@@ -283,6 +283,21 @@ def test_textBox_returns_overflow():
     assert "five" in overflow or "six" in overflow
 
 
+def test_cmyk_color_arguments():
+    db = Drawing()
+    db.cmykFill(0, 1, 1, 0)
+    assert db._gstate.fillPaint.color == (255, 255, 0, 0)
+    db.cmykFill((1, 0, 1, 0, 0.5))
+    assert db._gstate.fillPaint.color == (128, 0, 255, 0)
+    db.cmykFill(None)
+    assert not db._gstate.fillPaint.somethingToDraw
+
+    db.cmykStroke(1, 1, 0, 0)
+    assert db._gstate.strokePaint.color == (255, 0, 0, 255)
+    db.cmykStroke(None)
+    assert not db._gstate.strokePaint.somethingToDraw
+
+
 def readbytes(path):
     with open(path, "rb") as f:
         return f.read()

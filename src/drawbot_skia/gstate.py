@@ -39,8 +39,26 @@ class GraphicsStateMixin:
                 color=color, somethingToDraw=True, shader=None
             )
 
+    def cmykFill(self, *args):
+        color = _cmykArgs(args)
+        if color is None:
+            self.fillPaint = self.fillPaint.copy(somethingToDraw=False, shader=None)
+        else:
+            self.fillPaint = self.fillPaint.copy(
+                color=color, somethingToDraw=True, shader=None
+            )
+
     def stroke(self, *args):
         color = _colorArgs(args)
+        if color is None:
+            self.strokePaint = self.strokePaint.copy(somethingToDraw=False, shader=None)
+        else:
+            self.strokePaint = self.strokePaint.copy(
+                color=color, somethingToDraw=True, shader=None
+            )
+
+    def cmykStroke(self, *args):
+        color = _cmykArgs(args)
         if color is None:
             self.strokePaint = self.strokePaint.copy(somethingToDraw=False, shader=None)
         else:
@@ -100,6 +118,17 @@ class GraphicsStateMixin:
             shader=shader, fill=None, somethingToDraw=True
         )
 
+    def cmykLinearGradient(self, startPoint, endPoint, colors, locations=None):
+        colors = [_colorTupleToInt(_cmykArgs(c)) for c in colors]
+        shader = skia.GradientShader.MakeLinear(
+            points=[startPoint, endPoint],
+            colors=colors,
+            positions=locations,
+        )
+        self.fillPaint = self.fillPaint.copy(
+            shader=shader, fill=None, somethingToDraw=True
+        )
+
     def radialGradient(
         self,
         startPoint,
@@ -136,6 +165,34 @@ class GraphicsStateMixin:
             shader=shader, fill=None, somethingToDraw=True
         )
 
+    def cmykRadialGradient(
+        self,
+        startPoint,
+        endPoint=None,
+        colors=None,
+        locations=None,
+        startRadius=0,
+        endRadius=100,
+    ):
+        if startRadius != 0:
+            logging.warning(
+                "cmykRadialGradient: startRadius != 0 ignored (it's not supported in drawbot-skia)"
+            )
+        if endPoint is not None and endPoint != startPoint:
+            logging.warning(
+                "cmykRadialGradient: endPoint argument ignored (it's not supported in drawbot-skia)"
+            )
+        colors = [_colorTupleToInt(_cmykArgs(c)) for c in colors]
+        shader = skia.GradientShader.MakeRadial(
+            center=startPoint,
+            radius=endRadius,
+            colors=colors,
+            positions=locations,
+        )
+        self.fillPaint = self.fillPaint.copy(
+            shader=shader, fill=None, somethingToDraw=True
+        )
+
     def shadow(self, offset, blur=None, color=None):
         if offset is None:
             shadow = None
@@ -143,6 +200,11 @@ class GraphicsStateMixin:
             shadow = (offset, blur, color)
         self.fillPaint = self.fillPaint.copy(shadow=shadow)
         self.strokePaint = self.strokePaint.copy(shadow=shadow)
+
+    def cmykShadow(self, offset, blur=None, color=None):
+        if color is not None:
+            color = _cmykToRgbFloatTuple(_flattenColorArgs((color,)))
+        self.shadow(offset, blur, color)
 
     # Text style
 
@@ -544,9 +606,16 @@ def _colorTupleToInt(color):
     return intColor
 
 
+def _flattenColorArgs(args):
+    if len(args) == 1 and isinstance(args[0], (list, tuple)):
+        return tuple(args[0])
+    return args
+
+
 def _colorArgs(args):
     """Convert drawbot-style fill/stroke arguments to a tuple containing
     ARGB int values."""
+    args = _flattenColorArgs(args)
     if not args:
         return None
     alpha = 1
@@ -564,6 +633,31 @@ def _colorArgs(args):
     else:
         assert 0
     return tuple(min(255, max(0, round(v * 255))) for v in (alpha, r, g, b))
+
+
+def _cmykArgs(args):
+    """Convert drawbot-style CMYK arguments to a tuple containing ARGB values."""
+    args = _flattenColorArgs(args)
+    if not args:
+        return None
+    if len(args) == 1 and args[0] is None:
+        return None
+    r, g, b, alpha = _cmykToRgbFloatTuple(args)
+    return tuple(min(255, max(0, round(v * 255))) for v in (alpha, r, g, b))
+
+
+def _cmykToRgbFloatTuple(args):
+    if len(args) == 4:
+        c, m, y, k = args
+        alpha = 1
+    elif len(args) == 5:
+        c, m, y, k, alpha = args
+    else:
+        assert 0
+    r = (1 - c) * (1 - k)
+    g = (1 - m) * (1 - k)
+    b = (1 - y) * (1 - k)
+    return r, g, b, alpha
 
 
 _blendModesList = [

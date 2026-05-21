@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="240" height="180">
+	<defs>
+		<linearGradient id="gradient_0" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="240" y2="180">
+			<stop offset="0" stop-color="aqua"/>
+			<stop offset="0.34999999" stop-color="fuchsia"/>
+			<stop offset="0.69999999" stop-color="yellow"/>
+			<stop offset="1" stop-color="#CCC"/>
+		</linearGradient>
+	</defs>
+	<rect fill="url(#gradient_0)" transform="matrix(1 0 -0 -1 0 180)" width="240" height="180"/>
+	<rect fill="#666" fill-opacity="0.4509804" transform="matrix(1 0 -0 -1 8 188)" x="22" y="28" width="58" height="58"/>
+	<rect fill="red" transform="matrix(1 0 -0 -1 0 180)" x="22" y="28" width="58" height="58"/>
+	<ellipse fill="#666" fill-opacity="0.4509804" transform="matrix(1 0 -0 -1 8 188)" cx="123" cy="57" rx="31" ry="31"/>
+	<ellipse fill="none" stroke="#666" vector-effect="non-scaling-stroke" stroke-width="1" stroke-miterlimit="4" stroke-opacity="0.4509804" transform="matrix(1 0 -0 -1 8 188)" cx="123" cy="57" rx="31" ry="31"/>
+	<ellipse fill="lime" fill-opacity="0.8509804" transform="matrix(1 0 -0 -1 0 180)" cx="123" cy="57" rx="31" ry="31"/>
+	<ellipse fill="none" stroke="blue" stroke-width="5" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 180)" cx="123" cy="57" rx="31" ry="31"/>
+	<defs>
+		<radialGradient id="gradient_1" gradientUnits="userSpaceOnUse" cx="192" cy="58" r="44">
+			<stop offset="0" stop-color="white"/>
+			<stop offset="0.64999998" stop-color="red"/>
+			<stop offset="1" stop-color="black"/>
+		</radialGradient>
+	</defs>
+	<rect fill="url(#gradient_1)" transform="matrix(1 0 -0 -1 0 180)" x="158" y="24" width="68" height="68"/>
+	<rect fill="none" stroke="blue" stroke-width="5" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 180)" x="158" y="24" width="68" height="68"/>
+	<rect fill="none" stroke="#262626" stroke-width="3" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 180)" x="18" y="110" width="204" height="44"/>
+</svg>
