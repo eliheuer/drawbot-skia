@@ -286,6 +286,21 @@ def test_textBox_returns_overflow():
     assert "five" in overflow or "six" in overflow
 
 
+def test_textBox_formattedString_returns_overflow():
+    db = Drawing()
+    db.size(200, 200)
+    t = FormattedString(fontSize=20)
+    t.fill(1, 0, 0)
+    t += "one two "
+    t.fill(0, 0, 1)
+    t += "three four five six"
+    overflow = db.textBox(t, (0, 0, 80, 48))
+    assert isinstance(overflow, FormattedString)
+    assert str(overflow)
+    assert "five" in str(overflow) or "six" in str(overflow)
+    assert list(overflow._iterRuns())[-1][1]["fill"] == (255, 0, 0, 255)
+
+
 def test_formattedString_properties():
     t = FormattedString("Hello", fontSize=20, cmykFill=(0, 1, 1, 0), align="center")
     assert str(t) == "Hello"

@@ -2,6 +2,7 @@ import contextlib
 import functools
 import math
 import os
+import re
 import skia
 from .document import RecordingDocument
 from .errors import DrawbotError
@@ -224,7 +225,7 @@ class Drawing:
 
     def textBox(self, txt, box, align=None):
         if isinstance(txt, FormattedString):
-            raise NotImplementedError("textBox() does not support FormattedString yet")
+            return self._textBoxFormattedString(txt, box, align=align)
         x, y, width, height = box
         lineHeight = self._gstate.textStyle.getLineHeight()
         maxLines = max(0, int(height // lineHeight))
@@ -288,6 +289,86 @@ class Drawing:
                     return word[:1], word[1:]
                 return word[: index - 1], word[index - 1 :]
         return word, ""
+
+    def _textBoxFormattedString(self, txt, box, align=None):
+        x, y, width, height = box
+        lineHeight = _formattedStringBaseLineHeight(txt, self._gstate.textStyle)
+        maxLines = max(0, int(height // lineHeight))
+        if maxLines == 0:
+            return txt.copy()
+
+        lines, overflow = self._wrapFormattedString(txt, width, maxLines)
+        baseline = y + height - _formattedLineBaselineOffset(lines[0], self._gstate.textStyle)
+        boxAlign = _textBoxAlign(align)
+        for line in lines:
+            self.text(line, (x, baseline), align=boxAlign)
+            lineInfo = self._formattedLines(line)[0]
+            baseline -= _lineHeight(lineInfo)
+        return overflow
+
+    def _wrapFormattedString(self, txt, width, maxLines):
+        tokens = _formattedStringTokens(txt)
+        lines = []
+        line = []
+        index = 0
+
+        def finishLine(nextIndex):
+            if line or not lines:
+                lines.append(_formattedStringFromTokens(line, txt))
+            if len(lines) == maxLines:
+                return _formattedStringFromTokens(tokens[nextIndex:], txt)
+            line.clear()
+            return None
+
+        while index < len(tokens):
+            tokenText, tokenProperties = tokens[index]
+            if tokenText == "\n":
+                overflow = finishLine(index + 1)
+                if overflow is not None:
+                    return lines, overflow
+                index += 1
+                continue
+            if tokenText.isspace() and not line:
+                index += 1
+                continue
+
+            candidate = line + [(tokenText, tokenProperties)]
+            if self.textSize(_formattedStringFromTokens(candidate, txt))[0] <= width:
+                line[:] = candidate
+                index += 1
+                continue
+            if line:
+                overflow = finishLine(index)
+                if overflow is not None:
+                    return lines, overflow
+                continue
+
+            fitText, restText = self._breakFormattedToken(
+                tokenText, tokenProperties, txt, width
+            )
+            line.append((fitText, tokenProperties))
+            if restText:
+                tokens[index] = (restText, tokenProperties)
+            else:
+                index += 1
+            overflow = finishLine(index)
+            if overflow is not None:
+                return lines, overflow
+
+        if line or not lines:
+            lines.append(_formattedStringFromTokens(line, txt))
+        return lines, _formattedStringFromTokens([], txt)
+
+    def _breakFormattedToken(self, tokenText, tokenProperties, source, width):
+        for index in range(1, len(tokenText) + 1):
+            candidate = _formattedStringFromTokens(
+                [(tokenText[:index], tokenProperties)], source
+            )
+            if self.textSize(candidate)[0] > width:
+                if index == 1:
+                    return tokenText[:1], tokenText[1:]
+                return tokenText[: index - 1], tokenText[index - 1 :]
+        return tokenText, ""
 
     def _textFormattedString(self, txt, position, align=None):
         x, y = position
@@ -583,6 +664,49 @@ def _textBoxAlign(align):
     if align == "justified":
         return None
     return align
+
+
+def _formattedStringTokens(txt):
+    tokens = []
+    for runText, properties in txt._iterRuns():
+        for tokenText in re.findall(r"\n| +|[^ \n]+", runText):
+            tokens.append((tokenText, dict(properties)))
+    return tokens
+
+
+def _formattedStringFromTokens(tokens, source):
+    result = FormattedString()
+    result._properties = dict(source._properties)
+    result._features = dict(source._features)
+    result._variations = dict(source._variations)
+    for tokenText, properties in tokens:
+        if not tokenText:
+            continue
+        if result._runs and result._runs[-1][1] == properties:
+            previousText, previousProperties = result._runs[-1]
+            result._runs[-1] = (previousText + tokenText, previousProperties)
+        else:
+            result._runs.append((tokenText, dict(properties)))
+    return result
+
+
+def _formattedStringBaseLineHeight(txt, textStyle):
+    lineHeight = txt.textProperties().get("lineHeight")
+    if lineHeight is not None:
+        return lineHeight
+    fontSize = txt.textProperties().get("fontSize", textStyle.fontSize)
+    return fontSize * 1.2
+
+
+def _formattedLineBaselineOffset(txt, textStyle):
+    fontSizes = [
+        properties.get("fontSize", textStyle.fontSize)
+        for runText, properties in txt._iterRuns()
+        if runText
+    ]
+    if not fontSizes:
+        return textStyle.fontSize
+    return max(fontSizes)
 
 
 def _lineHeight(line):

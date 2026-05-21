@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="420" height="280">
+	<rect fill="white" transform="matrix(1 0 -0 -1 0 280)" width="420" height="280"/>
+	<rect fill="none" stroke="#B2B2B2" stroke-width="1" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 280)" x="40" y="120" width="160" height="90"/>
+	<rect fill="none" stroke="#B2B2B2" stroke-width="1" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 280)" x="240" y="70" width="140" height="140"/>
+	<text transform="translate(40 92)" font-size="22" font-family="Helvetica" x="0, 13.438477, 25.673828, 33, 51.326172, 63.561523, 69.673828, 75.786133, 88.021484, 100.25684, " y="0, ">
+			Formatted 
+	</text>
+	<text fill="red" transform="translate(40 92)" font-size="22" font-family="Helvetica" x="106.36914, 112.48145, 124.7168, 135.7168, 141.8291, " y="0, ">
+			text 
+	</text>
+	<text fill="red" transform="translate(40 120)" font-size="22" font-family="Helvetica" x="0, 15.887695, 23.213867, 35.449219, 47.68457, 58.68457, " y="0, ">
+			wraps 
+	</text>
+	<text fill="#03F" transform="translate(40 120)" font-size="22" font-family="Helvetica" x="64.796875, 80.68457, 85.572266, 91.68457, 103.91992, " y="0, ">
+			with 
+	</text>
+	<text fill="#03F" transform="translate(40 148)" font-size="22" font-family="Helvetica" x="0, 11, 17.112305, 28.112305, 33, 45.235352, 56.235352, 62.347656, 67.235352, 79.470703, 85.583008, 97.818359, 103.93066, 116.16602, " y="0, ">
+			styles into a 
+	</text>
+	<text fill="#03F" transform="translate(240 92)" font-size="22" font-family="Helvetica" x="-69.716797, -62.390625, -50.155273, -39.155273, -33.042969, -20.807617, -8.5722656, 3.6630859, 8.5507812, 20.786133, 26.898438, 39.133789, 51.369141, 63.604492, " y="0, ">
+			rectangle and 
+	</text>
+	<text fill="#03F" transform="translate(240 120)" font-size="22" font-family="Helvetica" x="-69.083008, -61.756836, -49.521484, -43.40918, -31.173828, -23.847656, -11.612305, -0.61230469, 5.5, 16.5, 22.612305, 33.612305, 38.5, 50.735352, 62.970703, " y="0, ">
+			returns styled 
+	</text>
+	<text fill="#03F" transform="translate(240 148)" font-size="22" font-family="Helvetica" x="-43.414551, -31.179199, -20.179199, -7.9438477, -0.61767578, 10.382324, 22.617676, 37.302246, " y="0, ">
+			overﬂow.
+	</text>
+</svg>
