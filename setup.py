@@ -22,6 +22,7 @@ setup(
     packages=find_packages("src"),
     install_requires=[
         "skia-python",
+        "skia-pathops",
         "fonttools[unicode]",
         "numpy",  # unlisted skia-python dependency, TODO: is this true?
         "uharfbuzz",
