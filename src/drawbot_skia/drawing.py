@@ -303,9 +303,20 @@ class Drawing:
                 lineWidth, lineHeight, runs = line
                 xOffset = _alignmentOffset(lineWidth, align)
                 for run in runs:
-                    runX, glyphsInfo, textStyle, fillPaint, strokePaint = run
+                    (
+                        runX,
+                        glyphsInfo,
+                        textStyle,
+                        fillPaint,
+                        strokePaint,
+                        baselineShift,
+                    ) = run
                     with self._temporaryTextState(textStyle, fillPaint, strokePaint):
-                        self._drawGlyphs(glyphsInfo, baseline, x=runX + xOffset)
+                        self._drawGlyphs(
+                            glyphsInfo,
+                            baseline + baselineShift,
+                            x=runX + xOffset,
+                        )
                 baseline += lineHeight
 
     def _formattedLines(self, txt):
@@ -330,8 +341,18 @@ class Drawing:
                     lineHeight = max(lineHeight, runLineHeight)
                     continue
                 glyphsInfo = textStyle.shape(part)
+                tracking = properties.get("tracking")
+                if tracking is not None:
+                    _applyTracking(glyphsInfo, tracking)
                 currentRuns.append(
-                    (lineWidth, glyphsInfo, textStyle, fillPaint, strokePaint)
+                    (
+                        lineWidth,
+                        glyphsInfo,
+                        textStyle,
+                        fillPaint,
+                        strokePaint,
+                        properties.get("baselineShift", 0),
+                    )
                 )
                 lineWidth += glyphsInfo.endPos[0]
                 lineHeight = max(lineHeight, runLineHeight)
@@ -537,6 +558,18 @@ def _strokePaintWithProperties(strokePaint, properties):
     return strokePaint
 
 
+def _applyTracking(glyphsInfo, tracking):
+    positions = []
+    for index, (x, y) in enumerate(glyphsInfo.positions):
+        positions.append((x + index * tracking, y))
+    glyphsInfo.positions = positions
+    if positions:
+        glyphsInfo.endPos = (
+            glyphsInfo.endPos[0] + tracking * (len(positions) - 1),
+            glyphsInfo.endPos[1],
+        )
+
+
 def _alignmentOffset(lineWidth, align):
     if align == "center":
         return -lineWidth / 2
@@ -563,7 +596,7 @@ def _lineSpacing(line):
         return lineHeight
     return max(
         textStyle.skFont.getSpacing()
-        for x, glyphsInfo, textStyle, fill, stroke in runs
+        for x, glyphsInfo, textStyle, fill, stroke, baselineShift in runs
     )
 
 

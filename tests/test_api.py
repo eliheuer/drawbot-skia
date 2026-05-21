@@ -297,6 +297,8 @@ def test_formattedString_properties():
     t.cmykFill(1, 0, 1, 0, 0.5)
     t.stroke(0, 0, 1)
     t.strokeWidth(2)
+    t.tracking(4)
+    t.baselineShift(3)
     t.align("right")
     t += " world"
     runText, runProperties = list(t._iterRuns())[-1]
@@ -304,10 +306,15 @@ def test_formattedString_properties():
     assert runProperties["fill"] == (128, 0, 255, 0)
     assert runProperties["stroke"] == (255, 0, 0, 255)
     assert runProperties["strokeWidth"] == 2
+    assert runProperties["tracking"] == 4
+    assert runProperties["baselineShift"] == 3
     assert runProperties["align"] == "right"
 
     t.cmykStroke(0, 1, 1, 0, 0.5)
     assert t.textProperties()["stroke"] == (128, 255, 0, 0)
+    tracked = FormattedString("ABC", fontSize=20, tracking=5)
+    untracked = FormattedString("ABC", fontSize=20)
+    assert tracked.size()[0] == pytest.approx(untracked.size()[0] + 10)
 
     t.clear()
     assert str(t) == ""

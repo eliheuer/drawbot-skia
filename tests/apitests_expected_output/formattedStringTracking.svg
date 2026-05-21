@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="420" height="170">
+	<rect fill="white" transform="matrix(1 0 -0 -1 0 170)" width="420" height="170"/>
+	<path fill="none" stroke="white" vector-effect="non-scaling-stroke" stroke-width="1" stroke-miterlimit="4" transform="matrix(1 0 -0 -1 0 170)" d="M20 86L400 86"/>
+	<path fill="none" stroke="#D9D9D9" stroke-width="1" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 170)" d="M20 86L400 86"/>
+	<text fill="#0D0D0D" transform="translate(28 84)" font-size="44" font-family="Helvetica" x="0, " y="0, ">
+			A
+	</text>
+	<text fill="none" stroke="#D9D9D9" stroke-width="1" stroke-miterlimit="5" transform="translate(28 84)" font-size="44" font-family="Helvetica" x="0, " y="0, ">
+			A
+	</text>
+	<text fill="#0D0D0D" transform="translate(28 84)" font-size="44" font-family="Helvetica" x="29.347656, 65.347656, 103.81836, 142.28906, 178.28906, 216.75977, " y="0, ">
+			spaced
+	</text>
+	<text fill="none" stroke="#D9D9D9" stroke-width="1" stroke-miterlimit="5" transform="translate(28 84)" font-size="44" font-family="Helvetica" x="29.347656, 65.347656, 103.81836, 142.28906, 178.28906, 216.75977, " y="0, ">
+			spaced
+	</text>
+	<text fill="red" transform="translate(28 84)" font-size="44" font-family="Helvetica" x="241.23047, 265.70117, " y="18, ">
+			up
+	</text>
+	<text fill="none" stroke="#D9D9D9" stroke-width="1" stroke-miterlimit="5" transform="translate(28 84)" font-size="44" font-family="Helvetica" x="241.23047, 265.70117, " y="18, ">
+			up
+	</text>
+	<text fill="#03F" transform="translate(28 84)" font-size="44" font-family="Helvetica" x="290.17188, 314.64258, 339.11328, 370.88867, " y="-14, ">
+			down
+	</text>
+	<text fill="none" stroke="#D9D9D9" stroke-width="1" stroke-miterlimit="5" transform="translate(28 84)" font-size="44" font-family="Helvetica" x="290.17188, 314.64258, 339.11328, 370.88867, " y="-14, ">
+			down
+	</text>
+	<text fill="#333" transform="translate(28 136)" font-size="24" font-family="Helvetica" x="0, 22.660156, 47.992188, 72, 97.332031, " y="0, ">
+			TRACK
+	</text>
+	<text fill="none" stroke="#D9D9D9" stroke-width="1" stroke-miterlimit="5" transform="translate(28 136)" font-size="24" font-family="Helvetica" x="0, 22.660156, 47.992188, 72, 97.332031, " y="0, ">
+			TRACK
+	</text>
+</svg>

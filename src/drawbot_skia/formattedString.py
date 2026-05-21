@@ -72,6 +72,12 @@ class FormattedString:
     def align(self, align):
         self._properties["align"] = align
 
+    def tracking(self, tracking):
+        self._properties["tracking"] = tracking
+
+    def baselineShift(self, baselineShift):
+        self._properties["baselineShift"] = baselineShift
+
     def openTypeFeatures(self, *, resetFeatures=False, **features):
         if resetFeatures:
             self._features.clear()
