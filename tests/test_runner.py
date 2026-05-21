@@ -1,5 +1,6 @@
 import pathlib
 import subprocess
+import sys
 
 
 testDir = pathlib.Path(__file__).resolve().parent
@@ -10,6 +11,6 @@ def test_runner_app(tmpdir):
     outputPath = pathlib.Path(tmpdir / "test.png")
     assert not outputPath.exists()
     # assert 0, outputPath
-    args = ["drawbot", testScript, outputPath]
+    args = [sys.executable, "-m", "drawbot_skia", testScript, outputPath]
     subprocess.check_output(args)
     assert outputPath.exists()
