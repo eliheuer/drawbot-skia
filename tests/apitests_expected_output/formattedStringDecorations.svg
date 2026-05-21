@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="460" height="200">
+	<rect fill="white" transform="matrix(1 0 -0 -1 0 200)" width="460" height="200"/>
+	<text fill="#0D0D0D" transform="translate(24 72)" font-size="44" font-family="Helvetica" x="0, 22, 31.775391, 56.246094, 80.716797, 90.492188, 114.96289, " y="0, ">
+			single 
+	</text>
+	<path fill="none" stroke="#0D0D0D" stroke-width="2.75" stroke-miterlimit="4" transform="translate(24 72)" d="M0 4.4000001L127.1875 4.4000001"/>
+	<text fill="red" transform="translate(24 72)" font-size="44" font-family="Helvetica" x="127.1875, 139.41211, 163.88281, 173.6582, 195.6582, 217.6582, " y="0, ">
+			thick 
+	</text>
+	<path fill="none" stroke="red" stroke-width="5.5" stroke-miterlimit="4" transform="translate(24 72)" d="M127.1875 4.4000001L229.88281 4.4000001"/>
+	<text fill="#03F" transform="translate(24 72)" font-size="44" font-family="Helvetica" x="229.88281, 254.35352, 278.82422, 303.29492, 327.76562, 337.54102, " y="0, ">
+			double
+	</text>
+	<path fill="none" stroke="#03F" stroke-width="2.75" stroke-miterlimit="4" transform="translate(24 72)" d="M229.88281 4.4000001L362.01172 4.4000001"/>
+	<path fill="none" stroke="#03F" stroke-width="2.75" stroke-miterlimit="4" transform="translate(24 72)" d="M229.88281 11.275L362.01172 11.275"/>
+	<text transform="translate(24 142)" font-size="38" font-family="Helvetica" x="0, 19, 29.557617, 42.211914, 50.654297, 69.654297, 90.788086, " y="0, ">
+			strike 
+	</text>
+	<path fill="none" stroke="black" stroke-width="2.375" stroke-miterlimit="4" transform="translate(24 142)" d="M0 -11.4L101.3457 -11.4"/>
+	<text fill="red" transform="translate(24 142)" font-size="38" font-family="Helvetica" x="101.3457, 111.90332, 133.03711, 141.47949, 160.47949, 179.47949, " y="0, ">
+			thick 
+	</text>
+	<path fill="none" stroke="red" stroke-width="4.75" stroke-miterlimit="4" transform="translate(24 142)" d="M101.3457 -11.4L190.03711 -11.4"/>
+	<text fill="#03F" transform="translate(24 142)" font-size="38" font-family="Helvetica" x="190.03711, 211.1709, 232.30469, 253.43848, 274.57227, 283.01465, " y="0, ">
+			double
+	</text>
+	<path fill="none" stroke="#03F" stroke-width="2.375" stroke-miterlimit="4" transform="translate(24 142)" d="M190.03711 -11.4L304.14844 -11.4"/>
+	<path fill="none" stroke="#03F" stroke-width="2.375" stroke-miterlimit="4" transform="translate(24 142)" d="M190.03711 -5.4625001L304.14844 -5.4625001"/>
+</svg>

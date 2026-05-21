@@ -79,6 +79,12 @@ class FormattedString:
     def baselineShift(self, baselineShift):
         self._properties["baselineShift"] = baselineShift
 
+    def underline(self, underline):
+        self._properties["underline"] = underline
+
+    def strikethrough(self, strikethrough):
+        self._properties["strikethrough"] = strikethrough
+
     def openTypeFeatures(self, *, resetFeatures=False, **features):
         if resetFeatures:
             self._features.clear()

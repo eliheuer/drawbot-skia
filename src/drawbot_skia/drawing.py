@@ -391,12 +391,31 @@ class Drawing:
                         fillPaint,
                         strokePaint,
                         baselineShift,
+                        underline,
+                        strikethrough,
                     ) = run
                     with self._temporaryTextState(textStyle, fillPaint, strokePaint):
+                        runBaseline = baseline + baselineShift
                         self._drawGlyphs(
                             glyphsInfo,
-                            baseline + baselineShift,
+                            runBaseline,
                             x=runX + xOffset,
+                        )
+                        self._drawTextDecoration(
+                            underline,
+                            runX + xOffset,
+                            runX + xOffset + glyphsInfo.endPos[0],
+                            runBaseline + textStyle.fontSize * 0.1,
+                            textStyle,
+                            fillPaint,
+                        )
+                        self._drawTextDecoration(
+                            strikethrough,
+                            runX + xOffset,
+                            runX + xOffset + glyphsInfo.endPos[0],
+                            runBaseline - textStyle.fontSize * 0.3,
+                            textStyle,
+                            fillPaint,
                         )
                 baseline += lineHeight
 
@@ -433,6 +452,8 @@ class Drawing:
                         fillPaint,
                         strokePaint,
                         properties.get("baselineShift", 0),
+                        properties.get("underline"),
+                        properties.get("strikethrough"),
                     )
                 )
                 lineWidth += glyphsInfo.endPos[0]
@@ -467,6 +488,21 @@ class Drawing:
                     brFont.drawGlyph(
                         glyphName, canvas, palette=None, textColor=textColor
                     )
+
+    def _drawTextDecoration(self, decoration, x1, x2, y, textStyle, fillPaint):
+        if decoration is None:
+            return
+        thickness = max(1, textStyle.fontSize / 16)
+        if decoration == "thick":
+            thickness = max(2, textStyle.fontSize / 8)
+        paint = skia.Paint(AntiAlias=True, Style=skia.Paint.kStroke_Style)
+        paint.setARGB(*fillPaint.color)
+        paint.setStrokeWidth(thickness)
+        self._canvas.drawLine(x1, y, x2, y, paint)
+        if decoration == "double":
+            self._canvas.drawLine(
+                x1, y + thickness * 2.5, x2, y + thickness * 2.5, paint
+            )
 
     @contextlib.contextmanager
     def _temporaryTextState(self, textStyle, fillPaint, strokePaint):
@@ -720,7 +756,16 @@ def _lineSpacing(line):
         return lineHeight
     return max(
         textStyle.skFont.getSpacing()
-        for x, glyphsInfo, textStyle, fill, stroke, baselineShift in runs
+        for (
+            x,
+            glyphsInfo,
+            textStyle,
+            fill,
+            stroke,
+            baselineShift,
+            underline,
+            strikethrough,
+        ) in runs
     )
 
 
