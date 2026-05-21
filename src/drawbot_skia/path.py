@@ -328,6 +328,19 @@ class BezierPath(BasePen):
         paint.getFillPath(self.path, path)
         return BezierPath(path=path)
 
+    def dashStroke(self, *dash, offset=0):
+        if not dash:
+            return self.copy()
+        intervals = tuple(dash)
+        if len(intervals) % 2:
+            intervals = intervals * 2
+        effect = skia.DashPathEffect.Make(intervals, offset)
+        path = skia.Path()
+        strokeRec = skia.StrokeRec(skia.StrokeRec.kHairline_InitStyle)
+        if not effect.filterPath(path, self.path, strokeRec, self.path.getBounds()):
+            path = skia.Path(self.path)
+        return BezierPath(path=path)
+
     __mod__ = difference
 
     def __imod__(self, other):

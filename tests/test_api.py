@@ -6,6 +6,7 @@ from PIL import Image
 import numpy as np
 from drawbot_skia.runner import makeDrawbotNamespace, runScript, runScriptSource
 from drawbot_skia.drawing import Drawing
+from drawbot_skia.path import BezierPath
 
 
 testDir = pathlib.Path(__file__).resolve().parent
@@ -296,6 +297,21 @@ def test_cmyk_color_arguments():
     assert db._gstate.strokePaint.color == (255, 0, 0, 255)
     db.cmykStroke(None)
     assert not db._gstate.strokePaint.somethingToDraw
+
+
+def test_bezier_path_dashStroke():
+    path = BezierPath()
+    path.moveTo((0, 0))
+    path.lineTo((100, 0))
+    dashed = path.dashStroke(10, 5)
+    assert dashed is not path
+    assert dashed.contours[0].open
+    assert dashed.contours[0][0] == ((0.0, 0.0),)
+    assert dashed.contours[0][1] == ((10.0, 0.0),)
+    assert len(dashed.contours) == 7
+
+    dashed = path.dashStroke(10, 5, offset=5)
+    assert dashed.contours[0][1] == ((5.0, 0.0),)
 
 
 def readbytes(path):
