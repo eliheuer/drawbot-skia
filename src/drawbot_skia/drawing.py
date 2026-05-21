@@ -4,6 +4,7 @@ import math
 import skia
 from .document import RecordingDocument
 from .errors import DrawbotError
+from .formattedString import FormattedString
 from .gstate import GraphicsState, GraphicsStateMixin
 from .shaping import alignGlyphPositions
 
@@ -107,23 +108,37 @@ class Drawing:
         # TODO: with some smartness we can shape only once, for a
         # textSize()/text() call combination with the same text and
         # the same text parameters.
-        lines = txt.split("\n")
-        lineWidths = []
-        for line in lines:
-            if line:
-                glyphsInfo = self._gstate.textStyle.shape(line)
-                lineWidths.append(glyphsInfo.endPos[0])
-            else:
-                lineWidths.append(0)
-        lineHeight = self._gstate.textStyle.getLineHeight()
-        textHeight = self._gstate.textStyle.skFont.getSpacing()
-        if len(lines) > 1:
-            textHeight += lineHeight * (len(lines) - 1)
-        return (max(lineWidths), textHeight)
+        if isinstance(txt, FormattedString):
+            lines = self._formattedLines(txt)
+            if not lines:
+                return (0, 0)
+            lineWidths = [lineWidth for lineWidth, lineHeight, runs in lines]
+            textHeight = _lineSpacing(lines[0])
+            for line in lines[1:]:
+                textHeight += _lineHeight(line)
+            return (max(lineWidths), textHeight)
+        else:
+            lines = txt.split("\n")
+            lineWidths = []
+            for line in lines:
+                if line:
+                    glyphsInfo = self._gstate.textStyle.shape(line)
+                    lineWidths.append(glyphsInfo.endPos[0])
+                else:
+                    lineWidths.append(0)
+            lineHeight = self._gstate.textStyle.getLineHeight()
+            textHeight = self._gstate.textStyle.skFont.getSpacing()
+            if len(lines) > 1:
+                textHeight += lineHeight * (len(lines) - 1)
+            return (max(lineWidths), textHeight)
 
     def text(self, txt, position, align=None):
         if not txt:
             # Hard Skia crash otherwise
+            return
+
+        if isinstance(txt, FormattedString):
+            self._textFormattedString(txt, position, align)
             return
 
         textStyle = self._gstate.textStyle
@@ -140,13 +155,55 @@ class Drawing:
                 alignGlyphPositions(glyphsInfo, align)
                 self._drawGlyphs(glyphsInfo, lineIndex * textStyle.getLineHeight())
 
-    def _drawGlyphs(self, glyphsInfo, y):
+    def _textFormattedString(self, txt, position, align=None):
+        x, y = position
+        lines = self._formattedLines(txt)
+        with self._savedCanvasState():
+            self._canvas.translate(x, y)
+            if self._flipCanvas:
+                self._canvas.scale(1, -1)
+            baseline = 0
+            for line in lines:
+                lineWidth, lineHeight, runs = line
+                xOffset = _alignmentOffset(lineWidth, align)
+                for run in runs:
+                    runX, glyphsInfo, textStyle, fillPaint = run
+                    with self._temporaryTextState(textStyle, fillPaint):
+                        self._drawGlyphs(glyphsInfo, baseline, x=runX + xOffset)
+                baseline += lineHeight
+
+    def _formattedLines(self, txt):
+        lines = []
+        currentRuns = []
+        lineWidth = 0
+        lineHeight = self._gstate.textStyle.getLineHeight()
+        for runText, properties in txt._iterRuns():
+            textStyle = _textStyleWithProperties(self._gstate.textStyle, properties)
+            fillPaint = _fillPaintWithProperties(self._gstate.fillPaint, properties)
+            runLineHeight = textStyle.getLineHeight()
+            for index, part in enumerate(runText.split("\n")):
+                if index:
+                    lines.append((lineWidth, lineHeight, currentRuns))
+                    currentRuns = []
+                    lineWidth = 0
+                    lineHeight = runLineHeight
+                if not part:
+                    lineHeight = max(lineHeight, runLineHeight)
+                    continue
+                glyphsInfo = textStyle.shape(part)
+                currentRuns.append((lineWidth, glyphsInfo, textStyle, fillPaint))
+                lineWidth += glyphsInfo.endPos[0]
+                lineHeight = max(lineHeight, runLineHeight)
+        lines.append((lineWidth, lineHeight, currentRuns))
+        return lines
+
+    def _drawGlyphs(self, glyphsInfo, y, x=0):
         textStyle = self._gstate.textStyle
         if "COLR" not in textStyle.ttFont:
             builder = skia.TextBlobBuilder()
             builder.allocRunPos(textStyle.skFont, glyphsInfo.gids, glyphsInfo.positions)
             blob = builder.make()
-            self._drawItem(self._canvas.drawTextBlob, blob, 0, y)
+            self._drawItem(self._canvas.drawTextBlob, blob, x, y)
         else:
             from blackrenderer.backends.skia import SkiaCanvas
 
@@ -159,14 +216,25 @@ class Drawing:
             scaleFactor = textStyle.fontSize / brFont.unitsPerEm
             a, r, g, b = (ch / 255 for ch in self._gstate.fillPaint.color)
             textColor = (r, g, b, a)
-            for gid, (x, glyphY) in zip(glyphsInfo.gids, glyphsInfo.positions):
+            for gid, (glyphX, glyphY) in zip(glyphsInfo.gids, glyphsInfo.positions):
                 glyphName = ttFont.getGlyphName(gid)
                 with self._savedCanvasState():
-                    self._canvas.translate(x, glyphY + y)
+                    self._canvas.translate(x + glyphX, glyphY + y)
                     self._canvas.scale(scaleFactor, -scaleFactor)
                     brFont.drawGlyph(
                         glyphName, canvas, palette=None, textColor=textColor
                     )
+
+    @contextlib.contextmanager
+    def _temporaryTextState(self, textStyle, fillPaint):
+        oldGState = self._gstate
+        self._gstate = self._gstate.copy()
+        self._gstate.textStyle = textStyle
+        self._gstate.fillPaint = fillPaint
+        try:
+            yield
+        finally:
+            self._gstate = oldGState
 
     def image(self, imagePath, position, alpha=1.0):
         im = self._getImage(imagePath)
@@ -276,6 +344,53 @@ def _makeWrapper(name):
 
     wrapper.__qualname__ = f"Drawing.{name}"
     return wrapper
+
+
+def _textStyleWithProperties(textStyle, properties):
+    textProperties = {}
+    for name in (
+        "font",
+        "fontSize",
+        "lineHeight",
+        "features",
+        "variations",
+        "language",
+    ):
+        if name in properties:
+            textProperties[name] = properties[name]
+    if textProperties:
+        textStyle = textStyle.copy(**textProperties)
+    return textStyle
+
+
+def _fillPaintWithProperties(fillPaint, properties):
+    if "fill" in properties:
+        color = properties["fill"]
+        if color is None:
+            return fillPaint.copy(somethingToDraw=False, shader=None)
+        return fillPaint.copy(color=color, somethingToDraw=True, shader=None)
+    return fillPaint
+
+
+def _alignmentOffset(lineWidth, align):
+    if align == "center":
+        return -lineWidth / 2
+    elif align == "right":
+        return -lineWidth
+    else:
+        return 0
+
+
+def _lineHeight(line):
+    lineWidth, lineHeight, runs = line
+    return lineHeight
+
+
+def _lineSpacing(line):
+    lineWidth, lineHeight, runs = line
+    if not runs:
+        return lineHeight
+    return max(textStyle.skFont.getSpacing() for x, glyphsInfo, textStyle, fill in runs)
 
 
 # Inject GraphicsStateMixin method wrappers into Drawing

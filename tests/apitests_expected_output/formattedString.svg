@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="480" height="220">
+	<rect fill="white" transform="matrix(1 0 -0 -1 0 220)" width="480" height="220"/>
+	<text transform="translate(30 60)" font-size="40" font-family="Helvetica" x="0, 26.679688, 35.566406, 57.8125, 77.8125, 97.8125, " y="0, ">
+			Black 
+	</text>
+	<text fill="red" transform="translate(30 60)" font-size="40" font-family="Helvetica" x="108.92578, 137.8125, 160.05859, " y="0, ">
+			Red
+	</text>
+	<text fill="blue" transform="translate(30 60)" font-size="28" font-family="Helvetica" x="0, 18.675781, 24.896484, 40.46875, 56.041016, 63.820312, 77.820312, 101.14453, 116.7168, 122.9375, 129.1582, 144.73047, 154.05469, " y="48, ">
+			Blue smaller 
+	</text>
+	<text fill="green" transform="translate(30 60)" font-size="28" font-family="Helvetica" x="161.83398, 183.61328, 192.9375, 208.50977, 224.08203, " y="48, ">
+			Green
+	</text>
+	<text fill="gray" transform="translate(360 160)" font-size="30" font-family="Helvetica" x="-61.706543, -40.041504, -23.356934, -6.6723633, 1.6625977, 18.347168, 28.337402, 45.021973, " y="0, ">
+			Centered
+	</text>
+</svg>

@@ -22,8 +22,8 @@ Work in progress!
 1. Get SVG export working ✅
 1. Get Animated GIF export working ✅
 1. Get multi-line, single style `text()` working ✅
-1. Get `FormattedString` working
-1. Get multi-style `text()` working
+1. Get `FormattedString` working ✅
+1. Get multi-style `text()` working ✅
 1. Get remaining `BezierPath` methods working
 1. Get many-things-I-forgot-to-mention working
 1. ...
