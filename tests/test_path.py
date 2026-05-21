@@ -1,4 +1,5 @@
 from drawbot_skia.path import BezierPath
+import pytest
 
 
 def test_path_bounds():
@@ -76,3 +77,18 @@ def test_path_contours():
     assert contours[1].open is True
     assert tuple(contours[0])[0] == ((0.0, 0.0),)
     assert tuple(contours[1]) == (((200.0, 0.0),), ((300.0, 0.0),))
+
+
+def test_path_expandStroke():
+    path = BezierPath()
+    path.line((0, 0), (100, 0))
+    expanded = path.expandStroke(20, lineCap="round", lineJoin="round")
+
+    assert isinstance(expanded, BezierPath)
+    assert expanded.bounds()[0] < 0
+    assert expanded.bounds()[1] < 0
+    assert expanded.bounds()[2] > 100
+    assert expanded.bounds()[3] > 0
+
+    with pytest.raises(Exception):
+        path.expandStroke(20, lineCap="bad")

@@ -5,14 +5,14 @@ from collections.abc import Sequence
 from fontTools.misc.transform import Transform
 from fontTools.pens.basePen import BasePen
 from fontTools.pens.pointPen import PointToSegmentPen, SegmentToPointPen
-from .gstate import TextStyle
+from .errors import DrawbotError
+from .gstate import TextStyle, _strokeCapMapping, _strokeJoinMapping
 from .shaping import alignGlyphPositions
 
 
 # TODO:
 # - textBox
 # MAYBE:
-# - expandStroke
 # - intersectionPoints
 # - optimizePath
 # - svgClass
@@ -308,6 +308,25 @@ class BezierPath(BasePen):
         resultPath = BezierPath()
         path.draw(resultPath)
         self.path = resultPath.path
+
+    def expandStroke(
+        self, width, lineCap="butt", lineJoin="miter", miterLimit=10
+    ):
+        if lineCap not in _strokeCapMapping:
+            raise DrawbotError(f"lineCap must be one of: {sorted(_strokeCapMapping)}")
+        if lineJoin not in _strokeJoinMapping:
+            raise DrawbotError(f"lineJoin must be one of: {sorted(_strokeJoinMapping)}")
+        paint = skia.Paint(
+            AntiAlias=True,
+            Style=skia.Paint.kStroke_Style,
+            StrokeWidth=width,
+        )
+        paint.setStrokeCap(_strokeCapMapping[lineCap])
+        paint.setStrokeJoin(_strokeJoinMapping[lineJoin])
+        paint.setStrokeMiter(miterLimit)
+        path = skia.Path()
+        paint.getFillPath(self.path, path)
+        return BezierPath(path=path)
 
     __mod__ = difference
 
