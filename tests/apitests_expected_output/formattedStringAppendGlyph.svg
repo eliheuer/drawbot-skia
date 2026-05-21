@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="420" height="170">
+	<rect fill="white" transform="matrix(1 0 -0 -1 0 170)" width="420" height="170"/>
+	<text fill="#0D0D0D" transform="translate(36 94)" font-size="72" font-family="Helvetica" x="0, 48.023438, " y="0, ">
+			A&amp;
+	</text>
+	<text fill="red" transform="translate(36 94)" font-size="72" font-family="Helvetica" x="96.046875, " y="0, ">
+			B
+	</text>
+	<text fill="#595959" transform="translate(36 136)" font-size="13" font-family="Helvetica" x="0, 7.9599609, 11.571777, 18.801758, 26.031738, 33.261719, 36.873535, 44.103516, 54.932617, 62.162598, 69.392578, 73.72168, 80.22168, 87.45166, 94.681641, 101.91162, 105.52344, 112.75342, 119.25342, 122.86523, 130.09521, 132.9834, 139.4834, 146.71338, 153.94336, 157.55518, 164.78516, 172.01514, 182.84424, 190.07422, 193.68604, 197.29785, 205.96875, 209.58057, 216.81055, 223.31055, 226.92236, 234.15234, 237.04053, 243.54053, 250.77051, 258.00049, 261.6123, 264.50049, 271.73047, 278.96045, 286.19043, " y="0, ">
+			A and ampersand by glyph name, B by glyph index
+	</text>
+</svg>

@@ -140,6 +140,24 @@ class FormattedString:
     def fontLineHeight(self):
         return self._textStyle().getLineHeight()
 
+    def appendGlyph(self, *glyphNames):
+        cmap = self._ttFont().getBestCmap() or {}
+        glyphToCharacter = {
+            glyphName: chr(codePoint) for codePoint, glyphName in cmap.items()
+        }
+        glyphOrder = self._ttFont().getGlyphOrder()
+        chars = []
+        for glyphName in glyphNames:
+            if isinstance(glyphName, int):
+                try:
+                    glyphName = glyphOrder[glyphName]
+                except IndexError:
+                    raise KeyError(glyphName) from None
+            if glyphName not in glyphToCharacter:
+                raise KeyError(glyphName)
+            chars.append(glyphToCharacter[glyphName])
+        self.append("".join(chars))
+
     def _textStyle(self):
         properties = self.textProperties()
         textProperties = {

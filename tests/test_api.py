@@ -355,6 +355,16 @@ def test_formattedString_font_info():
     assert t.fontFileFontNumber() == 0
 
 
+def test_formattedString_appendGlyph():
+    t = FormattedString(fontSize=20)
+    t.appendGlyph("A", "ampersand")
+    assert str(t) == "A&"
+    t.appendGlyph(t.listFontGlyphNames().index("B"))
+    assert str(t) == "A&B"
+    with pytest.raises(KeyError):
+        t.appendGlyph(".notdef")
+
+
 def test_cmyk_color_arguments():
     db = Drawing()
     db.cmykFill(0, 1, 1, 0)
