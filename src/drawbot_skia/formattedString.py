@@ -1,5 +1,6 @@
 import os
-from .gstate import TextStyle, _cmykArgs, _colorArgs
+from .gstate import TextStyle, _cmykArgs, _colorArgs, _getName
+from .shaping import getFeatures
 
 
 class FormattedString:
@@ -146,6 +147,47 @@ class FormattedString:
     def fontLineHeight(self):
         return self._textStyle().getLineHeight()
 
+    def listOpenTypeFeatures(self, fontNameOrPath=None, fontNumber=0):
+        textStyle = self._textStyleForFont(fontNameOrPath)
+        features = set()
+        for tableTag in ("GSUB", "GPOS"):
+            features.update(getFeatures(textStyle.hbFont.face, tableTag))
+        return sorted(features)
+
+    def listFontVariations(self, fontNameOrPath=None, fontNumber=0):
+        ttFont = self._textStyleForFont(fontNameOrPath).ttFont
+        variations = {}
+        if "fvar" in ttFont:
+            nameTable = ttFont["name"]
+            for axis in ttFont["fvar"].axes:
+                axisName = _getName(nameTable, axis.axisNameID)
+                variations[axis.axisTag] = dict(
+                    name=axisName,
+                    minValue=axis.minValue,
+                    defaultValue=axis.defaultValue,
+                    maxValue=axis.maxValue,
+                )
+        return variations
+
+    def listNamedInstances(self, fontNameOrPath=None, fontNumber=0):
+        ttFont = self._textStyleForFont(fontNameOrPath).ttFont
+        instances = {}
+        if "fvar" in ttFont:
+            nameTable = ttFont["name"]
+            psName = _getName(nameTable, 6)
+            for instance in ttFont["fvar"].instances:
+                if instance.postscriptNameID != 0xFFFF:
+                    name = _getName(nameTable, instance.postscriptNameID)
+                else:
+                    instanceStyleName = _getName(nameTable, instance.subfamilyNameID)
+                    styleName = _getName(nameTable, 2)
+                    if instanceStyleName == styleName:
+                        name = psName
+                    else:
+                        name = psName + "_" + instanceStyleName
+                instances[name] = instance.coordinates
+        return instances
+
     def appendGlyph(self, *glyphNames):
         cmap = self._ttFont().getBestCmap() or {}
         glyphToCharacter = {
@@ -179,6 +221,11 @@ class FormattedString:
             if name in properties
         }
         return TextStyle(**textProperties)
+
+    def _textStyleForFont(self, fontNameOrPath):
+        if fontNameOrPath is None:
+            return self._textStyle()
+        return self._textStyle().copy(font=fontNameOrPath)
 
     def _ttFont(self):
         return self._textStyle().ttFont

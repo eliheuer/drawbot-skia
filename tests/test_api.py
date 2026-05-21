@@ -369,6 +369,23 @@ def test_formattedString_appendGlyph():
         t.appendGlyph(".notdef")
 
 
+def test_formattedString_font_feature_queries():
+    sourceSerif = testDir / "fonts" / "SourceSerifPro-Regular.otf"
+    t = FormattedString(font=sourceSerif)
+    features = t.listOpenTypeFeatures()
+    assert "smcp" in features
+    assert "kern" in features
+
+    mutatorSans = testDir / "fonts" / "MutatorSans.ttf"
+    t = FormattedString(font=mutatorSans)
+    variations = t.listFontVariations()
+    assert set(variations) == {"wdth", "wght"}
+    assert variations["wdth"]["name"] == "Width"
+    instances = t.listNamedInstances()
+    assert "MutatorMathTest-BoldWide" in instances
+    assert instances["MutatorMathTest-BoldWide"]["wght"] == 1000.0
+
+
 def test_cmyk_color_arguments():
     db = Drawing()
     db.cmykFill(0, 1, 1, 0)
