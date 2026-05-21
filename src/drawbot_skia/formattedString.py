@@ -1,4 +1,5 @@
-from .gstate import _cmykArgs, _colorArgs
+import os
+from .gstate import TextStyle, _cmykArgs, _colorArgs
 
 
 class FormattedString:
@@ -97,6 +98,70 @@ class FormattedString:
         from .drawing import Drawing
 
         return Drawing().textSize(self)
+
+    def fontContainsCharacters(self, characters):
+        cmap = self._ttFont().getBestCmap() or {}
+        return all(ord(character) in cmap for character in characters)
+
+    def fontContainsGlyph(self, glyphName):
+        return glyphName in self._ttFont().getGlyphOrder()
+
+    def fontFilePath(self):
+        font = self.textProperties().get("font")
+        if font is not None and os.path.exists(os.fspath(font)):
+            return os.fspath(font)
+        return None
+
+    def fontFileFontNumber(self):
+        return 0
+
+    def listFontGlyphNames(self):
+        return list(self._ttFont().getGlyphOrder())
+
+    def fontAscender(self):
+        return self._fontUnitsToPoints(self._ttFont()["hhea"].ascent)
+
+    def fontDescender(self):
+        return self._fontUnitsToPoints(self._ttFont()["hhea"].descent)
+
+    def fontXHeight(self):
+        ttFont = self._ttFont()
+        value = getattr(ttFont.get("OS/2"), "sxHeight", 0)
+        return self._fontUnitsToPoints(value)
+
+    def fontCapHeight(self):
+        ttFont = self._ttFont()
+        value = getattr(ttFont.get("OS/2"), "sCapHeight", 0)
+        return self._fontUnitsToPoints(value)
+
+    def fontLeading(self):
+        return self._fontUnitsToPoints(self._ttFont()["hhea"].lineGap)
+
+    def fontLineHeight(self):
+        return self._textStyle().getLineHeight()
+
+    def _textStyle(self):
+        properties = self.textProperties()
+        textProperties = {
+            name: properties[name]
+            for name in (
+                "font",
+                "fontSize",
+                "lineHeight",
+                "features",
+                "variations",
+                "language",
+            )
+            if name in properties
+        }
+        return TextStyle(**textProperties)
+
+    def _ttFont(self):
+        return self._textStyle().ttFont
+
+    def _fontUnitsToPoints(self, value):
+        ttFont = self._ttFont()
+        return value * self._textStyle().fontSize / ttFont["head"].unitsPerEm
 
     def __iadd__(self, txt):
         self.append(txt)

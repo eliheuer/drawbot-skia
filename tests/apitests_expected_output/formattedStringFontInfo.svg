@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="360" height="190">
+	<rect fill="white" transform="matrix(1 0 -0 -1 0 190)" width="360" height="190"/>
+	<path fill="none" stroke="white" vector-effect="non-scaling-stroke" stroke-width="1" stroke-miterlimit="4" transform="matrix(1 0 -0 -1 0 190)" d="M40 76L320 76"/>
+	<path fill="none" stroke="#D9D9D9" stroke-width="1" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 190)" d="M40 76L320 76"/>
+	<path fill="none" stroke="white" vector-effect="non-scaling-stroke" stroke-width="1" stroke-miterlimit="4" transform="matrix(1 0 -0 -1 0 190)" d="M40 112.96094L320 112.96094"/>
+	<path fill="none" stroke="red" stroke-width="1" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 190)" d="M40 112.96094L320 112.96094"/>
+	<path fill="none" stroke="white" vector-effect="non-scaling-stroke" stroke-width="1" stroke-miterlimit="4" transform="matrix(1 0 -0 -1 0 190)" d="M40 64.960938L320 64.960938"/>
+	<path fill="none" stroke="blue" stroke-width="1" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 190)" d="M40 64.960938L320 64.960938"/>
+	<path fill="none" stroke="white" vector-effect="non-scaling-stroke" stroke-width="1" stroke-miterlimit="4" transform="matrix(1 0 -0 -1 0 190)" d="M40 101.10156L320 101.10156"/>
+	<path fill="none" stroke="#090" stroke-width="1" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 190)" d="M40 101.10156L320 101.10156"/>
+	<path fill="none" stroke="white" vector-effect="non-scaling-stroke" stroke-width="1" stroke-miterlimit="4" transform="matrix(1 0 -0 -1 0 190)" d="M40 110.42969L320 110.42969"/>
+	<path fill="none" stroke="#FF8000" stroke-width="1" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 190)" d="M40 110.42969L320 110.42969"/>
+	<text transform="translate(40 114)" font-size="10" font-family="Helvetica" x="0, 7.2216797, " y="0, ">
+			Hg
+	</text>
+	<text transform="translate(40 73.0391)" font-size="11" font-family="Helvetica" x="0, 6.1176758, 11.617676, 17.117676, 23.235352, 29.353027, 35.470703, 41.588379, " y="0, ">
+			ascender
+	</text>
+	<text transform="translate(40 137.039)" font-size="11" font-family="Helvetica" x="0, 6.1176758, 12.235352, 17.735352, 23.235352, 29.353027, 35.470703, 41.588379, 47.706055, " y="0, ">
+			descender
+	</text>
+</svg>

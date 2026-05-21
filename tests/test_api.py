@@ -322,6 +322,24 @@ def test_formattedString_properties():
     assert t.textProperties()["stroke"] == (128, 255, 0, 0)
 
 
+def test_formattedString_font_info():
+    t = FormattedString(fontSize=20)
+    assert t.fontContainsCharacters("ABC")
+    assert not t.fontContainsCharacters("\u0378")
+    assert t.fontContainsGlyph("A")
+    assert not t.fontContainsGlyph("notAGlyph")
+    glyphNames = t.listFontGlyphNames()
+    assert ".notdef" in glyphNames
+    assert "A" in glyphNames
+    assert t.fontAscender() > 0
+    assert t.fontDescender() < 0
+    assert t.fontXHeight() >= 0
+    assert t.fontCapHeight() >= 0
+    assert t.fontLeading() >= 0
+    assert t.fontLineHeight() == pytest.approx(24)
+    assert t.fontFileFontNumber() == 0
+
+
 def test_cmyk_color_arguments():
     db = Drawing()
     db.cmykFill(0, 1, 1, 0)
