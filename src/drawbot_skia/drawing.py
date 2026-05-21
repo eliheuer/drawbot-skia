@@ -429,13 +429,21 @@ class Drawing:
 
     @contextlib.contextmanager
     def savedState(self):
-        self._stack.append(self._gstate.copy())
-        self._canvas.save()
+        self.save()
         try:
             yield
         finally:
-            self._canvas.restore()
-            self._gstate = self._stack.pop()
+            self.restore()
+
+    def save(self):
+        self._stack.append(self._gstate.copy())
+        self._canvas.save()
+
+    def restore(self):
+        if not self._stack:
+            raise DrawbotError("restore() called without a matching save()")
+        self._canvas.restore()
+        self._gstate = self._stack.pop()
 
     @contextlib.contextmanager
     def _savedCanvasState(self):

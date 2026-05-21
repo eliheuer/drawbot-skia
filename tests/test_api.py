@@ -6,6 +6,7 @@ from PIL import Image
 import numpy as np
 from drawbot_skia.runner import makeDrawbotNamespace, runScript, runScriptSource
 from drawbot_skia.drawing import Drawing
+from drawbot_skia.errors import DrawbotError
 from drawbot_skia.path import BezierPath
 
 
@@ -327,6 +328,19 @@ def test_current_path_api():
     path = db._path
     db.newPath()
     assert db._path is not path
+
+
+def test_save_restore_graphics_state():
+    db = Drawing()
+    db.newPage(100, 100)
+    db.fill(1, 0, 0)
+    db.save()
+    db.fill(0, 1, 0)
+    assert db._gstate.fillPaint.color == (255, 0, 255, 0)
+    db.restore()
+    assert db._gstate.fillPaint.color == (255, 255, 0, 0)
+    with pytest.raises(DrawbotError):
+        db.restore()
 
 
 def readbytes(path):
