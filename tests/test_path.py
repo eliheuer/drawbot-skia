@@ -36,3 +36,43 @@ def test_path_point_args():
 def test_path_line_args():
     path1 = BezierPath()
     path1.line([0, 0], [0, 100])
+
+
+def test_path_points():
+    path = BezierPath()
+    path.moveTo((0, 0))
+    path.lineTo((100, 0))
+    path.curveTo((120, 20), (120, 80), (100, 100))
+    path.qCurveTo((50, 120), (0, 100))
+    path.closePath()
+
+    assert path.onCurvePoints == (
+        (0.0, 0.0),
+        (100.0, 0.0),
+        (100.0, 100.0),
+        (0.0, 100.0),
+    )
+    assert path.offCurvePoints == (
+        (120.0, 20.0),
+        (120.0, 80.0),
+        (50.0, 120.0),
+    )
+    assert path.points == path.onCurvePoints[:2] + path.offCurvePoints[:2] + (
+        path.onCurvePoints[2],
+        path.offCurvePoints[2],
+        path.onCurvePoints[3],
+    )
+
+
+def test_path_contours():
+    path = BezierPath()
+    path.rect(0, 0, 100, 100)
+    path.moveTo((200, 0))
+    path.lineTo((300, 0))
+
+    contours = path.contours
+    assert len(contours) == 2
+    assert contours[0].open is False
+    assert contours[1].open is True
+    assert tuple(contours[0])[0] == ((0.0, 0.0),)
+    assert tuple(contours[1]) == (((200.0, 0.0),), ((300.0, 0.0),))

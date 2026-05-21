@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="360" height="220">
+	<rect fill="white" transform="matrix(1 0 -0 -1 0 220)" width="360" height="220"/>
+	<path fill="#E6E6E6" transform="matrix(1 0 -0 -1 0 220)" d="M40 50L130 50C170 80 170 150 90 160Q40 150 40 90L40 50Z"/>
+	<path fill="none" stroke="black" stroke-width="2" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 220)" d="M40 50L130 50C170 80 170 150 90 160Q40 150 40 90L40 50Z"/>
+	<ellipse fill="red" transform="matrix(1 0 -0 -1 0 220)" cx="40" cy="50" rx="4" ry="4"/>
+	<ellipse fill="red" transform="matrix(1 0 -0 -1 0 220)" cx="130" cy="50" rx="4" ry="4"/>
+	<ellipse fill="red" transform="matrix(1 0 -0 -1 0 220)" cx="90" cy="160" rx="4" ry="4"/>
+	<ellipse fill="red" transform="matrix(1 0 -0 -1 0 220)" cx="40" cy="90" rx="4" ry="4"/>
+	<ellipse fill="blue" transform="matrix(1 0 -0 -1 0 220)" cx="170" cy="80" rx="3" ry="3"/>
+	<ellipse fill="blue" transform="matrix(1 0 -0 -1 0 220)" cx="170" cy="150" rx="3" ry="3"/>
+	<ellipse fill="blue" transform="matrix(1 0 -0 -1 0 220)" cx="40" cy="150" rx="3" ry="3"/>
+	<text transform="translate(210 80)" font-size="14" font-family="Helvetica" x="0, 7.7861328, 15.572266, 18.682617, 26.46875, 30.358398, 37.358398, 41.248047, 45.137695, " y="0, ">
+			points: 7
+	</text>
+	<text transform="translate(210 105)" font-size="14" font-family="Helvetica" x="0, 7.7861328, 15.572266, 19.461914, 23.351562, " y="0, ">
+			on: 4
+	</text>
+	<text transform="translate(210 130)" font-size="14" font-family="Helvetica" x="0, 7.7861328, 11.429688, 15.319336, 19.208984, 23.098633, " y="0, ">
+			off: 3
+	</text>
+	<text transform="translate(210 155)" font-size="14" font-family="Helvetica" x="0, 7.7861328, 15.572266, 23.358398, 31.144531, 35.03418, 38.923828, 47.475586, 55.261719, 58.37207, 65.37207, " y="0, ">
+			open: False
+	</text>
+</svg>

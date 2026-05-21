@@ -1,6 +1,7 @@
 import logging
 import math
 import skia
+from collections.abc import Sequence
 from fontTools.misc.transform import Transform
 from fontTools.pens.basePen import BasePen
 from fontTools.pens.pointPen import PointToSegmentPen, SegmentToPointPen
@@ -11,13 +12,9 @@ from .shaping import alignGlyphPositions
 # TODO:
 # - textBox
 # MAYBE:
-# - contours
 # - expandStroke
 # - intersectionPoints
-# - offCurvePoints
-# - onCurvePoints
 # - optimizePath
-# - points
 # - svgClass
 # - svgID
 # - svgLink
@@ -123,6 +120,51 @@ class BezierPath(BasePen):
         if self.path.countVerbs() == 0:
             return None
         return tuple(self.path.getBounds())
+
+    @property
+    def contours(self):
+        contours = []
+        currentContour = None
+        for segmentType, points in _iterPathSegments(self.path):
+            if segmentType == "moveTo":
+                if currentContour is not None:
+                    contours.append(currentContour)
+                currentContour = _Contour(open=True)
+                currentContour._appendSegment(points)
+            elif segmentType == "closePath":
+                if currentContour is not None:
+                    currentContour.open = False
+                    contours.append(currentContour)
+                    currentContour = None
+            else:
+                if currentContour is None:
+                    currentContour = _Contour(open=True)
+                currentContour._appendSegment(points)
+        if currentContour is not None:
+            contours.append(currentContour)
+        return tuple(contours)
+
+    @property
+    def points(self):
+        return tuple(
+            point for contour in self.contours for segment in contour for point in segment
+        )
+
+    @property
+    def onCurvePoints(self):
+        points = []
+        for segmentType, segmentPoints in _iterPathSegments(self.path):
+            if segmentType != "closePath":
+                points.append(segmentPoints[-1])
+        return tuple(points)
+
+    @property
+    def offCurvePoints(self):
+        points = []
+        for segmentType, segmentPoints in _iterPathSegments(self.path):
+            if segmentType in {"curveTo", "qCurveTo", "conicTo"}:
+                points.extend(segmentPoints[:-1])
+        return tuple(points)
 
     def reverse(self):
         path = skia.Path()
@@ -361,3 +403,60 @@ _pathVerbsToPenMethod = {
     skia.Path.Verb.kClose_Verb: ("closePath", 1, 1),
     # skia.Path.Verb.kDone_Verb: (None, None),  # "StopIteration", not receiving when using Python iterator
 }
+
+
+class _Contour(Sequence):
+    def __init__(self, segments=(), open=True):
+        self._segments = list(segments)
+        self.open = open
+
+    def _appendSegment(self, points):
+        self._segments.append(tuple(points))
+
+    def __iter__(self):
+        return iter(tuple(self._segments))
+
+    def __len__(self):
+        return len(self._segments)
+
+    def __getitem__(self, index):
+        return tuple(self._segments)[index]
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({tuple(self._segments)!r}, open={self.open!r})"
+
+
+def _iterPathSegments(path):
+    rawSegments = list(skia.Path.Iter(path, False))
+    contourStart = None
+    for index, (verb, points) in enumerate(rawSegments):
+        segmentType, startIndex, numPoints = _pathVerbsToPenMethod.get(
+            verb, (None, None, None)
+        )
+        if segmentType is None:
+            continue
+        nextVerb = rawSegments[index + 1][0] if index + 1 < len(rawSegments) else None
+        if segmentType == "conicTo":
+            segmentPoints = _convertConicToCubicDirty(*points)
+            yield "curveTo", tuple(_normalizePoint(point) for point in segmentPoints)
+        elif segmentType == "closePath":
+            contourStart = None
+            yield segmentType, ()
+        else:
+            segmentPoints = tuple(
+                _normalizePoint(point) for point in points[startIndex:]
+            )
+            if segmentType == "moveTo":
+                contourStart = segmentPoints[-1]
+            elif (
+                segmentType == "lineTo"
+                and nextVerb == skia.Path.Verb.kClose_Verb
+                and segmentPoints[-1] == contourStart
+            ):
+                continue
+            yield segmentType, segmentPoints
+
+
+def _normalizePoint(point):
+    x, y = point
+    return (float(x), float(y))
