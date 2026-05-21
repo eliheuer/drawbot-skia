@@ -314,6 +314,21 @@ def test_bezier_path_dashStroke():
     assert dashed.contours[0][1] == ((5.0, 0.0),)
 
 
+def test_current_path_api():
+    db = Drawing()
+    db.newPath()
+    db.moveTo((0, 0))
+    db.lineTo((50, 0))
+    db.qCurveTo((75, 25), (50, 50))
+    db.closePath()
+    assert len(db._path.contours) == 1
+    assert not db._path.contours[0].open
+
+    path = db._path
+    db.newPath()
+    assert db._path is not path
+
+
 def readbytes(path):
     with open(path, "rb") as f:
         return f.read()

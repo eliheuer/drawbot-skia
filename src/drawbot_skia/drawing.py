@@ -21,6 +21,7 @@ class Drawing:
     def _reset(self, document=None):
         self._stack = []
         self._gstate = GraphicsState()
+        self._path = None
         if document is None:
             document = RecordingDocument()
         self._document = document
@@ -129,10 +130,45 @@ class Drawing:
         bez.polygon(firstPoint, *points, close=close)
         self.drawPath(bez)
 
-    def drawPath(self, path):
+    def newPath(self):
+        from .path import BezierPath
+
+        self._path = BezierPath()
+
+    def _currentPath(self):
+        if self._path is None:
+            self.newPath()
+        return self._path
+
+    def moveTo(self, point):
+        self._currentPath().moveTo(point)
+
+    def lineTo(self, point):
+        self._currentPath().lineTo(point)
+
+    def curveTo(self, point1, point2, point3):
+        self._currentPath().curveTo(point1, point2, point3)
+
+    def qCurveTo(self, *points):
+        self._currentPath().qCurveTo(*points)
+
+    def arc(self, center, radius, startAngle, endAngle, clockwise):
+        self._currentPath().arc(center, radius, startAngle, endAngle, clockwise)
+
+    def arcTo(self, point1, point2, radius):
+        self._currentPath().arcTo(point1, point2, radius)
+
+    def closePath(self):
+        self._currentPath().closePath()
+
+    def drawPath(self, path=None):
+        if path is None:
+            path = self._currentPath()
         self._drawItem(self._canvas.drawPath, path.path)
 
-    def clipPath(self, path):
+    def clipPath(self, path=None):
+        if path is None:
+            path = self._currentPath()
         self._canvas.clipPath(path.path, doAntiAlias=True)
 
     def textSize(self, txt):
