@@ -25,6 +25,10 @@ class FormattedString:
             properties["fill"] = _cmykArgs(_asColorArgs(properties.pop("cmykFill")))
         elif "fill" in properties:
             properties["fill"] = _colorArgs(_asColorArgs(properties["fill"]))
+        if "cmykStroke" in properties:
+            properties["stroke"] = _cmykArgs(_asColorArgs(properties.pop("cmykStroke")))
+        elif "stroke" in properties:
+            properties["stroke"] = _colorArgs(_asColorArgs(properties["stroke"]))
         return properties
 
     def _currentProperties(self):
@@ -55,6 +59,15 @@ class FormattedString:
 
     def cmykFill(self, *args):
         self._properties["fill"] = _cmykArgs(args)
+
+    def stroke(self, *args):
+        self._properties["stroke"] = _colorArgs(args)
+
+    def cmykStroke(self, *args):
+        self._properties["stroke"] = _cmykArgs(args)
+
+    def strokeWidth(self, strokeWidth):
+        self._properties["strokeWidth"] = strokeWidth
 
     def align(self, align):
         self._properties["align"] = align
@@ -107,6 +120,6 @@ class FormattedString:
 
 
 def _asColorArgs(color):
-    if isinstance(color, tuple):
-        return color
+    if isinstance(color, (list, tuple)):
+        return tuple(color)
     return (color,)

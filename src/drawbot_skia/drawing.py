@@ -303,8 +303,8 @@ class Drawing:
                 lineWidth, lineHeight, runs = line
                 xOffset = _alignmentOffset(lineWidth, align)
                 for run in runs:
-                    runX, glyphsInfo, textStyle, fillPaint = run
-                    with self._temporaryTextState(textStyle, fillPaint):
+                    runX, glyphsInfo, textStyle, fillPaint, strokePaint = run
+                    with self._temporaryTextState(textStyle, fillPaint, strokePaint):
                         self._drawGlyphs(glyphsInfo, baseline, x=runX + xOffset)
                 baseline += lineHeight
 
@@ -316,6 +316,9 @@ class Drawing:
         for runText, properties in txt._iterRuns():
             textStyle = _textStyleWithProperties(self._gstate.textStyle, properties)
             fillPaint = _fillPaintWithProperties(self._gstate.fillPaint, properties)
+            strokePaint = _strokePaintWithProperties(
+                self._gstate.strokePaint, properties
+            )
             runLineHeight = textStyle.getLineHeight()
             for index, part in enumerate(runText.split("\n")):
                 if index:
@@ -327,7 +330,9 @@ class Drawing:
                     lineHeight = max(lineHeight, runLineHeight)
                     continue
                 glyphsInfo = textStyle.shape(part)
-                currentRuns.append((lineWidth, glyphsInfo, textStyle, fillPaint))
+                currentRuns.append(
+                    (lineWidth, glyphsInfo, textStyle, fillPaint, strokePaint)
+                )
                 lineWidth += glyphsInfo.endPos[0]
                 lineHeight = max(lineHeight, runLineHeight)
         lines.append((lineWidth, lineHeight, currentRuns))
@@ -362,11 +367,12 @@ class Drawing:
                     )
 
     @contextlib.contextmanager
-    def _temporaryTextState(self, textStyle, fillPaint):
+    def _temporaryTextState(self, textStyle, fillPaint, strokePaint):
         oldGState = self._gstate
         self._gstate = self._gstate.copy()
         self._gstate.textStyle = textStyle
         self._gstate.fillPaint = fillPaint
+        self._gstate.strokePaint = strokePaint
         try:
             yield
         finally:
@@ -516,6 +522,21 @@ def _fillPaintWithProperties(fillPaint, properties):
     return fillPaint
 
 
+def _strokePaintWithProperties(strokePaint, properties):
+    update = {}
+    if "stroke" in properties:
+        color = properties["stroke"]
+        if color is None:
+            update.update(somethingToDraw=False, shader=None)
+        else:
+            update.update(color=color, somethingToDraw=True, shader=None)
+    if "strokeWidth" in properties:
+        update["strokeWidth"] = properties["strokeWidth"]
+    if update:
+        return strokePaint.copy(**update)
+    return strokePaint
+
+
 def _alignmentOffset(lineWidth, align):
     if align == "center":
         return -lineWidth / 2
@@ -540,7 +561,10 @@ def _lineSpacing(line):
     lineWidth, lineHeight, runs = line
     if not runs:
         return lineHeight
-    return max(textStyle.skFont.getSpacing() for x, glyphsInfo, textStyle, fill in runs)
+    return max(
+        textStyle.skFont.getSpacing()
+        for x, glyphsInfo, textStyle, fill, stroke in runs
+    )
 
 
 def _imageNumberOfPages(path):
