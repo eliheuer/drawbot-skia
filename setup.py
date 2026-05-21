@@ -29,6 +29,7 @@ setup(
         "python-bidi==0.4.2",  # pin for now, 0.5 breaks things
         "unicodedata2",
         "blackrenderer",
+        "pillow>=11",
     ],
     setup_requires=["setuptools_scm"],
     extras_require={

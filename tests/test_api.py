@@ -88,11 +88,13 @@ rect(50, 50, 100, 100)
 test_data_saveImage = [
     (singlepageSource, "png", ["test.png"]),
     (singlepageSource, "jpg", ["test.jpg"]),
+    (singlepageSource, "gif", ["test.gif"]),
     (singlepageSource, "svg", ["test.svg"]),
     (singlepageSource, "pdf", ["test.pdf"]),
     # (singlepageSource, "mp4", ["test.mp4"]),
     (multipageSource, "png", ["test_0.png", "test_1.png", "test_2.png"]),
     (multipageSource, "jpg", ["test_0.jpg", "test_1.jpg", "test_2.jpg"]),
+    (multipageSource, "gif", ["test.gif"]),
     (multipageSource, "svg", ["test_0.svg", "test_1.svg", "test_2.svg"]),
     (multipageSource, "pdf", ["test.pdf"]),
     # (multipageSource, "mp4", ["test.mp4"]),
@@ -128,6 +130,32 @@ def test_saveImage_mp4_codec(tmpdir):
     paths = sorted(tmpdir.glob("*.mp4"))
     assert paths[0].stat().st_size < paths[1].stat().st_size
     assert expectedFilenames == [p.name for p in paths]
+
+
+def test_saveImage_gif_frame_durations(tmpdir):
+    source = """
+newPage(100, 100)
+frameDuration(0.2)
+fill(1, 0, 0)
+rect(0, 0, 100, 100)
+newPage(100, 100)
+frameDuration(0.5)
+fill(0, 0, 1)
+rect(0, 0, 100, 100)
+"""
+    tmpdir = pathlib.Path(tmpdir)
+    db = Drawing()
+    namespace = makeDrawbotNamespace(db)
+    runScriptSource(source, "<string>", namespace)
+    outputPath = tmpdir / "test.gif"
+    db.saveImage(outputPath)
+
+    im = Image.open(outputPath)
+    assert im.n_frames == 2
+    im.seek(0)
+    assert im.info["duration"] == 200
+    im.seek(1)
+    assert im.info["duration"] == 500
 
 
 def test_noFont(tmpdir):

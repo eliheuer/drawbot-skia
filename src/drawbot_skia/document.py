@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
+from io import BytesIO
 import logging
 import os
 import pathlib
@@ -110,6 +111,24 @@ class RecordingDocument(Document):
 
     _saveImage_jpg = _saveImage_jpeg
 
+    def _saveImage_gif(self, path, loop=0, optimize=False, **kwargs):
+        if not self._pictures:
+            return
+        frames = [_pictureToPILImage(picture) for picture in self._pictures]
+        durations = [
+            max(1, round(frameDuration * 1000))
+            for frameDuration in self._frameDurations
+        ]
+        firstFrame, restFrames = frames[0], frames[1:]
+        firstFrame.save(
+            os.fspath(path),
+            save_all=True,
+            append_images=restFrames,
+            duration=durations,
+            loop=loop,
+            optimize=optimize,
+        )
+
     def _saveImage_mp4(self, path, codec="libx264", **kwargs):
         from .ffmpeg import generateMP4
 
@@ -150,6 +169,11 @@ def _iteratePictures(pictures, path, singlePage=None):
 
 
 def _savePixelImage(picture, path, format, whiteBackground=False):
+    image = _pictureToSkiaImage(picture, whiteBackground=whiteBackground)
+    image.save(os.fspath(path), format)
+
+
+def _pictureToSkiaImage(picture, whiteBackground=False):
     x, y, width, height = picture.cullRect()
     assert x == 0 and y == 0
     surface = skia.Surface(int(width), int(height))
@@ -157,8 +181,14 @@ def _savePixelImage(picture, path, format, whiteBackground=False):
         if whiteBackground:
             canvas.clear(skia.ColorWHITE)
         canvas.drawPicture(picture)
-    image = surface.makeImageSnapshot()
-    image.save(os.fspath(path), format)
+    return surface.makeImageSnapshot()
+
+
+def _pictureToPILImage(picture):
+    from PIL import Image
+
+    data = _pictureToSkiaImage(picture).encodeToData(skia.kPNG, 100).bytes()
+    return Image.open(BytesIO(data)).convert("RGBA")
 
 
 class PixelDocument(Document):

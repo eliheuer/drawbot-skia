@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="360" height="220">
+	<rect fill="white" transform="matrix(1 0 -0 -1 0 220)" width="360" height="220"/>
+	<text transform="translate(30 50)" font-size="32" font-family="Helvetica" x="0, 19.546875, 26.65625, 37.3125, 53.3125, 62.203125, 71.09375, 78.203125, 85.3125, 103.10938, " y="0, ">
+			First line
+	</text>
+	<text transform="translate(30 50)" font-size="32" font-family="Helvetica" x="0, 21.34375, 39.140625, 55.140625, 72.9375, 90.734375, 108.53125, 117.42188, 124.53125, 131.64062, 149.4375, " y="38, ">
+			Second line
+	</text>
+	<text transform="translate(30 50)" font-size="32" font-family="Helvetica" x="0, 19.546875, 37.34375, 44.453125, 55.109375, " y="76, ">
+			Third
+	</text>
+	<text fill="red" transform="translate(260 60)" font-size="32" font-family="Helvetica" x="-26.6875, -8.890625, 8.90625, 17.796875, " y="0, ">
+			Left
+	</text>
+	<text fill="red" transform="translate(260 60)" font-size="32" font-family="Helvetica" x="-48.023438, -24.914062, -7.1171875, 10.679688, 19.570312, 37.367188, " y="38, ">
+			Center
+	</text>
+	<text fill="red" transform="translate(260 60)" font-size="32" font-family="Helvetica" x="-37.351562, -14.242188, -7.1328125, 10.664062, 28.460938, " y="76, ">
+			Right
+	</text>
+</svg>

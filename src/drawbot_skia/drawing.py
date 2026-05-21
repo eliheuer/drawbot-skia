@@ -107,9 +107,19 @@ class Drawing:
         # TODO: with some smartness we can shape only once, for a
         # textSize()/text() call combination with the same text and
         # the same text parameters.
-        glyphsInfo = self._gstate.textStyle.shape(txt)
-        textWidth = glyphsInfo.endPos[0]
-        return (textWidth, self._gstate.textStyle.skFont.getSpacing())
+        lines = txt.split("\n")
+        lineWidths = []
+        for line in lines:
+            if line:
+                glyphsInfo = self._gstate.textStyle.shape(line)
+                lineWidths.append(glyphsInfo.endPos[0])
+            else:
+                lineWidths.append(0)
+        lineHeight = self._gstate.textStyle.getLineHeight()
+        textHeight = self._gstate.textStyle.skFont.getSpacing()
+        if len(lines) > 1:
+            textHeight += lineHeight * (len(lines) - 1)
+        return (max(lineWidths), textHeight)
 
     def text(self, txt, position, align=None):
         if not txt:
@@ -117,42 +127,46 @@ class Drawing:
             return
 
         textStyle = self._gstate.textStyle
-        glyphsInfo = textStyle.shape(txt)
-        alignGlyphPositions(glyphsInfo, align)
-
         x, y = position
 
         with self._savedCanvasState():
             self._canvas.translate(x, y)
             if self._flipCanvas:
                 self._canvas.scale(1, -1)
-            if "COLR" not in textStyle.ttFont:
-                builder = skia.TextBlobBuilder()
-                builder.allocRunPos(
-                    textStyle.skFont, glyphsInfo.gids, glyphsInfo.positions
-                )
-                blob = builder.make()
-                self._drawItem(self._canvas.drawTextBlob, blob, 0, 0)
-            else:
-                from blackrenderer.backends.skia import SkiaCanvas
+            for lineIndex, line in enumerate(txt.split("\n")):
+                if not line:
+                    continue
+                glyphsInfo = textStyle.shape(line)
+                alignGlyphPositions(glyphsInfo, align)
+                self._drawGlyphs(glyphsInfo, lineIndex * textStyle.getLineHeight())
 
-                ttFont = textStyle.ttFont
-                brFont = textStyle.brFont
-                if textStyle.variations:
-                    brFont.setLocation(textStyle.variations)
+    def _drawGlyphs(self, glyphsInfo, y):
+        textStyle = self._gstate.textStyle
+        if "COLR" not in textStyle.ttFont:
+            builder = skia.TextBlobBuilder()
+            builder.allocRunPos(textStyle.skFont, glyphsInfo.gids, glyphsInfo.positions)
+            blob = builder.make()
+            self._drawItem(self._canvas.drawTextBlob, blob, 0, y)
+        else:
+            from blackrenderer.backends.skia import SkiaCanvas
 
-                canvas = SkiaCanvas(self._canvas)
-                scaleFactor = textStyle.fontSize / brFont.unitsPerEm
-                a, r, g, b = (ch / 255 for ch in self._gstate.fillPaint.color)
-                textColor = (r, g, b, a)
-                for gid, (x, y) in zip(glyphsInfo.gids, glyphsInfo.positions):
-                    glyphName = ttFont.getGlyphName(gid)
-                    with self._savedCanvasState():
-                        self._canvas.translate(x, y)
-                        self._canvas.scale(scaleFactor, -scaleFactor)
-                        brFont.drawGlyph(
-                            glyphName, canvas, palette=None, textColor=textColor
-                        )
+            ttFont = textStyle.ttFont
+            brFont = textStyle.brFont
+            if textStyle.variations:
+                brFont.setLocation(textStyle.variations)
+
+            canvas = SkiaCanvas(self._canvas)
+            scaleFactor = textStyle.fontSize / brFont.unitsPerEm
+            a, r, g, b = (ch / 255 for ch in self._gstate.fillPaint.color)
+            textColor = (r, g, b, a)
+            for gid, (x, glyphY) in zip(glyphsInfo.gids, glyphsInfo.positions):
+                glyphName = ttFont.getGlyphName(gid)
+                with self._savedCanvasState():
+                    self._canvas.translate(x, glyphY + y)
+                    self._canvas.scale(scaleFactor, -scaleFactor)
+                    brFont.drawGlyph(
+                        glyphName, canvas, palette=None, textColor=textColor
+                    )
 
     def image(self, imagePath, position, alpha=1.0):
         im = self._getImage(imagePath)
