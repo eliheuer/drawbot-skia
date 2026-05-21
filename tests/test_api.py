@@ -227,6 +227,15 @@ def test_line_args():
     db.line([0, 0], [0, 100])
 
 
+def test_textBox_returns_overflow():
+    db = Drawing()
+    db.fontSize(20)
+    db.lineHeight(24)
+    overflow = db.textBox("one two three four five six", (0, 0, 80, 48))
+    assert overflow
+    assert "five" in overflow or "six" in overflow
+
+
 def readbytes(path):
     with open(path, "rb") as f:
         return f.read()

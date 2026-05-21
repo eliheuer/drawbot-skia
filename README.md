@@ -27,7 +27,7 @@ Work in progress!
 1. Get remaining `BezierPath` methods working
 1. Get many-things-I-forgot-to-mention working
 1. ...
-1. `textBox()` 🔴 _(Major Obstacle)_
+1. `textBox()` 🔴 _(Major Obstacle; rectangular single-style text boxes work)_
 1. Fill further gaps in DrawBot API
 
 The currently supported subset of Drawbot is [tracked here](https://github.com/justvanrossum/drawbot-skia/issues/5).

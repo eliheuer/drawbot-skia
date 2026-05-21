@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="420" height="280">
+	<rect fill="white" transform="matrix(1 0 -0 -1 0 280)" width="420" height="280"/>
+	<rect fill="none" stroke="#B2B2B2" stroke-width="1" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 280)" x="40" y="120" width="160" height="90"/>
+	<text transform="translate(40 92)" font-size="22" font-family="Helvetica" x="0, 15.887695, 23.213867, 35.449219, 51.336914, 66.010742, 78.246094, 84.358398, 90.470703, 105.14453, 116.14453, 121.03223, " y="0, ">
+			DrawBot Skia
+	</text>
+	<text transform="translate(40 120)" font-size="22" font-family="Helvetica" x="0, 15.887695, 23.213867, 35.449219, 47.68457, 58.68457, 64.796875, 70.90918, 83.144531, 94.144531, 100.25684, 106.36914, 111.25684, 123.49219, 129.60449, " y="0, ">
+			wraps text into
+	</text>
+	<text transform="translate(40 148)" font-size="22" font-family="Helvetica" x="0, 12.235352, 18.347656, 25.673828, 37.90918, 48.90918, 55.021484, 67.256836, 79.492188, 91.727539, 96.615234, 108.85059, 114.96289, 127.19824, 139.43359, " y="0, ">
+			a rectangle and
+	</text>
+	<text fill="red" transform="translate(240 92)" font-size="22" font-family="Helvetica" x="-52.583008, -45.256836, -33.021484, -26.90918, -14.673828, -7.3476562, 4.8876953, 15.887695, 22, 28.112305, 40.347656, " y="0, ">
+			returns the
+	</text>
+	<text fill="red" transform="translate(240 120)" font-size="22" font-family="Helvetica" x="-43.414551, -31.179199, -20.179199, -7.9438477, -0.61767578, 10.382324, 22.617676, 37.302246, " y="0, ">
+			overﬂow.
+	</text>
+</svg>

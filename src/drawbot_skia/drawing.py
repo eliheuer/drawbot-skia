@@ -155,6 +155,73 @@ class Drawing:
                 alignGlyphPositions(glyphsInfo, align)
                 self._drawGlyphs(glyphsInfo, lineIndex * textStyle.getLineHeight())
 
+    def textBox(self, txt, box, align=None):
+        if isinstance(txt, FormattedString):
+            raise NotImplementedError("textBox() does not support FormattedString yet")
+        x, y, width, height = box
+        lineHeight = self._gstate.textStyle.getLineHeight()
+        maxLines = max(0, int(height // lineHeight))
+        if maxLines == 0:
+            return txt
+
+        lines, overflow = self._wrapText(txt, width, maxLines)
+        firstBaseline = y + height - self._gstate.textStyle.fontSize
+        for lineIndex, line in enumerate(lines):
+            lineY = firstBaseline - lineIndex * lineHeight
+            self.text(line, (x, lineY), align=_textBoxAlign(align))
+        return overflow
+
+    def _wrapText(self, txt, width, maxLines):
+        lines = []
+        remainingParagraphs = txt.split("\n")
+        for paragraphIndex, paragraph in enumerate(remainingParagraphs):
+            words = paragraph.split(" ")
+            currentLine = ""
+            wordIndex = 0
+            while wordIndex < len(words):
+                word = words[wordIndex]
+                candidate = word if not currentLine else currentLine + " " + word
+                if not candidate.strip():
+                    wordIndex += 1
+                    continue
+                if self.textSize(candidate)[0] <= width:
+                    currentLine = candidate
+                    wordIndex += 1
+                    continue
+                if currentLine:
+                    lines.append(currentLine)
+                    currentLine = ""
+                    if len(lines) == maxLines:
+                        overflow = " ".join(words[wordIndex:])
+                        rest = remainingParagraphs[paragraphIndex + 1 :]
+                        if rest:
+                            overflow += "\n" + "\n".join(rest)
+                        return lines, overflow
+                else:
+                    line, rest = self._breakLongWord(word, width)
+                    lines.append(line)
+                    words[wordIndex] = rest
+                    if len(lines) == maxLines:
+                        overflow = " ".join(words[wordIndex:])
+                        restParagraphs = remainingParagraphs[paragraphIndex + 1 :]
+                        if restParagraphs:
+                            overflow += "\n" + "\n".join(restParagraphs)
+                        return lines, overflow
+            if currentLine or paragraph == "":
+                lines.append(currentLine)
+                if len(lines) == maxLines:
+                    rest = remainingParagraphs[paragraphIndex + 1 :]
+                    return lines, "\n".join(rest)
+        return lines, ""
+
+    def _breakLongWord(self, word, width):
+        for index in range(1, len(word) + 1):
+            if self.textSize(word[:index])[0] > width:
+                if index == 1:
+                    return word[:1], word[1:]
+                return word[: index - 1], word[index - 1 :]
+        return word, ""
+
     def _textFormattedString(self, txt, position, align=None):
         x, y = position
         lines = self._formattedLines(txt)
@@ -379,6 +446,12 @@ def _alignmentOffset(lineWidth, align):
         return -lineWidth
     else:
         return 0
+
+
+def _textBoxAlign(align):
+    if align == "justified":
+        return None
+    return align
 
 
 def _lineHeight(line):
