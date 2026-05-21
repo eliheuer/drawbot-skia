@@ -80,6 +80,11 @@ class Drawing:
     def height(self):
         return self._document.pageHeight
 
+    def pageCount(self):
+        return getattr(self._document, "pageCount", 0)
+
+    numberOfPages = pageCount
+
     def rect(self, x, y, w, h):
         self._drawItem(self._canvas.drawRect, (x, y, w, h))
 

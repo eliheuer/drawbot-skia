@@ -74,6 +74,10 @@ class RecordingDocument(Document):
     def setFrameDuration(self, duration):
         self._currentFrameDuration = duration
 
+    @property
+    def pageCount(self):
+        return len(self._pictures) + int(self.isDrawing)
+
     def saveImage(self, path, **kwargs):
         path = pathlib.Path(path).resolve()
         suffix = path.suffix.lower().lstrip(".")

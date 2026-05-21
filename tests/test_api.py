@@ -200,6 +200,18 @@ def test_newPage_dimensions_arguments():
         db.newPage(height=10)
 
 
+def test_pageCount(tmpdir):
+    db = Drawing()
+    assert db.pageCount() == 0
+    assert db.numberOfPages() == 0
+    db.newPage(100, 100)
+    assert db.pageCount() == 1
+    db.newPage(100, 100)
+    assert db.pageCount() == 2
+    db.saveImage(pathlib.Path(tmpdir) / "test.pdf")
+    assert db.pageCount() == 2
+
+
 def test_multipleDocuments(tmpdir):
     tmpdir = pathlib.Path(tmpdir)
     db = Drawing()
