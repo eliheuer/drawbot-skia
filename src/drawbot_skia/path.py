@@ -10,8 +10,6 @@ from .gstate import TextStyle, _strokeCapMapping, _strokeJoinMapping
 from .shaping import alignGlyphPositions
 
 
-# TODO:
-# - textBox
 # MAYBE:
 # - intersectionPoints
 # - optimizePath
@@ -248,15 +246,66 @@ class BezierPath(BasePen):
         textStyle = TextStyle(font=font, fontSize=fontSize)
         glyphsInfo = textStyle.shape(txt)
         alignGlyphPositions(glyphsInfo, align)
-        gids = sorted(set(glyphsInfo.gids))
-        paths = [textStyle.skFont.getPath(gid) for gid in gids]
-        for path in paths:
-            path.transform(FLIP_MATRIX)
-        paths = dict(zip(gids, paths))
         x, y = (0, 0) if offset is None else offset
+        self._addGlyphPaths(glyphsInfo, textStyle, x, y)
+
+    def textBox(
+        self,
+        txt,
+        box,
+        font=None,
+        fontSize=10,
+        align=None,
+        hyphenation=None,
+    ):
+        if not txt:
+            return ""
+        if not isinstance(txt, str):
+            raise NotImplementedError(
+                "BezierPath.textBox() does not support FormattedString yet"
+            )
+        if hyphenation is not None:
+            raise NotImplementedError(
+                "BezierPath.textBox() does not support hyphenation yet"
+            )
+
+        textStyle = TextStyle(font=font, fontSize=fontSize)
+        x, y, width, height = box
+        lineHeight = textStyle.getLineHeight()
+        maxLines = max(0, int(height // lineHeight))
+        if maxLines == 0:
+            return txt
+
+        lines, overflow = _wrapText(txt, width, maxLines, textStyle)
+        firstBaseline = y + height - fontSize
+        for lineIndex, line in enumerate(lines):
+            if not line:
+                continue
+            glyphsInfo = textStyle.shape(line)
+            lineX = x
+            lineAlign = align
+            if align == "center":
+                lineX += width / 2
+            elif align == "right":
+                lineX += width
+            alignGlyphPositions(glyphsInfo, lineAlign)
+            lineY = firstBaseline - lineIndex * lineHeight
+            self._addGlyphPaths(glyphsInfo, textStyle, lineX, lineY)
+        return overflow
+
+    def _addGlyphPaths(self, glyphsInfo, textStyle, x, y):
+        gids = sorted(set(glyphsInfo.gids))
+        paths = []
+        for gid in gids:
+            path = textStyle.skFont.getPath(gid)
+            if path is not None:
+                path.transform(FLIP_MATRIX)
+            paths.append(path)
+        paths = dict(zip(gids, paths))
         for gid, pos in zip(glyphsInfo.gids, glyphsInfo.positions):
             path = paths[gid]
-            self.path.addPath(path, pos[0] + x, pos[1] + y)
+            if path is not None:
+                self.path.addPath(path, pos[0] + x, pos[1] + y)
 
     def _doPathOp(self, other, operator):
         from pathops import Path, op
@@ -435,6 +484,65 @@ _pathVerbsToPenMethod = {
     skia.Path.Verb.kClose_Verb: ("closePath", 1, 1),
     # skia.Path.Verb.kDone_Verb: (None, None),  # "StopIteration", not receiving when using Python iterator
 }
+
+
+def _wrapText(txt, width, maxLines, textStyle):
+    lines = []
+    remainingParagraphs = txt.split("\n")
+    for paragraphIndex, paragraph in enumerate(remainingParagraphs):
+        words = paragraph.split(" ")
+        currentLine = ""
+        wordIndex = 0
+        while wordIndex < len(words):
+            word = words[wordIndex]
+            candidate = word if not currentLine else currentLine + " " + word
+            if not candidate.strip():
+                wordIndex += 1
+                continue
+            if _textWidth(candidate, textStyle) <= width:
+                currentLine = candidate
+                wordIndex += 1
+                continue
+            if currentLine:
+                lines.append(currentLine)
+                currentLine = ""
+                if len(lines) == maxLines:
+                    overflow = " ".join(words[wordIndex:])
+                    rest = remainingParagraphs[paragraphIndex + 1 :]
+                    if rest:
+                        overflow += "\n" + "\n".join(rest)
+                    return lines, overflow
+            else:
+                line, rest = _breakLongWord(word, width, textStyle)
+                lines.append(line)
+                words[wordIndex] = rest
+                if len(lines) == maxLines:
+                    overflow = " ".join(words[wordIndex:])
+                    restParagraphs = remainingParagraphs[paragraphIndex + 1 :]
+                    if restParagraphs:
+                        overflow += "\n" + "\n".join(restParagraphs)
+                    return lines, overflow
+        if currentLine or paragraph == "":
+            lines.append(currentLine)
+            if len(lines) == maxLines:
+                rest = remainingParagraphs[paragraphIndex + 1 :]
+                return lines, "\n".join(rest)
+    return lines, ""
+
+
+def _breakLongWord(word, width, textStyle):
+    for index in range(1, len(word) + 1):
+        if _textWidth(word[:index], textStyle) > width:
+            if index == 1:
+                return word[:1], word[1:]
+            return word[: index - 1], word[index - 1 :]
+    return word, ""
+
+
+def _textWidth(txt, textStyle):
+    if not txt:
+        return 0
+    return textStyle.shape(txt).endPos[0]
 
 
 class _Contour(Sequence):

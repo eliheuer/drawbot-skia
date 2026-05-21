@@ -315,6 +315,23 @@ def test_bezier_path_dashStroke():
     assert dashed.contours[0][1] == ((5.0, 0.0),)
 
 
+def test_bezier_path_textBox_returns_overflow():
+    path = BezierPath()
+    overflow = path.textBox(
+        "one two three four five six",
+        (0, 0, 90, 48),
+        fontSize=20,
+    )
+    assert overflow
+    assert "five" in overflow or "six" in overflow
+    assert path.bounds() is not None
+    xMin, yMin, xMax, yMax = path.bounds()
+    assert xMin >= 0
+    assert yMin >= 0
+    assert xMax <= 90
+    assert yMax <= 48
+
+
 def test_current_path_api():
     db = Drawing()
     db.newPath()
