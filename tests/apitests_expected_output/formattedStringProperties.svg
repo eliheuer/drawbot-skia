@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="360" height="170">
+	<rect fill="white" transform="matrix(1 0 -0 -1 0 170)" width="360" height="170"/>
+	<rect fill="none" stroke="#BFBFBF" stroke-width="1" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 170)" x="96.248535" y="76" width="167.50293" height="32"/>
+	<text fill="lime" transform="translate(180 74)" font-size="32" font-family="Helvetica" x="-83.751465, -60.64209, -33.98584, -12.64209, " y="0, ">
+			CMYK
+	</text>
+	<text fill="none" stroke="#BFBFBF" stroke-width="1" stroke-miterlimit="5" transform="translate(180 74)" font-size="32" font-family="Helvetica" x="-83.751465, -60.64209, -33.98584, -12.64209, " y="0, ">
+			CMYK
+	</text>
+	<text transform="translate(180 74)" font-size="18" font-family="Helvetica" x="13.702637, 22.702637, 32.713379, 42.724121, 47.725098, 57.73584, 63.72998, 73.740723, " y="0, ">
+			centered
+	</text>
+	<text fill="none" stroke="#BFBFBF" stroke-width="1" stroke-miterlimit="5" transform="translate(180 74)" font-size="18" font-family="Helvetica" x="13.702637, 22.702637, 32.713379, 42.724121, 47.725098, 57.73584, 63.72998, 73.740723, " y="0, ">
+			centered
+	</text>
+	<text fill="red" transform="translate(330 132)" font-size="26" font-family="Helvetica" x="-50.578125, -41.919922, -36.143555, -21.683594, -7.2236328, " y="0, ">
+			right
+	</text>
+	<text fill="none" stroke="#BFBFBF" stroke-width="1" stroke-miterlimit="5" transform="translate(330 132)" font-size="26" font-family="Helvetica" x="-50.578125, -41.919922, -36.143555, -21.683594, -7.2236328, " y="0, ">
+			right
+	</text>
+</svg>

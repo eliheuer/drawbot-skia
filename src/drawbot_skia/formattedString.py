@@ -1,4 +1,4 @@
-from .gstate import _colorArgs
+from .gstate import _cmykArgs, _colorArgs
 
 
 class FormattedString:
@@ -21,11 +21,10 @@ class FormattedString:
         properties = dict(properties)
         if "font" in properties and properties["font"] is None:
             del properties["font"]
-        if "fill" in properties:
-            fill = properties["fill"]
-            if not isinstance(fill, tuple):
-                fill = (fill,)
-            properties["fill"] = _colorArgs(fill)
+        if "cmykFill" in properties:
+            properties["fill"] = _cmykArgs(_asColorArgs(properties.pop("cmykFill")))
+        elif "fill" in properties:
+            properties["fill"] = _colorArgs(_asColorArgs(properties["fill"]))
         return properties
 
     def _currentProperties(self):
@@ -33,6 +32,12 @@ class FormattedString:
         properties["features"] = dict(self._features)
         properties["variations"] = dict(self._variations)
         return properties
+
+    def textProperties(self):
+        return self._currentProperties()
+
+    def clear(self):
+        self._runs.clear()
 
     def font(self, fontNameOrPath, fontSize=None):
         self._properties["font"] = fontNameOrPath
@@ -48,6 +53,12 @@ class FormattedString:
     def fill(self, *args):
         self._properties["fill"] = _colorArgs(args)
 
+    def cmykFill(self, *args):
+        self._properties["fill"] = _cmykArgs(args)
+
+    def align(self, align):
+        self._properties["align"] = align
+
     def openTypeFeatures(self, *, resetFeatures=False, **features):
         if resetFeatures:
             self._features.clear()
@@ -62,6 +73,11 @@ class FormattedString:
 
     def language(self, language):
         self._properties["language"] = language
+
+    def size(self):
+        from .drawing import Drawing
+
+        return Drawing().textSize(self)
 
     def __iadd__(self, txt):
         self.append(txt)
@@ -88,3 +104,9 @@ class FormattedString:
 
     def _iterRuns(self):
         return iter(self._runs)
+
+
+def _asColorArgs(color):
+    if isinstance(color, tuple):
+        return color
+    return (color,)

@@ -7,6 +7,7 @@ import numpy as np
 from drawbot_skia.runner import makeDrawbotNamespace, runScript, runScriptSource
 from drawbot_skia.drawing import Drawing
 from drawbot_skia.errors import DrawbotError
+from drawbot_skia.formattedString import FormattedString
 from drawbot_skia.path import BezierPath
 
 
@@ -283,6 +284,27 @@ def test_textBox_returns_overflow():
     overflow = db.textBox("one two three four five six", (0, 0, 80, 48))
     assert overflow
     assert "five" in overflow or "six" in overflow
+
+
+def test_formattedString_properties():
+    t = FormattedString("Hello", fontSize=20, cmykFill=(0, 1, 1, 0), align="center")
+    assert str(t) == "Hello"
+    assert t.textProperties()["fill"] == (255, 255, 0, 0)
+    assert t.textProperties()["align"] == "center"
+    assert t.size()[0] > 0
+    assert t.size()[1] == pytest.approx(20)
+
+    t.cmykFill(1, 0, 1, 0, 0.5)
+    t.align("right")
+    t += " world"
+    runText, runProperties = list(t._iterRuns())[-1]
+    assert runText == " world"
+    assert runProperties["fill"] == (128, 0, 255, 0)
+    assert runProperties["align"] == "right"
+
+    t.clear()
+    assert str(t) == ""
+    assert t.textProperties()["fill"] == (128, 0, 255, 0)
 
 
 def test_cmyk_color_arguments():

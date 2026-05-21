@@ -292,6 +292,8 @@ class Drawing:
     def _textFormattedString(self, txt, position, align=None):
         x, y = position
         lines = self._formattedLines(txt)
+        if align is None:
+            align = txt.textProperties().get("align")
         with self._savedCanvasState():
             self._canvas.translate(x, y)
             if self._flipCanvas:
