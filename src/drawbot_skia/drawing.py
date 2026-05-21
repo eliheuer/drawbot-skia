@@ -166,7 +166,7 @@ class Drawing:
             self._canvas.translate(x, y + im.height())
             if self._flipCanvas:
                 self._canvas.scale(1, -1)
-            self._canvas.drawImage(im, 0, 0, paint)
+            self._canvas.drawImage(im, 0, 0, paint=paint)
 
     @staticmethod
     @functools.lru_cache(maxsize=32)
