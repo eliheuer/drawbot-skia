@@ -1,6 +1,7 @@
 import contextlib
 import functools
 import math
+import os
 import skia
 from .document import RecordingDocument
 from .errors import DrawbotError
@@ -83,7 +84,32 @@ class Drawing:
     def pageCount(self):
         return getattr(self._document, "pageCount", 0)
 
-    numberOfPages = pageCount
+    def numberOfPages(self, path=None):
+        if path is None:
+            return self.pageCount()
+        return _imageNumberOfPages(path)
+
+    def imageSize(self, path):
+        image = self._getImage(path)
+        return image.width(), image.height()
+
+    def imagePixelColor(self, path, position):
+        from PIL import Image
+
+        x, y = position
+        with Image.open(path) as image:
+            width, height = image.size
+            if x < 0 or y < 0 or x >= width or y >= height:
+                return None
+            image = image.convert("RGBA")
+            r, g, b, a = image.getpixel((int(x), height - int(y) - 1))
+        return tuple(channel / 255 for channel in (r, g, b, a))
+
+    def imageResolution(self, path):
+        from PIL import Image
+
+        with Image.open(path) as image:
+            return image.info.get("dpi", (72, 72))
 
     def rect(self, x, y, w, h):
         self._drawItem(self._canvas.drawRect, (x, y, w, h))
@@ -325,7 +351,7 @@ class Drawing:
     @staticmethod
     @functools.lru_cache(maxsize=32)
     def _getImage(imagePath):
-        return skia.Image.open(imagePath)
+        return skia.Image.open(os.fspath(imagePath))
 
     def translate(self, x, y):
         self._canvas.translate(x, y)
@@ -469,6 +495,16 @@ def _lineSpacing(line):
     if not runs:
         return lineHeight
     return max(textStyle.skFont.getSpacing() for x, glyphsInfo, textStyle, fill in runs)
+
+
+def _imageNumberOfPages(path):
+    from PIL import Image
+
+    suffix = os.fspath(path).lower().rsplit(".", 1)[-1]
+    if suffix == "gif":
+        with Image.open(path) as image:
+            return getattr(image, "n_frames", 1)
+    return None
 
 
 # Inject GraphicsStateMixin method wrappers into Drawing

@@ -212,6 +212,41 @@ def test_pageCount(tmpdir):
     assert db.pageCount() == 2
 
 
+def test_image_properties(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "props.png"
+    image = Image.new("RGBA", (4, 3), (0, 0, 0, 0))
+    image.putpixel((1, 0), (255, 0, 0, 128))
+    image.putpixel((2, 2), (0, 255, 0, 255))
+    image.save(imagePath, dpi=(144, 144))
+
+    db = Drawing()
+    assert db.imageSize(imagePath) == (4, 3)
+    xDpi, yDpi = db.imageResolution(imagePath)
+    assert xDpi == pytest.approx(144, abs=0.01)
+    assert yDpi == pytest.approx(144, abs=0.01)
+    assert db.imagePixelColor(imagePath, (1, 2)) == (1, 0, 0, 128 / 255)
+    assert db.imagePixelColor(imagePath, (2, 0)) == (0, 1, 0, 1)
+    assert db.imagePixelColor(imagePath, (-1, 0)) is None
+
+
+def test_numberOfPages_gif(tmpdir):
+    source = """
+for i in range(3):
+    newPage(80, 80)
+    fill(i / 2, 0, 1 - i / 2)
+    rect(0, 0, width(), height())
+"""
+    outputPath = pathlib.Path(tmpdir) / "test.gif"
+    db = Drawing()
+    namespace = makeDrawbotNamespace(db)
+    runScriptSource(source, "<string>", namespace)
+    db.saveImage(outputPath)
+
+    db = Drawing()
+    assert db.numberOfPages(outputPath) == 3
+    assert db.numberOfPages(pathlib.Path(tmpdir) / "test.png") is None
+
+
 def test_multipleDocuments(tmpdir):
     tmpdir = pathlib.Path(tmpdir)
     db = Drawing()
