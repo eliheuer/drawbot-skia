@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-399 passed, 3 skipped, 3 warnings
+400 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -54,7 +54,7 @@ None
 
 Notes:
 
-- The low-risk wrappers around existing `FormattedString` or graphics-state capabilities have been added: `tracking`, `baselineShift`, `underline`, `strikethrough`, `url`, `fallbackFont`, font metric/query wrappers, `listOpenTypeFeatures`, `opacity`, `sizes`, `textOverflow`, and `textBoxBaselines`.
+- The low-risk wrappers around existing `FormattedString` or graphics-state capabilities have been added: `tracking`, `baselineShift`, `underline`, `strikethrough`, `url`, `fallbackFont`, font metric/query wrappers, `listOpenTypeFeatures`, `opacity`, `sizes`, `textOverflow`, and `textBoxBaselines`. Path-based font queries and text styles honor `fontNumber` for collection fonts.
 - `textBoxCharacterBounds()` has been added for rectangular text boxes using drawbot-skia's current line wrapping and shaping stack.
 - `colorSpace()` and `listColorSpaces()` have been added as compatibility-level API/state support for DrawBot's standard color-space names. Rendering remains RGB-backed in Skia rather than CoreGraphics color-managed.
 - `listLanguages()` has been added with Python-locale-derived identifiers.

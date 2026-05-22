@@ -1,4 +1,6 @@
 import os
+import uharfbuzz as hb
+from fontTools.ttLib import TTFont
 from .gstate import (
     TextStyle,
     _cmykArgs,
@@ -205,15 +207,15 @@ class FormattedString:
     def fontLineHeight(self):
         return self._textStyle().getLineHeight()
 
-    def listOpenTypeFeatures(self, fontNameOrPath=None, fontNumber=0):
-        textStyle = self._textStyleForFont(fontNameOrPath)
+    def listOpenTypeFeatures(self, fontNameOrPath=None, fontNumber=None):
+        textStyle = self._textStyleForFont(fontNameOrPath, fontNumber)
         features = set()
         for tableTag in ("GSUB", "GPOS"):
-            features.update(getFeatures(textStyle.hbFont.face, tableTag))
+            features.update(getFeatures(_hbFaceForTextStyle(textStyle), tableTag))
         return sorted(features)
 
-    def listFontVariations(self, fontNameOrPath=None, fontNumber=0):
-        ttFont = self._textStyleForFont(fontNameOrPath).ttFont
+    def listFontVariations(self, fontNameOrPath=None, fontNumber=None):
+        ttFont = _ttFontForTextStyle(self._textStyleForFont(fontNameOrPath, fontNumber))
         variations = {}
         if "fvar" in ttFont:
             nameTable = ttFont["name"]
@@ -227,8 +229,8 @@ class FormattedString:
                 )
         return variations
 
-    def listNamedInstances(self, fontNameOrPath=None, fontNumber=0):
-        return _namedInstances(self._textStyleForFont(fontNameOrPath).ttFont)
+    def listNamedInstances(self, fontNameOrPath=None, fontNumber=None):
+        return _namedInstances(_ttFontForTextStyle(self._textStyleForFont(fontNameOrPath, fontNumber)))
 
     def fontNamedInstance(self, name, fontNameOrPath=None):
         instances = self.listNamedInstances(fontNameOrPath)
@@ -266,6 +268,7 @@ class FormattedString:
             name: properties[name]
             for name in (
                 "font",
+                "fontNumber",
                 "fontSize",
                 "lineHeight",
                 "features",
@@ -281,10 +284,16 @@ class FormattedString:
         }
         return TextStyle(**textProperties)
 
-    def _textStyleForFont(self, fontNameOrPath):
-        if fontNameOrPath is None:
-            return self._textStyle()
-        return self._textStyle().copy(font=fontNameOrPath)
+    def _textStyleForFont(self, fontNameOrPath, fontNumber=None):
+        textStyle = self._textStyle()
+        properties = {}
+        if fontNameOrPath is not None:
+            properties["font"] = fontNameOrPath
+        if fontNumber is not None:
+            properties["fontNumber"] = fontNumber
+        if not properties:
+            return textStyle
+        return textStyle.copy(**properties)
 
     def _ttFont(self):
         return self._textStyle().ttFont
@@ -321,6 +330,23 @@ class FormattedString:
 
 
 def _asColorArgs(color):
+    if color is None:
+        return (None,)
     if isinstance(color, (list, tuple)):
         return tuple(color)
     return (color,)
+
+
+def _hbFaceForTextStyle(textStyle):
+    font = textStyle.font
+    if font is not None and os.path.exists(os.fspath(font)):
+        with open(font, "rb") as fontFile:
+            return hb.Face.create(fontFile.read(), int(textStyle.fontNumber or 0))
+    return textStyle.hbFont.face
+
+
+def _ttFontForTextStyle(textStyle):
+    font = textStyle.font
+    if font is not None and os.path.exists(os.fspath(font)):
+        return TTFont(font, fontNumber=int(textStyle.fontNumber or 0), lazy=True)
+    return textStyle.ttFont

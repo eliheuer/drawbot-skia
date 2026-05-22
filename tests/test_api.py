@@ -4,6 +4,8 @@ import pathlib
 import shutil
 import sys
 import pytest
+from fontTools.ttLib import TTCollection
+from fontTools.ttLib import TTFont
 from PIL import Image
 from PIL import ImageDraw
 import numpy as np
@@ -3329,6 +3331,31 @@ def test_formattedString_font_feature_queries():
     assert "smcp" in db.listOpenTypeFeatures(sourceSerif)
     with pytest.raises(KeyError):
         t.fontNamedInstance("notAnInstance")
+
+
+def test_formattedString_font_queries_use_font_number(tmpdir):
+    collectionPath = pathlib.Path(tmpdir) / "collection.ttc"
+    collection = TTCollection()
+    collection.fonts = [
+        TTFont(testDir / "fonts" / "MutatorSans.ttf"),
+        TTFont(testDir / "fonts" / "Nabla.subset.ttf"),
+    ]
+    collection.save(collectionPath)
+
+    t = FormattedString(font=collectionPath)
+    mutatorVariations = t.listFontVariations(collectionPath, fontNumber=0)
+    nablaVariations = t.listFontVariations(collectionPath, fontNumber=1)
+    assert set(mutatorVariations) == {"wdth", "wght"}
+    assert set(nablaVariations) == {"HLGT", "wght"}
+
+    assert "MutatorMathTest-BoldWide" in t.listNamedInstances(collectionPath, fontNumber=0)
+    assert t.listNamedInstances(collectionPath, fontNumber=1) == {}
+
+    assert "kern" in t.listOpenTypeFeatures(collectionPath, fontNumber=0)
+    assert "kern" not in t.listOpenTypeFeatures(collectionPath, fontNumber=1)
+
+    t.fontNumber(1)
+    assert set(t.listFontVariations()) == {"HLGT", "wght"}
 
 
 def test_cmyk_color_arguments():

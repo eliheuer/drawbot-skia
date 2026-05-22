@@ -547,6 +547,7 @@ class TextStyle(_ImmutableContainer):
     fallbackFont = None
     fallbackFontNumber = 0
     font = None
+    fontNumber = 0
     lineHeight = None
 
     def __init__(self, **properties):
@@ -554,7 +555,7 @@ class TextStyle(_ImmutableContainer):
 
     @cached_property
     def fontObjects(self):
-        return _getFontObjects(self.font)
+        return _getFontObjects(self.font, self.fontNumber)
 
     @cached_property
     def skFont(self):
@@ -629,6 +630,7 @@ class TextStyle(_ImmutableContainer):
             "url": self.url,
             "fallbackFont": self.fallbackFont,
             "fallbackFontNumber": self.fallbackFontNumber,
+            "fontNumber": self.fontNumber,
         }
 
 
@@ -660,17 +662,20 @@ def getTempFontNames():
     return set(_tempFontPathsByName)
 
 
-def _getFontObjects(fontNameOrPath):
-    fontObjects = _fontObjectsCache.get(fontNameOrPath)
+def _getFontObjects(fontNameOrPath, fontNumber=0):
+    fontNumber = int(fontNumber or 0)
+    cacheKey = (fontNameOrPath, fontNumber)
+    fontObjects = _fontObjectsCache.get(cacheKey)
     if fontObjects is None:
-        fontObjects = FontObjects(fontNameOrPath)
-        _fontObjectsCache[fontNameOrPath] = fontObjects
+        fontObjects = FontObjects(fontNameOrPath, fontNumber)
+        _fontObjectsCache[cacheKey] = fontObjects
     return fontObjects
 
 
 class FontObjects:
-    def __init__(self, fontNameOrPath):
+    def __init__(self, fontNameOrPath, fontNumber=0):
         self.fontNameOrPath = fontNameOrPath
+        self.fontNumber = int(fontNumber or 0)
 
     @cached_property
     def skTypeface(self):
@@ -684,9 +689,9 @@ class FontObjects:
                 if fontPath is None:
                     typeface = skia.Typeface(fontNameOrPath)
                 else:
-                    typeface = skia.Typeface.MakeFromFile(fontPath)
+                    typeface = skia.Typeface.MakeFromFile(fontPath, self.fontNumber)
             else:
-                typeface = skia.Typeface.MakeFromFile(fontNameOrPath)
+                typeface = skia.Typeface.MakeFromFile(fontNameOrPath, self.fontNumber)
                 if typeface is None:
                     raise DrawbotError(f"can't load font: {fontNameOrPath}")
         return typeface
