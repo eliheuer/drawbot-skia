@@ -1,5 +1,6 @@
 import contextlib
 import functools
+import locale
 import math
 import os
 import re
@@ -15,6 +16,13 @@ from .shaping import alignGlyphPositions
 DEFAULT_CANVAS_DIMENSIONS = (1000, 1000)
 CharactersBounds = namedtuple(
     "CharactersBounds", ["bounds", "baselineOffset", "formattedSubString"]
+)
+_colorSpaces = (
+    "genericRGB",
+    "adobeRGB1998",
+    "sRGB",
+    "genericGray",
+    "genericGamma22Gray",
 )
 
 _paperSizes = {
@@ -52,6 +60,7 @@ class Drawing:
         self._stack = []
         self._gstate = GraphicsState()
         self._path = None
+        self._colorSpace = "genericRGB"
         if document is None:
             document = RecordingDocument()
         self._document = document
@@ -108,6 +117,34 @@ class Drawing:
 
     def frameDuration(self, duration):
         self._document.setFrameDuration(duration)
+
+    def colorSpace(self, colorSpace):
+        if colorSpace is None:
+            colorSpace = "genericRGB"
+        if colorSpace not in _colorSpaces:
+            raise DrawbotError(
+                "'%s' is not a valid colorSpace, argument must be '%s'"
+                % (colorSpace, "', '".join(_colorSpaces))
+            )
+        self._colorSpace = colorSpace
+
+    def listColorSpaces(self):
+        return sorted(_colorSpaces)
+
+    def listLanguages(self):
+        languages = {}
+        for tag, name in locale.locale_alias.items():
+            if "." in name:
+                name = name.split(".", 1)[0]
+            if "@" in name:
+                name = name.split("@", 1)[0]
+            name = name.replace("_", "-")
+            if len(name) < 2:
+                continue
+            languages.setdefault(name, name)
+        languages.setdefault("en", "en")
+        languages.setdefault("en-US", "en-US")
+        return dict(sorted(languages.items()))
 
     def sizes(self, paperSize=None):
         if paperSize is None:

@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-304 passed, 3 skipped, 3 warnings
+305 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -22,7 +22,7 @@ The fork has moved past the original upstream README blockers for animated GIF e
 
 The remaining parity work is concentrated in:
 
-- top-level DrawBot namespace gaps, including link annotations, installed font helpers, app/page helpers, and color-space helpers;
+- top-level DrawBot namespace gaps, including link annotations, installed font helpers, and app/page helpers;
 - `BezierPath` gaps, especially `intersectionPoints()` and `traceImage()`;
 - `ImageObject`, where only a small cross-platform subset exists compared with DrawBot's Core Image-backed API;
 - macOS/AppKit-only APIs that should be deliberately documented as unsupported instead of silently treated as parity gaps.
@@ -50,15 +50,12 @@ Missing in `drawbot_skia.drawbot` after the latest parity wrapper batch:
 
 ```text
 Variable
-colorSpace
 drawing
 installFont
 installedFonts
 linkDestination
 linkRect
 linkURL
-listColorSpaces
-listLanguages
 pages
 pdfImage
 printImage
@@ -69,6 +66,8 @@ Notes:
 
 - The low-risk wrappers around existing `FormattedString` or graphics-state capabilities have been added: `tracking`, `baselineShift`, `underline`, `strikethrough`, `url`, `fallbackFont`, font metric/query wrappers, `listOpenTypeFeatures`, `opacity`, `sizes`, `textOverflow`, and `textBoxBaselines`.
 - `textBoxCharacterBounds()` has been added for rectangular text boxes using drawbot-skia's current line wrapping and shaping stack.
+- `colorSpace()` and `listColorSpaces()` have been added as compatibility-level API/state support for DrawBot's standard color-space names. Rendering remains RGB-backed in Skia rather than CoreGraphics color-managed.
+- `listLanguages()` has been added with Python-locale-derived identifiers.
 - `linkURL`, `linkDestination`, and `linkRect` require output-context support, at least for PDF.
 - `Variable`, `drawing`, `pages`, `pdfImage`, and `printImage` are app/macOS-oriented and need a deliberate cross-platform support decision.
 - `installFont`/`uninstallFont` are likely macOS-specific in original DrawBot; cross-platform behavior should be scoped before implementation.

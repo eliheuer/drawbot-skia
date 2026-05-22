@@ -609,6 +609,26 @@ def test_cmyk_color_arguments():
     assert not db._gstate.strokePaint.somethingToDraw
 
 
+def test_color_space_and_languages():
+    db = Drawing()
+    assert db.listColorSpaces() == [
+        "adobeRGB1998",
+        "genericGamma22Gray",
+        "genericGray",
+        "genericRGB",
+        "sRGB",
+    ]
+    db.colorSpace("sRGB")
+    assert db._colorSpace == "sRGB"
+    db.colorSpace(None)
+    assert db._colorSpace == "genericRGB"
+    with pytest.raises(DrawbotError):
+        db.colorSpace("notAColorSpace")
+    languages = db.listLanguages()
+    assert "en" in languages
+    assert "en-US" in languages
+
+
 def test_opacity(tmpdir):
     path = pathlib.Path(tmpdir) / "opacity.png"
     db = Drawing()
