@@ -1678,10 +1678,31 @@ class ImageObject:
         striationContrast=1.375,
         fadeThreshold=0.85,
     ):
-        target = _imageObjectToPIL(targetImage).resize(self.size())
-        base = _blendRGBA(self._pilImage(), target, time)
-        flash = _radialLightImage(self.size(), center, color, max(self.size()) * float(time), max(self.size()), rays=True)
-        self._setPILImage(_screenBlend(base, flash, max(0, min(1, 1 - abs(float(time) - float(fadeThreshold))))))
+        size = self.size()
+        time = max(0, min(1, float(time)))
+        target = _imageObjectToPIL(targetImage).resize(size)
+        transitionMask = _extentMask(size, extent, _clampByte(time * 255))
+        base = _blendWithMask(self._pilImage(), target, transitionMask)
+        flash = _radialLightImage(
+            size,
+            center,
+            color,
+            math.hypot(*size) * time,
+            max(size),
+            rays=True,
+            rayRadius=maxStriationRadius,
+            rayStrength=striationStrength,
+            rayContrast=striationContrast,
+            extent=extent,
+        )
+        fadeThreshold = max(0, min(1, float(fadeThreshold)))
+        if fadeThreshold <= 0:
+            flashAmount = 1 - time
+        elif time <= fadeThreshold:
+            flashAmount = time / fadeThreshold
+        else:
+            flashAmount = (1 - time) / max(1e-9, 1 - fadeThreshold)
+        self._setPILImage(_screenBlend(base, flash, max(0, min(1, flashAmount))))
 
     def modTransition(
         self,
@@ -2863,7 +2884,18 @@ def _code128BarcodeImage(size, message, quietSpace=10.0, barcodeHeight=32.0):
     return image
 
 
-def _radialLightImage(size, center, color, radius, width, rays=False):
+def _radialLightImage(
+    size,
+    center,
+    color,
+    radius,
+    width,
+    rays=False,
+    rayRadius=2.58,
+    rayStrength=0.5,
+    rayContrast=1.0,
+    extent=None,
+):
     from PIL import Image
 
     imageWidth, imageHeight = _normalizeSize(size)
@@ -2871,16 +2903,28 @@ def _radialLightImage(size, center, color, radius, width, rays=False):
     color = _colorToRGBABytes(color)
     radius = max(1, float(radius))
     width = max(1, float(width))
+    rayRadius = max(0.01, float(rayRadius))
+    rayStrength = max(0, min(1, float(rayStrength)))
+    rayContrast = max(0.01, float(rayContrast))
     image = Image.new("RGBA", (imageWidth, imageHeight), (0, 0, 0, 0))
     pixels = image.load()
     for y in range(imageHeight):
         for x in range(imageWidth):
+            if not _pointInExtent(x, y, extent, (imageWidth, imageHeight)):
+                continue
             distance = math.hypot(x - cx, y - cy)
             amount = max(0, 1 - abs(distance - radius) / width)
             if rays:
                 angle = math.atan2(y - cy, x - cx)
-                amount *= 0.65 + 0.35 * ((math.sin(angle * 18) + 1) / 2)
-            pixels[x, y] = (*color[:3], _clampByte(color[3] * amount))
+                wave = ((math.sin(angle * rayRadius * 12) + 1) / 2) ** rayContrast
+                amount *= 1 - rayStrength + rayStrength * wave
+            alpha = _clampByte(color[3] * amount)
+            pixels[x, y] = (
+                _clampByte(color[0] * amount),
+                _clampByte(color[1] * amount),
+                _clampByte(color[2] * amount),
+                alpha,
+            )
     return image
 
 
@@ -3448,15 +3492,16 @@ def _pointInExtent(x, y, extent, size):
     return left <= x < right and top <= y < bottom
 
 
-def _extentMask(size, extent):
+def _extentMask(size, extent, value=255):
     from PIL import Image
 
     mask = Image.new("L", size, 0)
     pixels = mask.load()
     width, height = size
+    value = _clampByte(value)
     for y in range(height):
         for x in range(width):
-            pixels[x, y] = 255 if _pointInExtent(x, y, extent, size) else 0
+            pixels[x, y] = value if _pointInExtent(x, y, extent, size) else 0
     return mask
 
 

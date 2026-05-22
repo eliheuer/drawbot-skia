@@ -1313,6 +1313,52 @@ def test_imageObject_swipe_transition_color_extent(tmpdir):
     assert [image.getpixel((x, 1)) for x in range(6)] == [(255, 0, 0, 255)] * 6
 
 
+def test_imageObject_flash_transition_extent_and_striations(tmpdir):
+    sourcePath = pathlib.Path(tmpdir) / "flash-source.png"
+    targetPath = pathlib.Path(tmpdir) / "flash-target.png"
+    Image.new("RGBA", (6, 3), (255, 0, 0, 255)).save(sourcePath)
+    Image.new("RGBA", (6, 3), (0, 0, 255, 255)).save(targetPath)
+
+    im = ImageObject(sourcePath)
+    assert im.flashTransition(
+        targetPath,
+        center=(0, 0),
+        extent=(0, 0, 6, 1),
+        color=(0, 0, 0, 1),
+        time=1,
+        fadeThreshold=0,
+    ) is None
+    image = im._pilImage()
+    assert [image.getpixel((x, 0)) for x in range(6)] == [(0, 0, 255, 255)] * 6
+    assert [image.getpixel((x, 1)) for x in range(6)] == [(255, 0, 0, 255)] * 6
+
+    Image.new("RGBA", (7, 7), (0, 0, 0, 255)).save(sourcePath)
+    Image.new("RGBA", (7, 7), (0, 0, 0, 255)).save(targetPath)
+    smooth = ImageObject(sourcePath)
+    assert smooth.flashTransition(
+        targetPath,
+        center=(3, 3),
+        color=(1, 1, 1, 1),
+        time=0.5,
+        maxStriationRadius=1,
+        striationStrength=0,
+        striationContrast=1,
+        fadeThreshold=0.5,
+    ) is None
+    striated = ImageObject(sourcePath)
+    assert striated.flashTransition(
+        targetPath,
+        center=(3, 3),
+        color=(1, 1, 1, 1),
+        time=0.5,
+        maxStriationRadius=3,
+        striationStrength=1,
+        striationContrast=2,
+        fadeThreshold=0.5,
+    ) is None
+    assert smooth._pilImage().tobytes() != striated._pilImage().tobytes()
+
+
 def test_imageObject_disintegrate_transition_shadow(tmpdir):
     sourcePath = pathlib.Path(tmpdir) / "disintegrate-source.png"
     targetPath = pathlib.Path(tmpdir) / "disintegrate-target.png"
