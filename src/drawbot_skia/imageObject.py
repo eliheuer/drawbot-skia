@@ -503,12 +503,7 @@ class ImageObject:
         rotation=0.0,
         zoom=1.0,
     ):
-        from PIL import Image
-
-        image = self._pilImage()
-        inset = image.resize((max(1, image.width // 2), max(1, image.height // 2)))
-        image.alpha_composite(inset.rotate(float(rotation), resample=Image.Resampling.BICUBIC), (image.width // 4, image.height // 4))
-        self._setPILImage(image)
+        self._setPILImage(_drosteImage(self._pilImage(), insetPoint0, insetPoint1, strands, periodicity, rotation, zoom))
 
     def lightTunnel(self, center=(150.0, 150.0), rotation=0.0, radius=100.0):
         self._setPILImage(_tileImage(self._pilImage(), rotations=8, reflect=False, angle=rotation))
@@ -3559,6 +3554,48 @@ def _torusDistortImage(image, center, radius, width, refraction):
         return cx + dx * factor, cy + dy * factor
 
     return _distortImage(image, mapPoint)
+
+
+def _drosteImage(image, insetPoint0, insetPoint1, strands, periodicity, rotation, zoom):
+    from PIL import Image
+
+    source = image.convert("RGBA")
+    result = source.copy()
+    x0, y0 = insetPoint0
+    x1, y1 = insetPoint1
+    left = max(0, min(source.width - 1, int(round(min(x0, x1)))))
+    top = max(0, min(source.height - 1, int(round(min(y0, y1)))))
+    right = max(left + 1, min(source.width, int(round(max(x0, x1)))))
+    bottom = max(top + 1, min(source.height, int(round(max(y0, y1)))))
+    baseWidth = right - left
+    baseHeight = bottom - top
+    strandCount = max(1, int(round(abs(float(strands)))))
+    iterations = max(1, int(round(abs(float(periodicity)) * 3)))
+    zoom = abs(float(zoom)) or 1.0
+    rotation = float(rotation)
+    if abs(rotation) <= math.tau:
+        rotation = math.degrees(rotation)
+    for index in range(iterations):
+        shrink = zoom ** index / (index + 1)
+        targetWidth = max(1, int(round(baseWidth * shrink)))
+        targetHeight = max(1, int(round(baseHeight * shrink)))
+        targetLeft = left + (baseWidth - targetWidth) // 2
+        targetTop = top + (baseHeight - targetHeight) // 2
+        for strand in range(strandCount):
+            angle = rotation * (index + 1) + (360 * strand / strandCount if strandCount > 1 else 0)
+            inset = source.resize((targetWidth, targetHeight), Image.Resampling.BICUBIC)
+            if angle:
+                inset = inset.rotate(angle, resample=Image.Resampling.BICUBIC)
+            if strandCount > 1:
+                offset = min(targetWidth, targetHeight) * 0.15
+                radians = math.tau * strand / strandCount
+                pasteLeft = int(round(targetLeft + math.cos(radians) * offset))
+                pasteTop = int(round(targetTop + math.sin(radians) * offset))
+            else:
+                pasteLeft = targetLeft
+                pasteTop = targetTop
+            result.alpha_composite(inset, (pasteLeft, pasteTop))
+    return result
 
 
 def _ninePartImage(image, breakpoint0, breakpoint1, growAmount, tiled=False, flipYTiles=True):

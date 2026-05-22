@@ -862,6 +862,28 @@ def test_imageObject_displacement_distortion_uses_red_green_channels(tmpdir):
     ]
 
 
+def test_imageObject_droste_uses_inset_and_recursion_parameters(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "droste.png"
+    image = Image.new("RGBA", (6, 6), (0, 0, 0, 255))
+    for y in range(6):
+        for x in range(6):
+            image.putpixel((x, y), (x * 30, y * 30, 0, 255))
+    image.save(imagePath)
+
+    im = ImageObject(imagePath)
+    assert im.droste(insetPoint0=(1, 1), insetPoint1=(5, 5), periodicity=1, zoom=1, rotation=0, strands=1) is None
+    assert im.size() == (6, 6)
+    assert [im._pilImage().getpixel((x, 1))[:3] for x in range(6)] == [
+        (0, 30, 0),
+        (9, 9, 0),
+        (51, 9, 0),
+        (99, 9, 0),
+        (141, 9, 0),
+        (150, 30, 0),
+    ]
+    assert im._pilImage().getpixel((0, 0))[:3] == (0, 0, 0)
+
+
 def test_imageObject_analysis_and_stylize_batch(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "analysis.png"
     image = Image.new("RGBA", (24, 16), (40, 80, 160, 255))
