@@ -5,6 +5,7 @@ import logging
 import os
 import pathlib
 import tempfile
+from xml.sax.saxutils import quoteattr
 import skia
 
 
@@ -46,8 +47,10 @@ class RecordingDocument(Document):
     def __init__(self):
         self._pictures = []
         self._frameDurations = []
+        self._linkAnnotations = []
         self._currentRecorder = None
         self._currentFrameDuration = DEFAULT_FRAMEDURATION
+        self._currentLinkAnnotations = None
         self.pageWidth = self.pageHeight = None
 
     @property
@@ -59,13 +62,16 @@ class RecordingDocument(Document):
         self.pageWidth = width
         self.pageHeight = height
         self._currentRecorder = skia.PictureRecorder()
+        self._currentLinkAnnotations = []
         return self._currentRecorder.beginRecording(width, height)
 
     def endPage(self):
         self._pictures.append(self._currentRecorder.finishRecordingAsPicture())
         self._frameDurations.append(self._currentFrameDuration)
+        self._linkAnnotations.append(tuple(self._currentLinkAnnotations))
         self._currentRecorder = None
         self._currentFrameDuration = DEFAULT_FRAMEDURATION
+        self._currentLinkAnnotations = None
         self.pageWidth = self.pageHeight = None
 
     def endDrawing(self):
@@ -73,6 +79,11 @@ class RecordingDocument(Document):
 
     def setFrameDuration(self, duration):
         self._currentFrameDuration = duration
+
+    def addLinkAnnotation(self, annotation):
+        if self._currentLinkAnnotations is None:
+            self._currentLinkAnnotations = []
+        self._currentLinkAnnotations.append(annotation)
 
     @property
     def pageCount(self):
@@ -98,7 +109,7 @@ class RecordingDocument(Document):
         stream.flush()
 
     def _saveImage_svg(self, path, **kwargs):
-        for picture, framePath in _iteratePictures(self._pictures, path):
+        for index, (picture, framePath) in enumerate(_iteratePictures(self._pictures, path)):
             x, y, width, height = picture.cullRect()
             assert x == 0 and y == 0
             stream = skia.FILEWStream(os.fspath(framePath))
@@ -106,6 +117,11 @@ class RecordingDocument(Document):
             canvas.drawPicture(picture)
             del canvas
             stream.flush()
+            _appendSVGLinkAnnotations(
+                framePath,
+                self._linkAnnotations[index] if index < len(self._linkAnnotations) else (),
+                height,
+            )
 
     def _saveImage_png(self, path, **kwargs):
         _savePixelImages(self._pictures, path, skia.kPNG)
@@ -175,6 +191,56 @@ def _iteratePictures(pictures, path, singlePage=None):
 def _savePixelImage(picture, path, format, whiteBackground=False):
     image = _pictureToSkiaImage(picture, whiteBackground=whiteBackground)
     image.save(os.fspath(path), format)
+
+
+def _appendSVGLinkAnnotations(path, annotations, pageHeight):
+    if not annotations:
+        return
+    path = pathlib.Path(path)
+    svg = path.read_text(encoding="utf-8")
+    marker = "</svg>"
+    links = [_svgLinkAnnotation(annotation, pageHeight) for annotation in annotations]
+    links = "".join(links)
+    if marker in svg:
+        svg = svg.replace(marker, links + marker, 1)
+    elif svg.rstrip().endswith("/>"):
+        trailingWhitespace = svg[len(svg.rstrip()):]
+        svg = svg.rstrip()[:-2] + ">\n" + links + marker + trailingWhitespace
+    else:
+        return
+    path.write_text(svg, encoding="utf-8")
+
+
+def _svgLinkAnnotation(annotation, pageHeight):
+    kind = annotation["type"]
+    if kind == "destination":
+        x, y = annotation["xy"]
+        if x is None and y is None:
+            x = annotation["width"] * 0.5
+            y = annotation["height"] * 0.5
+        x = max(0, min(x, annotation["width"]))
+        y = max(0, min(y, annotation["height"]))
+        return (
+            f'<rect id={quoteattr(annotation["name"])} '
+            f'x={quoteattr(_svgNumber(x))} y={quoteattr(_svgNumber(pageHeight - y))} '
+            'width="1" height="1" fill="transparent"/>\n'
+        )
+    x, y, width, height = annotation["rect"]
+    rect = (
+        f'<rect x={quoteattr(_svgNumber(x))} '
+        f'y={quoteattr(_svgNumber(pageHeight - y - height))} '
+        f'width={quoteattr(_svgNumber(width))} height={quoteattr(_svgNumber(height))} '
+        'fill="transparent"/>\n'
+    )
+    if kind == "url":
+        href = annotation["url"]
+    else:
+        href = "#" + annotation["name"]
+    return f'<a href={quoteattr(href)}>\n{rect}</a>\n'
+
+
+def _svgNumber(value):
+    return f"{value:g}"
 
 
 def _pictureToSkiaImage(picture, whiteBackground=False):

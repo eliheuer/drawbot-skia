@@ -250,6 +250,56 @@ class Drawing:
             r, g, b, a = image.getpixel((int(x), height - int(y) - 1))
         return tuple(channel / 255 for channel in (r, g, b, a))
 
+    def linkURL(self, url, xywh):
+        x, y, width, height = xywh
+        self._ensureActivePageForLink()
+        self._document.addLinkAnnotation(
+            {
+                "type": "url",
+                "url": url,
+                "rect": (x, y, width, height),
+            }
+        )
+
+    def linkDestination(self, name, xy):
+        x, y = xy
+        self._ensureActivePageForLink()
+        self._document.addLinkAnnotation(
+            {
+                "type": "destination",
+                "name": name,
+                "xy": (x, y),
+                "width": self.width(),
+                "height": self.height(),
+            }
+        )
+
+    def linkRect(self, name, xywh):
+        x, y, width, height = xywh
+        self._ensureActivePageForLink()
+        self._document.addLinkAnnotation(
+            {
+                "type": "rect",
+                "name": name,
+                "rect": (x, y, width, height),
+            }
+        )
+
+    def Variable(self, variables, workSpace, continuous=True):
+        raise DrawbotError(
+            "Variable() is only available in DrawBot's macOS application UI"
+        )
+
+    def pdfImage(self):
+        raise DrawbotError(
+            "pdfImage() returns a macOS PDFKit object and is not available in drawbot-skia"
+        )
+
+    def printImage(self, pdf=None):
+        raise DrawbotError(
+            "printImage() opens the macOS print dialog and is not available in drawbot-skia"
+        )
+
     def imageResolution(self, path):
         from PIL import Image
 
@@ -1027,6 +1077,12 @@ class Drawing:
             canvasMethod(*items, self._gstate.fillPaint.skPaint)
         if self._gstate.strokePaint.somethingToDraw:
             canvasMethod(*items, self._gstate.strokePaint.skPaint)
+
+    def _ensureActivePageForLink(self):
+        if not isinstance(self._document, RecordingDocument):
+            raise DrawbotError("link annotations are only supported for recorded drawings")
+        if not self._document.isDrawing:
+            self._canvas
 
 
 def _makeWrapper(name):

@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-309 passed, 3 skipped, 3 warnings
+311 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -22,7 +22,7 @@ The fork has moved past the original upstream README blockers for animated GIF e
 
 The remaining parity work is concentrated in:
 
-- top-level DrawBot namespace gaps, including link annotations and app/page helpers;
+- behavior gaps behind top-level compatibility names, especially PDF link annotations and macOS app/PDFKit helpers;
 - `BezierPath` gaps, especially `intersectionPoints()` and `traceImage()`;
 - `ImageObject`, where only a small cross-platform subset exists compared with DrawBot's Core Image-backed API;
 - macOS/AppKit-only APIs that should be deliberately documented as unsupported instead of silently treated as parity gaps.
@@ -38,7 +38,7 @@ Do not call the larger feature-parity goal complete from this evidence.
 | `FormattedString` | Implemented, not full DrawBot parity | `src/drawbot_skia/formattedString.py`; missing macOS `getNSObject()` vs DrawBot |
 | Multi-style `text()` | Implemented | `Drawing._textFormattedString()` and FormattedString API tests |
 | Remaining `BezierPath` methods | Incomplete | Missing `intersectionPoints()`, `traceImage()`; macOS bridge methods not applicable |
-| Many-things-I-forgot-to-mention | Incomplete | Top-level namespace gaps listed below |
+| Many-things-I-forgot-to-mention | Incomplete | Top-level namespace is complete; behavior gaps listed below |
 | `textBox()` | Implemented, not CoreText-identical | `Drawing.textBox()`, FormattedString text box layout, overflow return tests |
 | Fill further gaps in DrawBot API | Incomplete | Top-level, path, FormattedString, and ImageObject gaps listed below |
 
@@ -49,12 +49,7 @@ Static comparison source: public methods on `typemytype/drawbot` `DrawBotDrawing
 Missing in `drawbot_skia.drawbot` after the latest parity wrapper batch:
 
 ```text
-Variable
-linkDestination
-linkRect
-linkURL
-pdfImage
-printImage
+None
 ```
 
 Notes:
@@ -66,8 +61,8 @@ Notes:
 - `drawing()` has been added as a reset/cleanup context manager.
 - `installedFonts()`, `installFont()`, and `uninstallFont()` have been added. Temporary font installation is process-local in drawbot-skia: `installFont(path)` returns the font's PostScript name and registers that name as an alias for the path so it can be passed to `font()`. As in DrawBot, these functions are deprecated in favor of passing font paths directly.
 - `pages()` has been added for recorded drawings, including context-manager support for drawing back into an existing page.
-- `linkURL`, `linkDestination`, and `linkRect` require output-context support, at least for PDF.
-- `Variable`, `pdfImage`, and `printImage` are app/macOS-oriented and need a deliberate cross-platform support decision.
+- `linkURL`, `linkDestination`, and `linkRect` have been added with SVG output annotations. PDF annotations remain unsupported because skia-python's PDF API does not expose URL/destination annotation hooks.
+- `Variable`, `pdfImage`, and `printImage` now exist and raise explicit `DrawbotError`s explaining that they are macOS application/PDFKit features and are unavailable in drawbot-skia.
 
 ## `BezierPath` Gaps
 
@@ -139,7 +134,7 @@ Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-
 
 ## Recommended Next Work
 
-1. Implement or explicitly document PDF link annotation support for `linkURL`, `linkDestination`, `linkRect`, and richer `FormattedString.url()` behavior.
+1. Implement PDF link annotations for `linkURL`, `linkDestination`, `linkRect`, and richer `FormattedString.url()` behavior if a cross-platform PDF annotation backend is added.
 2. Scope `BezierPath.intersectionPoints()` and `traceImage()` separately; both need targeted tests and may need new dependencies or geometry algorithms.
-3. Decide which app/macOS-only APIs are out of scope and document them: `Variable`, `pdfImage`, `printImage`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`.
+3. Decide whether to keep explicit unsupported errors for macOS-only APIs or document them as permanently out of scope: `Variable`, `pdfImage`, `printImage`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`.
 4. Decide an `ImageObject` target subset rather than chasing all Core Image filters.
