@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="420" height="240">
+	<rect fill="white" transform="matrix(1 0 -0 -1 0 240)" width="420" height="240"/>
+	<rect fill="none" stroke="#B2B2B2" stroke-width="1" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 240)" x="40" y="130" width="92" height="76"/>
+	<rect fill="none" stroke="#B2B2B2" stroke-width="1" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 240)" x="170" y="130" width="92" height="76"/>
+	<rect fill="none" stroke="#B2B2B2" stroke-width="1" stroke-miterlimit="5" transform="matrix(1 0 -0 -1 0 240)" x="300" y="82" width="92" height="124"/>
+	<text fill="#B2B2B2" transform="translate(40 28)" font-size="20" font-family="Helvetica" x="0, 11.123047, 16.328125, " y="0, ">
+			off
+	</text>
+	<text fill="#B2B2B2" transform="translate(170 28)" font-size="20" font-family="Helvetica" x="0, 11.123047, " y="0, ">
+			on
+	</text>
+	<text fill="#B2B2B2" transform="translate(300 28)" font-size="20" font-family="Helvetica" x="0, 5.5566406, 16.679688, 23.339844, 40, 51.123047, 56.679688, 62.236328, 73.359375, " y="0, ">
+			formatted
+	</text>
+	<text transform="translate(40 54)" font-size="20" font-family="Helvetica" x="0, 10, 21.123047, 32.246094, 43.369141, 50.029297, 60.029297, 71.152344, 75.595703, 80.039062, " y="0, ">
+			supercalif
+	</text>
+	<text transform="translate(40 78)" font-size="20" font-family="Helvetica" x="0, 6.6601562, 17.783203, 28.90625, 33.349609, 37.792969, 42.236328, 52.236328, 57.792969, 62.236328, " y="0, ">
+			ragilistic
+	</text>
+	<text transform="translate(170 54)" font-size="20" font-family="Helvetica" x="0, 10, 21.123047, 32.246094, 43.369141, 50.029297, 60.029297, 71.152344, 75.595703, 80.039062, " y="0, ">
+			supercali-
+	</text>
+	<text transform="translate(170 78)" font-size="20" font-family="Helvetica" x="0, 5.5566406, 12.216797, 23.339844, 34.462891, 38.90625, 43.349609, 47.792969, 57.792969, 63.349609, 67.792969, " y="0, ">
+			fragilistic
+	</text>
+	<text fill="#1A40A6" transform="translate(300 54)" font-size="20" font-family="Helvetica" x="0, 10, 21.123047, 32.246094, 43.369141, 50.029297, 60.029297, 71.152344, 75.595703, 80.039062, " y="0, ">
+			supercali-
+	</text>
+	<text fill="#1A40A6" transform="translate(300 78)" font-size="20" font-family="Helvetica" x="0, 5.5566406, 12.216797, 23.339844, 34.462891, 38.90625, 43.349609, 47.792969, 57.792969, 63.349609, 67.792969, " y="0, ">
+			fragilistic
+	</text>
+</svg>

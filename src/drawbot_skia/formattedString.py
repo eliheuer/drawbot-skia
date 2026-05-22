@@ -73,6 +73,9 @@ class FormattedString:
     def lineHeight(self, value):
         self._properties["lineHeight"] = value
 
+    def hyphenation(self, value):
+        self._properties["hyphenation"] = value
+
     def tabs(self, *tabs):
         if len(tabs) == 1 and tabs[0] is None:
             tabs = None
@@ -260,6 +263,7 @@ class FormattedString:
                 "language",
                 "direction",
                 "tabs",
+                "hyphenation",
             )
             if name in properties
         }

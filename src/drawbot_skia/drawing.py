@@ -279,7 +279,9 @@ class Drawing:
                             overflow += "\n" + "\n".join(rest)
                         return lines, overflow
                 else:
-                    line, rest = self._breakLongWord(word, width)
+                    line, rest = self._breakLongWord(
+                        word, width, self._gstate.textStyle.hyphenation
+                    )
                     lines.append(line)
                     words[wordIndex] = rest
                     if len(lines) == maxLines:
@@ -295,7 +297,12 @@ class Drawing:
                     return lines, "\n".join(rest)
         return lines, ""
 
-    def _breakLongWord(self, word, width):
+    def _breakLongWord(self, word, width, hyphenation=False):
+        if hyphenation:
+            for index in range(len(word) - 1, 0, -1):
+                candidate = word[:index] + "-"
+                if self.textSize(candidate)[0] <= width:
+                    return candidate, word[index:]
         for index in range(1, len(word) + 1):
             if self.textSize(word[:index])[0] > width:
                 if index == 1:
@@ -392,7 +399,11 @@ class Drawing:
                 continue
 
             fitText, restText = self._breakFormattedToken(
-                tokenText, tokenProperties, txt, lineWidth
+                tokenText,
+                tokenProperties,
+                txt,
+                lineWidth,
+                tokenProperties.get("hyphenation", False),
             )
             line.append((fitText, tokenProperties))
             if restText:
@@ -418,7 +429,16 @@ class Drawing:
             )
         return lines, _formattedStringFromTokens([], txt)
 
-    def _breakFormattedToken(self, tokenText, tokenProperties, source, width):
+    def _breakFormattedToken(
+        self, tokenText, tokenProperties, source, width, hyphenation=False
+    ):
+        if hyphenation:
+            for index in range(len(tokenText) - 1, 0, -1):
+                candidate = _formattedStringFromTokens(
+                    [(tokenText[:index] + "-", tokenProperties)], source
+                )
+                if self.textSize(candidate)[0] <= width:
+                    return tokenText[:index] + "-", tokenText[index:]
         for index in range(1, len(tokenText) + 1):
             candidate = _formattedStringFromTokens(
                 [(tokenText[:index], tokenProperties)], source
@@ -734,6 +754,7 @@ def _textStyleWithProperties(textStyle, properties):
         "language",
         "direction",
         "tabs",
+        "hyphenation",
     ):
         if name in properties:
             textProperties[name] = properties[name]

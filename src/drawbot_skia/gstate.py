@@ -220,6 +220,9 @@ class GraphicsStateMixin:
     def lineHeight(self, value):
         self.textStyle = self.textStyle.copy(lineHeight=value)
 
+    def hyphenation(self, value):
+        self.textStyle = self.textStyle.copy(hyphenation=value)
+
     def tabs(self, *tabs):
         if len(tabs) == 1 and tabs[0] is None:
             tabs = None
@@ -499,6 +502,7 @@ class TextStyle(_ImmutableContainer):
     language = None
     direction = None
     tabs = None
+    hyphenation = False
     font = None
     lineHeight = None
 

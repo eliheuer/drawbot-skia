@@ -286,6 +286,19 @@ def test_textBox_returns_overflow():
     assert "five" in overflow or "six" in overflow
 
 
+def test_textBox_hyphenation():
+    db = Drawing()
+    db.fontSize(20)
+    line, rest = db._breakLongWord("supercalifragilistic", 70)
+    assert not line.endswith("-")
+    db.hyphenation(True)
+    line, rest = db._breakLongWord("supercalifragilistic", 70, True)
+    assert line.endswith("-")
+    assert rest
+    db.hyphenation(False)
+    assert db._gstate.textStyle.hyphenation is False
+
+
 def test_writingDirection():
     db = Drawing()
     db.writingDirection("RTL")
@@ -327,6 +340,21 @@ def test_textBox_formattedString_returns_overflow():
     assert list(overflow._iterRuns())[-1][1]["fill"] == (255, 0, 0, 255)
 
 
+def test_textBox_formattedString_hyphenation():
+    db = Drawing()
+    t = FormattedString(fontSize=20)
+    t.hyphenation(True)
+    fit, rest = db._breakFormattedToken(
+        "supercalifragilistic",
+        t.textProperties(),
+        t,
+        70,
+        True,
+    )
+    assert fit.endswith("-")
+    assert rest
+
+
 def test_formattedString_properties():
     t = FormattedString("Hello", fontSize=20, cmykFill=(0, 1, 1, 0), align="center")
     assert str(t) == "Hello"
@@ -346,6 +374,7 @@ def test_formattedString_properties():
     t.paragraphTopSpacing(5)
     t.paragraphBottomSpacing(7)
     t.tabs((80, "center"))
+    t.hyphenation(True)
     t.underline("single")
     t.strikethrough("double")
     t.writingDirection("RTL")
@@ -364,6 +393,7 @@ def test_formattedString_properties():
     assert runProperties["paragraphTopSpacing"] == 5
     assert runProperties["paragraphBottomSpacing"] == 7
     assert runProperties["tabs"] == ((80, "center"),)
+    assert runProperties["hyphenation"] is True
     assert runProperties["underline"] == "single"
     assert runProperties["strikethrough"] == "double"
     assert runProperties["direction"] == "rtl"
