@@ -1220,7 +1220,7 @@ class ImageObject:
         self.photoEffectMono()
 
     def thermal(self):
-        self.falseColor((0, 0, 0.3, 1), (1, 0.2, 0, 1))
+        self._setPILImage(_thermalImage(self._pilImage()))
 
     def dither(self, intensity=0.1):
         image = self._pilImage()
@@ -2384,6 +2384,41 @@ def _gaborKernels(size=7, sigma=2.0, wavelength=4.0):
             normalized = [[value / weightSum for value in row] for row in normalized]
         kernels.append((normalized, radius))
     return kernels
+
+
+def _thermalImage(image):
+    return _luminanceRampImage(
+        image,
+        (
+            (0.00, (0, 0, 0, 255)),
+            (0.18, (44, 0, 80, 255)),
+            (0.36, (0, 64, 192, 255)),
+            (0.55, (0, 220, 220, 255)),
+            (0.72, (255, 230, 0, 255)),
+            (0.88, (255, 64, 0, 255)),
+            (1.00, (255, 255, 255, 255)),
+        ),
+    )
+
+
+def _luminanceRampImage(image, stops):
+    gray = image.convert("L")
+    alpha = image.getchannel("A")
+    data = []
+    for value, a in zip(_getImageData(gray), _getImageData(alpha)):
+        position = value / 255
+        for index, (stopPosition, color) in enumerate(stops[1:], start=1):
+            if position <= stopPosition:
+                previousPosition, previousColor = stops[index - 1]
+                span = stopPosition - previousPosition
+                amount = 0 if span == 0 else (position - previousPosition) / span
+                r, g, b, _ = _mixRGBABytes(previousColor, color, amount)
+                data.append((r, g, b, a))
+                break
+        else:
+            r, g, b, _ = stops[-1][1]
+            data.append((r, g, b, a))
+    return _newRGBAWithData(image.size, data)
 
 
 def _photoEffectAmount(extrapolate):

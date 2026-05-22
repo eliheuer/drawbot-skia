@@ -2004,6 +2004,29 @@ def test_imageObject_gabor_gradients_use_oriented_kernel():
     assert gabor._pilImage().tobytes() != sobel._pilImage().tobytes()
 
 
+def test_imageObject_thermal_uses_multistop_luminance_ramp():
+    image = Image.new("RGBA", (6, 1))
+    for x, value in enumerate((0, 46, 92, 140, 224, 255)):
+        image.putpixel((x, 0), (value, value, value, 100 + x))
+
+    thermal = ImageObject()
+    thermal._setPILImage(image)
+    assert thermal.thermal() is None
+    assert [thermal._pilImage().getpixel((x, 0)) for x in range(6)] == [
+        (0, 0, 0, 100),
+        (43, 0, 78, 101),
+        (0, 65, 192, 102),
+        (5, 220, 215, 103),
+        (255, 71, 0, 104),
+        (255, 255, 255, 105),
+    ]
+
+    falseColor = ImageObject()
+    falseColor._setPILImage(image)
+    assert falseColor.falseColor((0, 0, 0.3, 1), (1, 0.2, 0, 1)) is None
+    assert thermal._pilImage().tobytes() != falseColor._pilImage().tobytes()
+
+
 def test_imageObject_cmyk_halftone_uses_gcr_and_ucr(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "cmyk-halftone.png"
     colors = [
