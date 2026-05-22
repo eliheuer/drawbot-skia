@@ -54,8 +54,9 @@ class FormattedString:
     def clear(self):
         self._runs.clear()
 
-    def font(self, fontNameOrPath, fontSize=None):
+    def font(self, fontNameOrPath, fontSize=None, fontNumber=0):
         self._properties["font"] = fontNameOrPath
+        self._properties["fontNumber"] = int(fontNumber or 0)
         if fontSize is not None:
             self._properties["fontSize"] = fontSize
 

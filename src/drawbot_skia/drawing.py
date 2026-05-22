@@ -1187,6 +1187,7 @@ def _textStyleWithProperties(textStyle, properties):
     textProperties = {}
     for name in (
         "font",
+        "fontNumber",
         "fontSize",
         "lineHeight",
         "features",

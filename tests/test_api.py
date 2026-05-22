@@ -3373,6 +3373,30 @@ def test_formattedString_font_queries_use_font_number(tmpdir):
     assert set(t.listFontVariations()) == {"HLGT", "wght"}
 
 
+def test_font_accepts_font_number(tmpdir):
+    collectionPath = pathlib.Path(tmpdir) / "collection.ttc"
+    collection = TTCollection()
+    collection.fonts = [
+        TTFont(testDir / "fonts" / "MutatorSans.ttf"),
+        TTFont(testDir / "fonts" / "SourceSerifPro-Regular.otf"),
+    ]
+    collection.save(collectionPath)
+    collection.close()
+
+    db = Drawing()
+    db.font(collectionPath, 80, fontNumber=0)
+    assert db.textSize("A")[0] == pytest.approx(32.0)
+    db.font(collectionPath, 80, fontNumber=1)
+    assert db.textSize("A")[0] == pytest.approx(53.12)
+    assert db.textProperties()["fontNumber"] == 1
+
+    text = FormattedString()
+    text.font(collectionPath, 80, fontNumber=1)
+    text.append("A")
+    assert text.size()[0] == pytest.approx(53.12)
+    assert text.textProperties()["fontNumber"] == 1
+
+
 def test_cmyk_color_arguments():
     db = Drawing()
     db.cmykFill(0, 1, 1, 0)

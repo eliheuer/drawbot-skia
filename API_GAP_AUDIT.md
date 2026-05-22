@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-402 passed, 3 skipped, 3 warnings
+403 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -56,6 +56,7 @@ None
 Notes:
 
 - The low-risk wrappers around existing `FormattedString` or graphics-state capabilities have been added: `tracking`, `baselineShift`, `underline`, `strikethrough`, `url`, `fallbackFont`, font metric/query wrappers, `listOpenTypeFeatures`, `opacity`, `sizes`, `textOverflow`, and `textBoxBaselines`. Path-based font queries and text styles honor `fontNumber` for collection fonts.
+- `font()` accepts `fontNumber` for drawing state and `FormattedString`, matching DrawBot's collection-font API.
 - `textBoxCharacterBounds()` has been added for rectangular text boxes using drawbot-skia's current line wrapping and shaping stack.
 - BezierPath text containers remain unsupported for `textBox()`, `textOverflow()`, `textBoxBaselines()`, and `textBoxCharacterBounds()` because DrawBot flows text inside arbitrary path shapes through the macOS text stack; tracked in [#15](https://github.com/eliheuer/drawbot-skia/issues/15).
 - `colorSpace()` and `listColorSpaces()` have been added as compatibility-level API/state support for DrawBot's standard color-space names. Rendering remains RGB-backed in Skia rather than CoreGraphics color-managed.

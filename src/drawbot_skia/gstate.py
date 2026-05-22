@@ -179,11 +179,19 @@ class GraphicsStateMixin:
 
     # Text style
 
-    def font(self, fontNameOrPath, fontSize=None):
+    def font(self, fontNameOrPath, fontSize=None, fontNumber=0):
+        fontNumber = int(fontNumber or 0)
         if fontSize is not None:
-            self.textStyle = self.textStyle.copy(font=fontNameOrPath, fontSize=fontSize)
+            self.textStyle = self.textStyle.copy(
+                font=fontNameOrPath,
+                fontSize=fontSize,
+                fontNumber=fontNumber,
+            )
         else:
-            self.textStyle = self.textStyle.copy(font=fontNameOrPath)
+            self.textStyle = self.textStyle.copy(
+                font=fontNameOrPath,
+                fontNumber=fontNumber,
+            )
 
     def fontSize(self, size):
         self.textStyle = self.textStyle.copy(fontSize=size)
