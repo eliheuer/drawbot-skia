@@ -375,6 +375,10 @@ def test_imageObject_zoom_blur_uses_center(tmpdir):
     image.putpixel((1, 0), (255, 255, 255, 255))
     image.save(imagePath)
 
+    unchanged = ImageObject(imagePath)
+    assert unchanged.zoomBlur(center=(0, 0), amount=0) is None
+    assert unchanged._pilImage().tobytes() == image.tobytes()
+
     left = ImageObject(imagePath)
     assert left.zoomBlur(center=(0, 0), amount=200) is None
     assert [left._pilImage().getpixel((x, 0))[0] for x in range(5)] == [0, 89, 138, 143, 101]

@@ -1530,7 +1530,9 @@ class ImageObject:
 
         image = self._pilImage()
         cx, cy = center
-        amount = max(1, int(round(float(amount))))
+        amount = max(0, int(round(float(amount))))
+        if not amount:
+            return
         accumulator = Image.new("RGBA", image.size, (0, 0, 0, 0))
         samples = 8
         for sample in range(samples):
