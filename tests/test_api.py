@@ -3575,7 +3575,19 @@ def test_font_accepts_font_number(tmpdir):
 
 
 def test_cmyk_color_arguments():
+    import inspect
+
     db = Drawing()
+    assert list(inspect.signature(db.fill).parameters) == ["r", "g", "b", "alpha"]
+    assert list(inspect.signature(db.stroke).parameters) == ["r", "g", "b", "alpha"]
+    assert list(inspect.signature(db.cmykFill).parameters) == ["c", "m", "y", "k", "alpha"]
+    assert inspect.signature(db.cmykFill).parameters["c"].default is inspect.Signature.empty
+
+    db.fill(0, 0.5)
+    assert db._gstate.fillPaint.color == (128, 0, 0, 0)
+    db.stroke((1, 0, 0, 0.5))
+    assert db._gstate.strokePaint.color == (128, 255, 0, 0)
+
     db.cmykFill(0, 1, 1, 0)
     assert db._gstate.fillPaint.color == (255, 255, 0, 0)
     db.cmykFill((1, 0, 1, 0, 0.5))
@@ -3587,6 +3599,15 @@ def test_cmyk_color_arguments():
     assert db._gstate.strokePaint.color == (255, 0, 0, 255)
     db.cmykStroke(None)
     assert not db._gstate.strokePaint.somethingToDraw
+
+    text = FormattedString()
+    assert list(inspect.signature(text.fill).parameters) == ["r", "g", "b", "alpha"]
+    assert list(inspect.signature(text.cmykFill).parameters) == ["c", "m", "y", "k", "alpha"]
+    assert inspect.signature(text.cmykFill).parameters["c"].default is None
+    text.fill(0, 0.5)
+    assert text.textProperties()["fill"] == (128, 0, 0, 0)
+    text.cmykStroke((1, 0, 1, 0, 0.5))
+    assert text.textProperties()["stroke"] == (128, 0, 255, 0)
 
 
 def test_line_dash_offset():

@@ -4,10 +4,12 @@ from fontTools.ttLib import TTFont
 from .gstate import (
     TextStyle,
     _cmykArgs,
+    _cmykColorCallArgs,
     _colorArgs,
     _getName,
     _namedInstances,
     _normalizeWritingDirection,
+    _rgbColorCallArgs,
 )
 from .shaping import getFeatures
 
@@ -84,17 +86,17 @@ class FormattedString:
             tabs = None
         self._properties["tabs"] = tabs
 
-    def fill(self, *args):
-        self._properties["fill"] = _colorArgs(args)
+    def fill(self, r=None, g=None, b=None, alpha=1):
+        self._properties["fill"] = _colorArgs(_rgbColorCallArgs(r, g, b, alpha))
 
-    def cmykFill(self, *args):
-        self._properties["fill"] = _cmykArgs(args)
+    def cmykFill(self, c=None, m=None, y=None, k=None, alpha=1):
+        self._properties["fill"] = _cmykArgs(_cmykColorCallArgs(c, m, y, k, alpha))
 
-    def stroke(self, *args):
-        self._properties["stroke"] = _colorArgs(args)
+    def stroke(self, r=None, g=None, b=None, alpha=1):
+        self._properties["stroke"] = _colorArgs(_rgbColorCallArgs(r, g, b, alpha))
 
-    def cmykStroke(self, *args):
-        self._properties["stroke"] = _cmykArgs(args)
+    def cmykStroke(self, c=None, m=None, y=None, k=None, alpha=1):
+        self._properties["stroke"] = _cmykArgs(_cmykColorCallArgs(c, m, y, k, alpha))
 
     def strokeWidth(self, strokeWidth):
         self._properties["strokeWidth"] = strokeWidth

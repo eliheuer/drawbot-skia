@@ -57,6 +57,7 @@ Notes:
 
 - The low-risk wrappers around existing `FormattedString` or graphics-state capabilities have been added: `tracking`, `baselineShift`, `underline`, `strikethrough`, `url`, `fallbackFont`, font metric/query wrappers, `listOpenTypeFeatures`, `opacity`, `sizes`, `textOverflow`, and `textBoxBaselines`. Path-based font queries and text styles honor `fontNumber` for collection fonts.
 - `font()` accepts `fontNumber` for drawing state and `FormattedString`, matching DrawBot's collection-font API.
+- Drawing-state and `FormattedString` color setters expose DrawBot's named RGB/CMYK channel signatures while preserving gray, alpha, tuple, and `None` forms.
 - `textSize()` accepts DrawBot's `align`, `width`, and `height` arguments and measures width-constrained plain and formatted text through drawbot-skia's wrapping stack.
 - `image()` and `imageSize()` accept `pageNumber` for multi-frame raster image paths.
 - `numberOfPages(path)` requires a path and returns external PDF/GIF page counts; use `pageCount()` for the current drawing.

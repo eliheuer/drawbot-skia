@@ -31,8 +31,8 @@ class GraphicsStateMixin:
 
     # Paint style
 
-    def fill(self, *args):
-        color = _colorArgs(args)
+    def fill(self, r=None, g=None, b=None, alpha=1):
+        color = _colorArgs(_rgbColorCallArgs(r, g, b, alpha))
         if color is None:
             self.fillPaint = self.fillPaint.copy(somethingToDraw=False, shader=None)
         else:
@@ -40,8 +40,8 @@ class GraphicsStateMixin:
                 color=color, somethingToDraw=True, shader=None
             )
 
-    def cmykFill(self, *args):
-        color = _cmykArgs(args)
+    def cmykFill(self, c, m=None, y=None, k=None, alpha=1):
+        color = _cmykArgs(_cmykColorCallArgs(c, m, y, k, alpha))
         if color is None:
             self.fillPaint = self.fillPaint.copy(somethingToDraw=False, shader=None)
         else:
@@ -49,8 +49,8 @@ class GraphicsStateMixin:
                 color=color, somethingToDraw=True, shader=None
             )
 
-    def stroke(self, *args):
-        color = _colorArgs(args)
+    def stroke(self, r=None, g=None, b=None, alpha=1):
+        color = _colorArgs(_rgbColorCallArgs(r, g, b, alpha))
         if color is None:
             self.strokePaint = self.strokePaint.copy(somethingToDraw=False, shader=None)
         else:
@@ -58,8 +58,8 @@ class GraphicsStateMixin:
                 color=color, somethingToDraw=True, shader=None
             )
 
-    def cmykStroke(self, *args):
-        color = _cmykArgs(args)
+    def cmykStroke(self, c, m=None, y=None, k=None, alpha=1):
+        color = _cmykArgs(_cmykColorCallArgs(c, m, y, k, alpha))
         if color is None:
             self.strokePaint = self.strokePaint.copy(somethingToDraw=False, shader=None)
         else:
@@ -843,6 +843,16 @@ def _colorArgs(args):
     return tuple(min(255, max(0, round(v * 255))) for v in (alpha, r, g, b))
 
 
+def _rgbColorCallArgs(r=None, g=None, b=None, alpha=1):
+    if r is None:
+        return (None,)
+    if b is None:
+        if g is None:
+            return (r,)
+        return (r, g)
+    return (r, g, b, alpha)
+
+
 def _cmykArgs(args):
     """Convert drawbot-style CMYK arguments to a tuple containing ARGB values."""
     args = _flattenColorArgs(args)
@@ -852,6 +862,14 @@ def _cmykArgs(args):
         return None
     r, g, b, alpha = _cmykToRgbFloatTuple(args)
     return tuple(min(255, max(0, round(v * 255))) for v in (alpha, r, g, b))
+
+
+def _cmykColorCallArgs(c=None, m=None, y=None, k=None, alpha=1):
+    if c is None:
+        return (None,)
+    if m is None and y is None and k is None:
+        return (c,)
+    return (c, m, y, k, alpha)
 
 
 def _cmykToRgbFloatTuple(args):
