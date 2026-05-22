@@ -1097,12 +1097,15 @@ class ImageObject:
     def unsharpMask(self, radius=2.5, intensity=0.5):
         from PIL import ImageFilter
 
-        self._filter(
-            ImageFilter.UnsharpMask(
-                radius=float(radius),
-                percent=max(0, int(float(intensity) * 250)),
-            )
-        )
+        image = self._pilImage()
+        percent = max(0, int(float(intensity) * 250))
+        if not percent:
+            return
+        sharpened = image.convert("RGB").filter(
+            ImageFilter.UnsharpMask(radius=max(0, float(radius)), percent=percent)
+        ).convert("RGBA")
+        sharpened.putalpha(image.getchannel("A"))
+        self._setPILImage(sharpened)
 
     def noiseReduction(self, noiseLevel=0.02, sharpness=0.4):
         from PIL import ImageFilter
