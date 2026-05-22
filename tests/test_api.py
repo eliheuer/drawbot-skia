@@ -3624,6 +3624,33 @@ def test_transform_default_arguments():
     assert path.bounds() == bounds
 
 
+def test_gradient_default_arguments_reset_to_black_fill():
+    import inspect
+
+    db = Drawing()
+    for methodName in (
+        "linearGradient",
+        "cmykLinearGradient",
+        "radialGradient",
+        "cmykRadialGradient",
+    ):
+        method = getattr(db, methodName)
+        signature = inspect.signature(method)
+        assert signature.parameters["startPoint"].default is None
+        assert signature.parameters["endPoint"].default is None
+        assert signature.parameters["colors"].default is None
+
+        colors = [(1, 0, 0, 0), (0, 1, 0, 0)] if methodName.startswith("cmyk") else [(1, 0, 0), (0, 0, 1)]
+        db.fill(1, 0, 0)
+        method((0, 0), (10, 10), colors)
+        assert db._gstate.fillPaint.shader is not None
+
+        method()
+        assert db._gstate.fillPaint.shader is None
+        assert db._gstate.fillPaint.somethingToDraw
+        assert db._gstate.fillPaint.color == (255, 0, 0, 0)
+
+
 def test_color_space_and_languages():
     db = Drawing()
     assert db.listColorSpaces() == [

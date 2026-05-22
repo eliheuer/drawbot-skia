@@ -108,7 +108,10 @@ class GraphicsStateMixin:
         self.fillPaint = self.fillPaint.copy(opacity=value)
         self.strokePaint = self.strokePaint.copy(opacity=value)
 
-    def linearGradient(self, startPoint, endPoint, colors, locations=None):
+    def linearGradient(self, startPoint=None, endPoint=None, colors=None, locations=None):
+        if startPoint is None:
+            self.fill(0)
+            return
         # MakeLinear(
         #   points: List[skia.Point],
         #   colors: List[int],
@@ -126,7 +129,10 @@ class GraphicsStateMixin:
             shader=shader, fill=None, somethingToDraw=True
         )
 
-    def cmykLinearGradient(self, startPoint, endPoint, colors, locations=None):
+    def cmykLinearGradient(self, startPoint=None, endPoint=None, colors=None, locations=None):
+        if startPoint is None:
+            self.fill(0)
+            return
         colors = [_colorTupleToInt(_cmykArgs(c)) for c in colors]
         shader = skia.GradientShader.MakeLinear(
             points=[startPoint, endPoint],
@@ -139,13 +145,16 @@ class GraphicsStateMixin:
 
     def radialGradient(
         self,
-        startPoint,
+        startPoint=None,
         endPoint=None,
         colors=None,
         locations=None,
         startRadius=0,
         endRadius=100,
     ):
+        if startPoint is None:
+            self.fill(0)
+            return
         colors = [_colorTupleToInt(_colorArgs(c)) for c in colors]
         shader = _makeRadialGradientShader(startPoint, endPoint, startRadius, endRadius, colors, locations)
         self.fillPaint = self.fillPaint.copy(
@@ -154,13 +163,16 @@ class GraphicsStateMixin:
 
     def cmykRadialGradient(
         self,
-        startPoint,
+        startPoint=None,
         endPoint=None,
         colors=None,
         locations=None,
         startRadius=0,
         endRadius=100,
     ):
+        if startPoint is None:
+            self.fill(0)
+            return
         colors = [_colorTupleToInt(_cmykArgs(c)) for c in colors]
         shader = _makeRadialGradientShader(startPoint, endPoint, startRadius, endRadius, colors, locations)
         self.fillPaint = self.fillPaint.copy(

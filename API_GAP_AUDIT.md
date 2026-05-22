@@ -67,7 +67,7 @@ Notes:
 - `colorSpace()` and `listColorSpaces()` have been added as compatibility-level API/state support for DrawBot's standard color-space names. Rendering remains RGB-backed in Skia rather than CoreGraphics color-managed.
 - `listLanguages()` has been added with Python-locale-derived identifiers.
 - `drawing()` has been added as a reset/cleanup context manager.
-- `radialGradient()` and `cmykRadialGradient()` now use Skia two-point conical gradients when `startRadius` or a distinct `endPoint` is supplied.
+- `linearGradient()`, `cmykLinearGradient()`, `radialGradient()`, and `cmykRadialGradient()` accept DrawBot's default `None` arguments; calling them without a `startPoint` clears the gradient and restores black fill. Radial gradients now use Skia two-point conical gradients when `startRadius` or a distinct `endPoint` is supplied.
 - `installedFonts()`, `installFont()`, and `uninstallFont()` have been added. Temporary font installation is process-local in drawbot-skia: `installFont(path)` returns the font's PostScript name and registers that name as an alias for the path so it can be passed to `font()`. As in DrawBot, these functions are deprecated in favor of passing font paths directly.
 - `pages()` has been added for recorded drawings, including context-manager support for drawing back into an existing page.
 - `linkURL`, `linkDestination`, and `linkRect` have been added with SVG output annotations and PDF link annotations. PDF support is implemented as a post-processing pass over Skia's emitted PDF because skia-python's PDF API does not expose URL/destination annotation hooks.
