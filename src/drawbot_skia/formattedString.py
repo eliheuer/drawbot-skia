@@ -126,6 +126,9 @@ class FormattedString:
     def strikethrough(self, strikethrough):
         self._properties["strikethrough"] = strikethrough
 
+    def url(self, url):
+        self._properties["url"] = url
+
     def openTypeFeatures(self, *, resetFeatures=False, **features):
         if resetFeatures:
             self._features.clear()

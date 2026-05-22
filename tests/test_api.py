@@ -444,6 +444,7 @@ def test_formattedString_properties():
     t.hyphenation(True)
     t.underline("single")
     t.strikethrough("double")
+    t.url("https://example.com")
     t.writingDirection("RTL")
     t.align("right")
     t += " world"
@@ -463,6 +464,7 @@ def test_formattedString_properties():
     assert runProperties["hyphenation"] is True
     assert runProperties["underline"] == "single"
     assert runProperties["strikethrough"] == "double"
+    assert runProperties["url"] == "https://example.com"
     assert runProperties["direction"] == "rtl"
     assert runProperties["align"] == "right"
 
@@ -476,6 +478,8 @@ def test_formattedString_properties():
     assert str(t) == ""
     assert t.textProperties()["fill"] == (128, 0, 255, 0)
     assert t.textProperties()["stroke"] == (128, 255, 0, 0)
+    t.url(None)
+    assert t.textProperties()["url"] is None
 
 
 def test_formattedString_font_info():

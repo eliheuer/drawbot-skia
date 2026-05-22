@@ -35,7 +35,7 @@ Do not call the larger feature-parity goal complete from this evidence.
 |---|---:|---|
 | Animated GIF export | Implemented | `RecordingDocument._saveImage_gif()`, `tests/test_api.py::test_saveImage_gif_frame_durations`, `tests/test_api.py::test_numberOfPages_gif` |
 | Multi-line, single-style `text()` | Implemented | `Drawing.text()` handles multiline strings through `_formattedLines()`/line drawing; covered by `tests/apitests/multiLineText.py` |
-| `FormattedString` | Implemented, not full DrawBot parity | `src/drawbot_skia/formattedString.py`; missing `url()` and macOS `getNSObject()` vs DrawBot |
+| `FormattedString` | Implemented, not full DrawBot parity | `src/drawbot_skia/formattedString.py`; missing macOS `getNSObject()` vs DrawBot |
 | Multi-style `text()` | Implemented | `Drawing._textFormattedString()` and FormattedString API tests |
 | Remaining `BezierPath` methods | Incomplete | Missing `intersectionPoints()`, `traceImage()`; macOS bridge methods not applicable |
 | Many-things-I-forgot-to-mention | Incomplete | Top-level namespace gaps listed below |
@@ -96,13 +96,12 @@ Missing:
 
 ```text
 getNSObject
-url
 ```
 
 Notes:
 
 - `getNSObject()` is macOS bridge API and should remain unsupported or documented as intentionally absent.
-- `url()` is relevant if PDF/link annotations are added.
+- `url()` has been added as text-style state; rendering URL annotations still depends on the output context and is tracked with the link APIs.
 
 ## `ImageObject` Gaps
 
