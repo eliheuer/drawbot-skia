@@ -1207,6 +1207,22 @@ def test_imageObject_guided_filter_preserves_guide_edges(tmpdir):
     assert [smoothed._pilImage().getpixel((x, 0))[0] for x in range(7)] == [22, 33, 44, 152, 22, 16, 11]
 
 
+def test_imageObject_person_segmentation_uses_quality_level(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "person-segmentation.png"
+    image = Image.new("RGBA", (7, 1), (0, 0, 0, 255))
+    for x, value in enumerate([0, 20, 60, 100, 160, 220, 255]):
+        image.putpixel((x, 0), (value, value, value, 255))
+    image.save(imagePath)
+
+    sharp = ImageObject(imagePath)
+    assert sharp.personSegmentation(qualityLevel=1) is None
+    assert [sharp._pilImage().getpixel((x, 0))[0] for x in range(7)] == [0, 0, 255, 255, 255, 255, 255]
+
+    soft = ImageObject(imagePath)
+    assert soft.personSegmentation(qualityLevel=0) is None
+    assert [soft._pilImage().getpixel((x, 0))[0] for x in range(7)] == [33, 61, 103, 152, 196, 227, 244]
+
+
 def test_imageObject_depth_of_field_uses_focus_line(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "depth-of-field.png"
     image = Image.new("RGBA", (7, 5), (0, 0, 0, 255))

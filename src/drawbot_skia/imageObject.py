@@ -1174,8 +1174,18 @@ class ImageObject:
         self._setPILImage(_guidedFilterImage(self._pilImage(), guide, radius, epsilon))
 
     def personSegmentation(self, qualityLevel=1.0):
+        from PIL import ImageFilter
+        from PIL import ImageOps
+
         image = self._pilImage()
-        mask = image.convert("L").point(lambda value: 255 if value > 32 else 0)
+        qualityLevel = max(0, min(1, float(qualityLevel)))
+        luminance = image.convert("L")
+        mask = ImageOps.autocontrast(luminance)
+        threshold = 32 + (1 - qualityLevel) * 64
+        mask = mask.point(lambda value: 255 if value > threshold else 0)
+        blurRadius = (1 - qualityLevel) * 2
+        if blurRadius:
+            mask = mask.filter(ImageFilter.GaussianBlur(blurRadius))
         self._setPILImage(_mergeRGBA(mask, mask, mask, image.getchannel("A")))
 
     def saliencyMapFilter(self):
