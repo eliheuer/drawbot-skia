@@ -358,6 +358,30 @@ class BezierPath(BasePen):
         path.draw(resultPath)
         self.path = resultPath.path
 
+    def intersectionPoints(self, other=None):
+        if other is not None:
+            assert isinstance(other, self.__class__)
+        selfSegments = _pathIntersectionSegments(self.path)
+        otherSegments = (
+            _pathIntersectionSegments(other.path)
+            if other is not None
+            else selfSegments
+        )
+        points = []
+        seen = set()
+        for index1, segment1 in enumerate(selfSegments):
+            startIndex = 0 if other is not None else index1 + 1
+            for index2, segment2 in enumerate(otherSegments[startIndex:], startIndex):
+                if other is None and _segmentsAreAdjacent(segment1, segment2):
+                    continue
+                for intersection in _segmentIntersections(segment1, segment2):
+                    point = tuple(float(v) for v in intersection.pt)
+                    key = (round(point[0], 6), round(point[1], 6))
+                    if key not in seen:
+                        points.append(point)
+                        seen.add(key)
+        return points
+
     def optimizePath(self):
         segments = list(_iterRawPathSegments(self.path))
         while segments and segments[-1][0] == "moveTo":
@@ -632,6 +656,81 @@ def _iterRawPathSegments(path):
             yield segmentType, tuple(
                 _normalizePoint(point) for point in points[startIndex:]
             )
+
+
+def _pathIntersectionSegments(path):
+    contours = []
+    contour = []
+    contourIndex = -1
+    for verb, points in skia.Path.Iter(path, False):
+        segmentType, startIndex, numPoints = _pathVerbsToPenMethod.get(
+            verb, (None, None, None)
+        )
+        if segmentType is None:
+            continue
+        if segmentType == "moveTo":
+            if contour:
+                contours.append((False, contour))
+            contourIndex += 1
+            contour = []
+            continue
+        if segmentType == "closePath":
+            if contour:
+                contours.append((True, contour))
+                contour = []
+            continue
+        if segmentType == "conicTo":
+            segmentPoints = tuple(
+                _normalizePoint(point) for point in _convertConicToCubicDirty(*points)
+            )
+        else:
+            segmentPoints = tuple(_normalizePoint(point) for point in points)
+        if segmentPoints:
+            contour.append((contourIndex, segmentPoints))
+    if contour:
+        contours.append((False, contour))
+
+    segments = []
+    for closed, contour in contours:
+        lastIndex = len(contour) - 1
+        for index, (contourIndex, points) in enumerate(contour):
+            segments.append(
+                _IntersectionSegment(
+                    points=points,
+                    contour=contourIndex,
+                    index=index,
+                    first=index == 0,
+                    last=index == lastIndex,
+                    closed=closed,
+                )
+            )
+    return segments
+
+
+def _segmentsAreAdjacent(segment1, segment2):
+    if segment1.contour != segment2.contour:
+        return False
+    if abs(segment1.index - segment2.index) == 1:
+        return True
+    return segment1.closed and (
+        (segment1.first and segment2.last) or (segment1.last and segment2.first)
+    )
+
+
+def _segmentIntersections(segment1, segment2):
+    from fontTools.misc.bezierTools import segmentSegmentIntersections
+
+    return segmentSegmentIntersections(segment1.points, segment2.points)
+
+
+class _IntersectionSegment:
+    def __init__(self, points, contour, index, first, last, closed):
+        self.points = points
+        self.contour = contour
+        self.index = index
+        self.first = first
+        self.last = last
+        self.closed = closed
 
 
 def _normalizePoint(point):

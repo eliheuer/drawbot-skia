@@ -768,6 +768,25 @@ def test_bezier_path_optimizePath():
     assert len(path.contours) == 1
 
 
+def test_bezier_path_intersectionPoints():
+    path1 = BezierPath()
+    path1.line((0, 0), (100, 100))
+    path2 = BezierPath()
+    path2.line((0, 100), (100, 0))
+    assert path1.intersectionPoints(path2) == [(50.0, 50.0)]
+
+    selfIntersecting = BezierPath()
+    selfIntersecting.moveTo((0, 0))
+    selfIntersecting.lineTo((100, 100))
+    selfIntersecting.lineTo((0, 100))
+    selfIntersecting.lineTo((100, 0))
+    assert selfIntersecting.intersectionPoints() == [(50.0, 50.0)]
+
+    rectangle = BezierPath()
+    rectangle.rect(0, 0, 100, 100)
+    assert rectangle.intersectionPoints() == []
+
+
 def test_bezier_path_textBox_returns_overflow():
     path = BezierPath()
     overflow = path.textBox(
