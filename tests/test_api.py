@@ -722,6 +722,18 @@ def test_imageObject_lab_conversion_and_delta_e(tmpdir):
     assert all(abs(a - b) <= 5 for a, b in zip(roundTripped.getpixel((1, 0))[:3], (80, 120, 200)))
     assert roundTripped.getpixel((1, 0))[3] == 128
 
+    normalized = ImageObject(sourcePath)
+    assert normalized.convertRGBtoLab(normalize=True) is None
+    normalizedLabImage = normalized._pilImage()
+    assert normalizedLabImage.getpixel((0, 0)) == (
+        *_labToBytes(*_rgbBytesToLab(255, 0, 0), normalize=True),
+        255,
+    )
+    assert normalized.convertLabToRGB(normalize=True) is None
+    normalizedRoundTripped = normalized._pilImage()
+    assert normalizedRoundTripped.getpixel((0, 0))[:3] == (255, 2, 1)
+    assert normalizedRoundTripped.getpixel((1, 0))[3] == 128
+
     same = ImageObject(sourcePath)
     assert same.labDeltaE(samePath) is None
     assert same._pilImage().getpixel((0, 0)) == (0, 0, 0, 255)

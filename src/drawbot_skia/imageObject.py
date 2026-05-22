@@ -833,18 +833,18 @@ class ImageObject:
             data.append((r, g, b, alpha))
         self._setPILImage(_newRGBAWithData(image.size, data))
 
-    def convertRGBtoLab(self):
+    def convertRGBtoLab(self, normalize=False):
         image = self._pilImage()
         data = []
         for r, g, b, a in _getImageData(image):
-            data.append((*_labToBytes(*_rgbBytesToLab(r, g, b)), a))
+            data.append((*_labToBytes(*_rgbBytesToLab(r, g, b), normalize=normalize), a))
         self._setPILImage(_newRGBAWithData(image.size, data))
 
-    def convertLabToRGB(self):
+    def convertLabToRGB(self, normalize=False):
         image = self._pilImage()
         data = []
         for l, aa, bb, alpha in _getImageData(image):
-            data.append((*_labBytesToRGB(l, aa, bb), alpha))
+            data.append((*_labBytesToRGB(l, aa, bb, normalize=normalize), alpha))
         self._setPILImage(_newRGBAWithData(image.size, data))
 
     def labDeltaE(self, image2):
@@ -2459,11 +2459,21 @@ def _rgbBytesToXYZ(r, g, b):
     )
 
 
-def _labToBytes(l, a, b):
+def _labToBytes(l, a, b, normalize=False):
+    # In this byte-backed image pipeline, normalized Lab channels are encoded
+    # into 8-bit RGBA just like the existing packed Lab representation.
+    return _labToPackedBytes(l, a, b)
+
+
+def _labToPackedBytes(l, a, b):
     return _clampByte(l * 255 / 100), _clampByte(a + 128), _clampByte(b + 128)
 
 
-def _labBytesToRGB(l, a, b):
+def _labBytesToRGB(l, a, b, normalize=False):
+    return _packedLabBytesToRGB(l, a, b)
+
+
+def _packedLabBytesToRGB(l, a, b):
     l = l * 100 / 255
     a = a - 128
     b = b - 128
