@@ -2433,6 +2433,34 @@ def test_imageObject_transition_batch(tmpdir):
         assert im.size() == (18, 14)
 
 
+def test_imageObject_transitions_zero_time_are_noop(tmpdir):
+    sourcePath = pathlib.Path(tmpdir) / "transition-zero-source.png"
+    targetPath = pathlib.Path(tmpdir) / "transition-zero-target.png"
+    maskPath = pathlib.Path(tmpdir) / "transition-zero-mask.png"
+    shadingPath = pathlib.Path(tmpdir) / "transition-zero-shading.png"
+    Image.new("RGBA", (5, 5), (255, 0, 0, 111)).save(sourcePath)
+    Image.new("RGBA", (5, 5), (0, 0, 255, 222)).save(targetPath)
+    Image.new("RGBA", (5, 5), (128, 128, 128, 255)).save(maskPath)
+    Image.new("RGBA", (5, 5), (220, 220, 220, 255)).save(shadingPath)
+    baseline = ImageObject(sourcePath)._pilImage().tobytes()
+
+    calls = [
+        ("swipeTransition", (targetPath,), {"time": 0, "width": 2, "opacity": 1}),
+        ("barsSwipeTransition", (targetPath,), {"time": 0, "width": 2}),
+        ("copyMachineTransition", (targetPath,), {"time": 0, "width": 2}),
+        ("modTransition", (targetPath,), {"center": (2, 2), "time": 0, "radius": 4, "compression": 2}),
+        ("rippleTransition", (targetPath, shadingPath), {"center": (2, 2), "time": 0, "width": 2, "scale": 20}),
+        ("disintegrateWithMaskTransition", (targetPath, maskPath), {"time": 0}),
+        ("accordionFoldTransition", (targetPath,), {"time": 0, "foldShadowAmount": 1}),
+        ("pageCurlTransition", (targetPath, maskPath, shadingPath), {"time": 0, "extent": (0, 0, 5, 5)}),
+        ("pageCurlWithShadowTransition", (targetPath, maskPath), {"time": 0, "extent": (0, 0, 5, 5)}),
+    ]
+    for methodName, args, kwargs in calls:
+        im = ImageObject(sourcePath)
+        assert getattr(im, methodName)(*args, **kwargs) is None
+        assert im._pilImage().tobytes() == baseline, methodName
+
+
 def test_imageObject_swipe_transition_color_extent(tmpdir):
     sourcePath = pathlib.Path(tmpdir) / "swipe-source.png"
     targetPath = pathlib.Path(tmpdir) / "swipe-target.png"
