@@ -1368,13 +1368,7 @@ class ImageObject:
         from PIL import ImageFilter
 
         image = self._pilImage()
-        luminance = image.convert("L")
-        alpha = image.getchannel("A")
-        data = [
-            _clampByte(value * mask / 255)
-            for value, mask in zip(_getImageData(luminance), _getImageData(alpha))
-        ]
-        height = _newLWithData(image.size, data).filter(ImageFilter.GaussianBlur(float(radius)))
+        height = _alphaScaledLuminanceImage(image).filter(ImageFilter.GaussianBlur(float(radius)))
         self._setPILImage(_mergeRGBA(height, height, height, image.getchannel("A")))
 
     def lineOverlay(
@@ -3828,7 +3822,7 @@ def _maskedVariableBlurImage(image, mask, radius):
     from PIL import ImageFilter
 
     source = image.convert("RGBA")
-    maskImage = mask.resize(source.size).convert("L")
+    maskImage = _alphaScaledLuminanceImage(mask.resize(source.size))
     radius = max(0, float(radius))
     if radius == 0:
         return source
@@ -3854,6 +3848,19 @@ def _maskedVariableBlurImage(image, mask, radius):
                 b = levelPixels[upper][x, y]
                 resultPixels[x, y] = tuple(_clampByte(a[index] * (1 - amount) + b[index] * amount) for index in range(4))
     return result
+
+
+def _alphaScaledLuminanceImage(image):
+    source = image.convert("RGBA")
+    luminance = source.convert("L")
+    alpha = source.getchannel("A")
+    return _newLWithData(
+        source.size,
+        [
+            _clampByte(value * mask / 255)
+            for value, mask in zip(_getImageData(luminance), _getImageData(alpha))
+        ],
+    )
 
 
 def _edgePreserveUpsampleImage(image, smallImage, spatialSigma=3.0, lumaSigma=0.15):

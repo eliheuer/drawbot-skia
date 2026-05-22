@@ -2675,6 +2675,25 @@ def test_imageObject_masked_variable_blur_uses_mask_as_radius(tmpdir):
     assert [im._pilImage().getpixel((x, 0))[0] for x in range(7)] == [0, 0, 27, 103, 55, 33, 22]
 
 
+def test_imageObject_masked_variable_blur_uses_mask_alpha(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "variable-blur-alpha.png"
+    transparentMaskPath = pathlib.Path(tmpdir) / "variable-blur-transparent-mask.png"
+    opaqueMaskPath = pathlib.Path(tmpdir) / "variable-blur-opaque-mask.png"
+    image = Image.new("RGBA", (7, 1), (0, 0, 0, 255))
+    image.putpixel((3, 0), (255, 255, 255, 255))
+    image.save(imagePath)
+    Image.new("RGBA", (7, 1), (255, 255, 255, 0)).save(transparentMaskPath)
+    Image.new("RGBA", (7, 1), (255, 255, 255, 255)).save(opaqueMaskPath)
+
+    transparent = ImageObject(imagePath)
+    assert transparent.maskedVariableBlur(transparentMaskPath, radius=2) is None
+    assert [transparent._pilImage().getpixel((x, 0))[0] for x in range(7)] == [0, 0, 0, 255, 0, 0, 0]
+
+    opaque = ImageObject(imagePath)
+    assert opaque.maskedVariableBlur(opaqueMaskPath, radius=2) is None
+    assert [opaque._pilImage().getpixel((x, 0))[0] for x in range(7)] == [22, 33, 44, 49, 44, 33, 22]
+
+
 def test_imageObject_guided_filter_preserves_guide_edges(tmpdir):
     import inspect
 
