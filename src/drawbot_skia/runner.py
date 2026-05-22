@@ -12,11 +12,16 @@ def makeNamespace(*objects, **kwargs):
 
 def makeDrawbotNamespace(drawbot):
     from .formattedString import FormattedString
+    from .imageObject import ImageObject
     from .path import BezierPath
     import math
     import random
 
-    additionalNames = dict(BezierPath=BezierPath, FormattedString=FormattedString)
+    additionalNames = dict(
+        BezierPath=BezierPath,
+        FormattedString=FormattedString,
+        ImageObject=ImageObject,
+    )
     for name in ["random", "randint", "choice", "shuffle"]:
         additionalNames[name] = getattr(random, name)
     return makeNamespace(math, drawbot, **additionalNames)

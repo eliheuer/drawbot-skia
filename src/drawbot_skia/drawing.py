@@ -99,7 +99,11 @@ class Drawing:
         from PIL import Image
 
         x, y = position
-        with Image.open(path) as image:
+        if hasattr(path, "_pilImage"):
+            imageContext = path._pilImage()
+        else:
+            imageContext = Image.open(path)
+        with imageContext as image:
             width, height = image.size
             if x < 0 or y < 0 or x >= width or y >= height:
                 return None
@@ -110,6 +114,8 @@ class Drawing:
     def imageResolution(self, path):
         from PIL import Image
 
+        if hasattr(path, "_pilImage"):
+            return (72, 72)
         with Image.open(path) as image:
             return image.info.get("dpi", (72, 72))
 
@@ -642,6 +648,8 @@ class Drawing:
     @staticmethod
     @functools.lru_cache(maxsize=32)
     def _getImage(imagePath):
+        if hasattr(imagePath, "_skiaImage"):
+            return imagePath._skiaImage()
         return skia.Image.open(os.fspath(imagePath))
 
     def translate(self, x, y):

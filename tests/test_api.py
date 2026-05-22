@@ -8,6 +8,7 @@ from drawbot_skia.runner import makeDrawbotNamespace, runScript, runScriptSource
 from drawbot_skia.drawing import Drawing
 from drawbot_skia.errors import DrawbotError
 from drawbot_skia.formattedString import FormattedString
+from drawbot_skia.imageObject import ImageObject
 from drawbot_skia.path import BezierPath
 
 
@@ -230,6 +231,22 @@ def test_image_properties(tmpdir):
     assert db.imagePixelColor(imagePath, (1, 2)) == (1, 0, 0, 128 / 255)
     assert db.imagePixelColor(imagePath, (2, 0)) == (0, 1, 0, 1)
     assert db.imagePixelColor(imagePath, (-1, 0)) is None
+
+
+def test_imageObject():
+    db = Drawing()
+    imagePath = testDir / "images" / "drawbot.png"
+    im = ImageObject(imagePath)
+    assert im.size() == (512, 512)
+    assert im.offset() == (0, 0)
+    assert db.imageSize(im) == (512, 512)
+    assert db.imagePixelColor(im, (128, 128)) == db.imagePixelColor(
+        imagePath, (128, 128)
+    )
+    assert db.imageResolution(im) == (72, 72)
+    im2 = im.copy()
+    assert im2 is not im
+    assert im2.size() == im.size()
 
 
 def test_numberOfPages_gif(tmpdir):
