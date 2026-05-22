@@ -32,6 +32,20 @@ Work in progress!
 
 The current API audit is tracked in [`API_GAP_AUDIT.md`](API_GAP_AUDIT.md).
 
+## Documentation and examples
+
+The local [`docs/`](docs/) and [`examples/`](examples/) directories provide a
+DrawBot-style documentation scaffold with rendered visual fixtures. The examples
+are grouped after the main categories on drawbot.com, and `examples/showcase/`
+is reserved for features that this fork supports beyond the original upstream
+roadmap state.
+
+Regenerate the example previews with:
+
+```sh
+.venv/bin/python examples/render_examples.py
+```
+
 ## Vision
 
 This project is purely a Python package that implements (part of) the DrawBot drawing API. Using Skia ([skia-python](https://github.com/kyamagu/skia-python)) ensures this can be done in a cross-platform way.

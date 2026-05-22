@@ -1,0 +1,19 @@
+# Shapes
+
+Official DrawBot reference: <https://www.drawbot.com/content/shapes.html>
+
+Shape drawing starts with a canvas, then combines fills, strokes, and geometric
+primitives such as `rect()`, `oval()`, `line()`, and `polygon()`. More complex
+outlines use `BezierPath`.
+
+![Basic shapes](../examples/shapes/basic_shapes.jpg)
+
+Source: [`examples/shapes/basic_shapes.py`](../examples/shapes/basic_shapes.py)
+
+![Bezier path](../examples/shapes/bezier_path.jpg)
+
+Source: [`examples/shapes/bezier_path.py`](../examples/shapes/bezier_path.py)
+
+![Path properties](../examples/shapes/path_properties.jpg)
+
+Source: [`examples/shapes/path_properties.py`](../examples/shapes/path_properties.py)

@@ -1,0 +1,26 @@
+size(620, 380)
+
+tile = ImageObject()
+tile.lockFocus()
+size(180, 180)
+fill(0.08, 0.16, 0.28)
+rect(0, 0, width(), height())
+fill(0.95, 0.36, 0.16)
+oval(32, 32, 116, 116)
+fill(1)
+fontSize(42)
+text("im", (58, 72))
+tile.unlockFocus()
+
+filtered = tile.copy()
+filtered.twirlDistortion(center=(90, 90), radius=92, angle=2.4)
+
+fill(0.95)
+rect(0, 0, width(), height())
+image(tile, (80, 112))
+image(filtered, (356, 112))
+
+fill(0.08)
+fontSize(18)
+text("draw into ImageObject", (80, 72))
+text("then apply a filter", (356, 72))
