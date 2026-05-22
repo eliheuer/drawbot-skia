@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-323 passed, 3 skipped, 3 warnings
+324 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -323,11 +323,11 @@ whitePointAdjust
 zoomBlur
 ```
 
-DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports all 219 of those method names. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, generators, simple geometry filters, analysis/statistical filters, stylization filters, screen/halftone filters, masked blur/upsample filters, distortion/tiling filters, transition filters, barcode-like generators, segmentation/saliency/material filters, and blend/compositing modes rather than pixel-identical Core Image implementations.
+DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports all 219 of those method names. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, generators, simple geometry filters, analysis/statistical filters, stylization filters, screen/halftone filters, masked blur/upsample filters, distortion/tiling filters, transition filters, barcode-like generators, segmentation/saliency/material filters, and blend/compositing modes rather than pixel-identical Core Image implementations. `code128BarcodeGenerator()` is backed by a standards-compliant Code 128 Set B encoder for text input.
 
 Representative behavior follow-up groups:
 
-- generators and barcodes: barcode and advanced Core Image generator method names now exist, but barcode output is deterministic placeholder pattern generation rather than standards-compliant QR/PDF417/Aztec/Code 128 encoding; tracked in [#6](https://github.com/eliheuer/drawbot-skia/issues/6).
+- generators and barcodes: barcode and advanced Core Image generator method names now exist. `code128BarcodeGenerator()` produces standards-compliant Code 128 Set B output for text input, while QR/PDF417/Aztec output is still deterministic placeholder pattern generation rather than standards-compliant encoding; tracked in [#6](https://github.com/eliheuer/drawbot-skia/issues/6).
 - blur, stylization, saliency, segmentation, material, and lighting filters now exist as Pillow-backed approximations and still need deeper Core Image-equivalent behavior; tracked in [#8](https://github.com/eliheuer/drawbot-skia/issues/8).
 - color/statistical filters now exist as Pillow-backed approximations and still need deeper Core Image-equivalent behavior for true Lab, KMeans, palette, and spot-color semantics; tracked in [#7](https://github.com/eliheuer/drawbot-skia/issues/7).
 - compositing, transition, and mask workflow method names now exist as Pillow-backed approximations and still need deeper Core Image-equivalent transition semantics; tracked in [#9](https://github.com/eliheuer/drawbot-skia/issues/9).

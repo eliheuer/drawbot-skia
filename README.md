@@ -48,7 +48,7 @@ Generally, 100% text compatibility with DrawBot should not be top priority, as m
 
 The `ImageObject` API in DrawBot relies heavily on Core Image. This fork exposes the audited public `ImageObject` method names, but many filters are Pillow-backed compatibility implementations rather than Core Image-equivalent behavior. In particular:
 
-- barcode generators currently produce deterministic barcode-like placeholder patterns, not standards-compliant QR/PDF417/Aztec/Code 128 encodings;
+- `code128BarcodeGenerator()` produces standards-compliant Code 128 Set B output for text input; QR, PDF417, and Aztec generators currently produce deterministic barcode-like placeholder patterns rather than standards-compliant encodings;
 - Lab, KMeans, palette, saliency, segmentation, material, lighting, transition, and advanced distortion filters are approximations;
 - exact pixel parity with Core Image should be treated as follow-up work on a method-by-method basis.
 

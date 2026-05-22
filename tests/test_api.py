@@ -467,6 +467,26 @@ def test_imageObject_generator_batch():
         assert im.offset() == (0, 0)
 
 
+def test_imageObject_code128_barcode_generator():
+    from drawbot_skia.imageObject import _CODE128_PATTERNS
+
+    im = ImageObject()
+    assert im.code128BarcodeGenerator((220, 40), "ABC", quietSpace=10, barcodeHeight=20) is None
+    image = im._pilImage()
+    assert image.size == (220, 40)
+
+    codes = [104, ord("A") - 32, ord("B") - 32, ord("C") - 32]
+    checksum = (104 + sum(index * code for index, code in enumerate(codes[1:], start=1))) % 103
+    expectedPattern = "".join(_CODE128_PATTERNS[code] for code in [*codes, checksum, 106])
+    assert expectedPattern.startswith("11010010000")
+    moduleWidth = 200 / len(expectedPattern)
+    sampled = ""
+    for index in range(len(expectedPattern)):
+        x = int(round(10 + (index + 0.5) * moduleWidth))
+        sampled += "1" if image.getpixel((x, 20))[:3] == (0, 0, 0) else "0"
+    assert sampled == expectedPattern
+
+
 def test_imageObject_simple_geometry_batch(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "geometry.png"
     texturePath = pathlib.Path(tmpdir) / "texture.png"
