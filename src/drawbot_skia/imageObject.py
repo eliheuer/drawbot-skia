@@ -2080,14 +2080,18 @@ class ImageObject:
         self._setPILImage(_blendRGBA(image, sepia, intensity))
 
     def sharpenLuminance(self, sharpness=0.4, radius=1.69):
+        from PIL import Image
         from PIL import ImageFilter
 
-        self._filter(
-            ImageFilter.UnsharpMask(
-                radius=float(radius),
-                percent=max(0, int(float(sharpness) * 250)),
-            )
-        )
+        image = self._pilImage()
+        percent = max(0, int(float(sharpness) * 250))
+        if not percent:
+            return
+        y, cb, cr = image.convert("RGB").convert("YCbCr").split()
+        y = y.filter(ImageFilter.UnsharpMask(radius=max(0, float(radius)), percent=percent))
+        sharpened = Image.merge("YCbCr", (y, cb, cr)).convert("RGBA")
+        sharpened.putalpha(image.getchannel("A"))
+        self._setPILImage(sharpened)
 
     def lockFocus(self):
         if self._focusState is not None:

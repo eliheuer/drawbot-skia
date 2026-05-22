@@ -1754,6 +1754,43 @@ def test_imageObject_noise_reduction_controls_noise_and_sharpness(tmpdir):
     assert sum(denoised._pilImage().tobytes()) == 15095
 
 
+def test_imageObject_sharpen_luminance_preserves_chroma_and_alpha(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "sharpen-luminance.png"
+    image = Image.new("RGBA", (5, 1))
+    for x, pixel in enumerate(
+        [
+            (40, 20, 180, 101),
+            (50, 30, 190, 111),
+            (200, 180, 30, 121),
+            (210, 190, 40, 131),
+            (220, 200, 50, 141),
+        ]
+    ):
+        image.putpixel((x, 0), pixel)
+    image.save(imagePath)
+    baseline = ImageObject(imagePath)._pilImage().tobytes()
+
+    unchanged = ImageObject(imagePath)
+    assert unchanged.sharpenLuminance(sharpness=0, radius=1) is None
+    assert unchanged._pilImage().tobytes() == baseline
+
+    luminance = ImageObject(imagePath)
+    assert luminance.sharpenLuminance(sharpness=1, radius=1) is None
+    assert [luminance._pilImage().getpixel((x, 0)) for x in range(5)] == [
+        (13, 0, 151, 101),
+        (0, 0, 133, 111),
+        (255, 255, 105, 121),
+        (226, 208, 56, 131),
+        (231, 212, 61, 141),
+    ]
+
+    rgb = ImageObject(imagePath)
+    assert rgb.unsharpMask(intensity=1, radius=1) is None
+    assert [rgb._pilImage().getpixel((x, 0))[3] for x in range(5)] == [91, 111, 121, 131, 151]
+    assert [luminance._pilImage().getpixel((x, 0))[3] for x in range(5)] == [101, 111, 121, 131, 141]
+    assert luminance._pilImage().tobytes() != rgb._pilImage().tobytes()
+
+
 def test_imageObject_masked_variable_blur_uses_mask_as_radius(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "variable-blur.png"
     maskPath = pathlib.Path(tmpdir) / "variable-blur-mask.png"
