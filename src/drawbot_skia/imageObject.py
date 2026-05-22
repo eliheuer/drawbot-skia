@@ -76,10 +76,13 @@ class ImageObject:
         from PIL import ImageEnhance
 
         image = self._pilImage()
-        image = ImageEnhance.Color(image).enhance(float(saturation))
-        image = ImageEnhance.Brightness(image).enhance(1 + float(brightness))
-        image = ImageEnhance.Contrast(image).enhance(float(contrast))
-        self._setPILImage(image)
+        alpha = image.getchannel("A")
+        adjusted = image.convert("RGB")
+        adjusted = ImageEnhance.Color(adjusted).enhance(float(saturation))
+        adjusted = ImageEnhance.Brightness(adjusted).enhance(1 + float(brightness))
+        adjusted = ImageEnhance.Contrast(adjusted).enhance(float(contrast)).convert("RGBA")
+        adjusted.putalpha(alpha)
+        self._setPILImage(adjusted)
 
     def colorInvert(self):
         from PIL import ImageOps
@@ -640,7 +643,10 @@ class ImageObject:
         from PIL import ImageEnhance
 
         image = self._pilImage()
-        self._setPILImage(ImageEnhance.Brightness(image).enhance(2 ** float(EV)))
+        alpha = image.getchannel("A")
+        adjusted = ImageEnhance.Brightness(image.convert("RGB")).enhance(2 ** float(EV)).convert("RGBA")
+        adjusted.putalpha(alpha)
+        self._setPILImage(adjusted)
 
     def hueAdjust(self, angle=0.0):
         from PIL import Image

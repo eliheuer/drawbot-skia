@@ -665,6 +665,35 @@ def test_imageObject_vibrance_boosts_muted_colors_more_than_saturated_colors(tmp
     assert [pixel[3] for pixel in pixels] == [255, 255, 255, 64]
 
 
+def test_imageObject_color_controls_and_exposure_preserve_alpha(tmpdir):
+    from drawbot_skia.imageObject import _getImageData
+
+    sourcePath = pathlib.Path(tmpdir) / "color-controls-source.png"
+    source = Image.new("RGBA", (3, 1))
+    source.putdata(
+        [
+            (20, 80, 160, 255),
+            (120, 90, 60, 128),
+            (220, 180, 140, 32),
+        ]
+    )
+    source.save(sourcePath)
+    loadedPixels = list(_getImageData(ImageObject(sourcePath)._pilImage()))
+    expectedAlpha = [pixel[3] for pixel in loadedPixels]
+
+    controlled = ImageObject(sourcePath)
+    controlled.colorControls(saturation=0.25, brightness=0.4, contrast=1.4)
+    controlledPixels = list(_getImageData(controlled._pilImage()))
+    assert [pixel[3] for pixel in controlledPixels] == expectedAlpha
+    assert [pixel[:3] for pixel in controlledPixels] != [pixel[:3] for pixel in loadedPixels]
+
+    exposed = ImageObject(sourcePath)
+    exposed.exposureAdjust(EV=1)
+    exposedPixels = list(_getImageData(exposed._pilImage()))
+    assert [pixel[3] for pixel in exposedPixels] == expectedAlpha
+    assert [pixel[:3] for pixel in exposedPixels] != [pixel[:3] for pixel in loadedPixels]
+
+
 def test_imageObject_palette_filters(tmpdir):
     import inspect
 
