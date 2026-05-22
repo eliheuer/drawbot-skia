@@ -448,14 +448,7 @@ class ImageObject:
         self._setPILImage(_tileImage(self._pilImage(), rotations=2, reflect=True))
 
     def perspectiveRotate(self, focalLength=28.0, pitch=0.0, yaw=0.0, roll=0.0):
-        from PIL import Image
-
-        image = self._pilImage()
-        rotated = image.rotate(float(roll), resample=Image.Resampling.BICUBIC)
-        scaleX = max(0.1, 1 - abs(float(yaw)) / 180)
-        scaleY = max(0.1, 1 - abs(float(pitch)) / 180)
-        size = (max(1, int(round(image.width * scaleX))), max(1, int(round(image.height * scaleY))))
-        self._setPILImage(rotated.resize(size, Image.Resampling.BICUBIC).resize(image.size, Image.Resampling.BICUBIC))
+        self._setPILImage(_perspectiveRotateImage(self._pilImage(), focalLength, pitch, yaw, roll))
 
     def bumpDistortion(self, center=(150.0, 150.0), radius=300.0, scale=0.5):
         self._setPILImage(_radialDistortImage(self._pilImage(), center, radius, scale, "bump"))
@@ -3611,6 +3604,46 @@ def _drosteImage(image, insetPoint0, insetPoint1, strands, periodicity, rotation
                 pasteTop = targetTop
             result.alpha_composite(inset, (pasteLeft, pasteTop))
     return result
+
+
+def _perspectiveRotateImage(image, focalLength, pitch, yaw, roll):
+    width, height = image.size
+    halfWidth = width / 2
+    halfHeight = height / 2
+    focal = max(1, float(focalLength)) / 35 * max(width, height)
+    pitch = _angleToRadians(pitch)
+    yaw = _angleToRadians(yaw)
+    roll = _angleToRadians(roll)
+    if pitch == 0 and yaw == 0 and roll == 0:
+        return image.convert("RGBA")
+    cosPitch = math.cos(pitch)
+    sinPitch = math.sin(pitch)
+    cosYaw = math.cos(yaw)
+    sinYaw = math.sin(yaw)
+    cosRoll = math.cos(roll)
+    sinRoll = math.sin(roll)
+
+    def project(point):
+        x, y = point
+        z = 0
+        y, z = y * cosPitch - z * sinPitch, y * sinPitch + z * cosPitch
+        x, z = x * cosYaw + z * sinYaw, -x * sinYaw + z * cosYaw
+        x, y = x * cosRoll - y * sinRoll, x * sinRoll + y * cosRoll
+        factor = focal / max(1, focal + z)
+        return halfWidth + x * factor, halfHeight + y * factor
+
+    corners = [
+        project((-halfWidth, -halfHeight)),
+        project((halfWidth, -halfHeight)),
+        project((halfWidth, halfHeight)),
+        project((-halfWidth, halfHeight)),
+    ]
+    return _quadTransformImage(image, *corners)
+
+
+def _angleToRadians(value):
+    value = float(value)
+    return math.radians(value) if abs(value) > math.tau else value
 
 
 def _ninePartImage(image, breakpoint0, breakpoint1, growAmount, tiled=False, flipYTiles=True):

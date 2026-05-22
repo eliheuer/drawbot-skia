@@ -905,6 +905,36 @@ def test_imageObject_perspective_correction_crop_flag(tmpdir):
     assert expanded.offset() == (-1, 0)
 
 
+def test_imageObject_perspective_rotate_projects_corners(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "perspective-rotate.png"
+    image = Image.new("RGBA", (5, 5), (0, 0, 0, 255))
+    for y in range(5):
+        for x in range(5):
+            image.putpixel((x, y), (x * 50, y * 50, 0, 255))
+    image.save(imagePath)
+
+    identity = ImageObject(imagePath)
+    assert identity.perspectiveRotate(focalLength=28, yaw=0, pitch=0, roll=0) is None
+    assert [identity._pilImage().getpixel((x, 2))[:3] for x in range(5)] == [
+        (0, 100, 0),
+        (50, 100, 0),
+        (100, 100, 0),
+        (150, 100, 0),
+        (200, 100, 0),
+    ]
+
+    yawed = ImageObject(imagePath)
+    assert yawed.perspectiveRotate(focalLength=28, yaw=0.6, pitch=0, roll=0) is None
+    assert yawed.size() == (5, 5)
+    assert [yawed._pilImage().getpixel((x, 2))[:3] for x in range(5)] == [
+        (94, 55, 0),
+        (94, 116, 0),
+        (94, 175, 0),
+        (78, 205, 0),
+        (0, 0, 0),
+    ]
+
+
 def test_imageObject_analysis_and_stylize_batch(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "analysis.png"
     image = Image.new("RGBA", (24, 16), (40, 80, 160, 255))
