@@ -8,12 +8,12 @@ This audit compares the current fork against:
 
 - `justvanrossum/drawbot-skia` upstream README roadmap at `upstream/main` commit `582e2c5067234ee6c8c72bff524e8efb7cab51d4`.
 - `typemytype/drawbot` public drawing API at commit `71cff6df68fff1fafd5a542ab58157b30e377bd1`.
-- Current fork baseline commit `d8bd1fbc4624a1aeabde4883964271348d861402`, with the latest parity wrapper batch reflected below.
+- Current fork baseline commit `98077eef505f26309df9083b6c34f64d84096718`, with the latest parity batches reflected below.
 
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-413 passed, 3 skipped, 3 warnings
+414 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
