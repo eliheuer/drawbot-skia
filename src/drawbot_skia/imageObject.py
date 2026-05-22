@@ -1216,8 +1216,7 @@ class ImageObject:
         self._setPILImage(_blendRGBA(posterized, _mergeRGBA(edgeMask, edgeMask, edgeMask, image.getchannel("A")), 0.35))
 
     def XRay(self):
-        self.colorInvert()
-        self.photoEffectMono()
+        self._setPILImage(_xrayImage(self._pilImage()))
 
     def thermal(self):
         self._setPILImage(_thermalImage(self._pilImage()))
@@ -2397,6 +2396,19 @@ def _thermalImage(image):
             (0.72, (255, 230, 0, 255)),
             (0.88, (255, 64, 0, 255)),
             (1.00, (255, 255, 255, 255)),
+        ),
+    )
+
+
+def _xrayImage(image):
+    return _luminanceRampImage(
+        image,
+        (
+            (0.00, (235, 250, 255, 255)),
+            (0.25, (138, 205, 235, 255)),
+            (0.50, (42, 96, 158, 255)),
+            (0.75, (10, 32, 78, 255)),
+            (1.00, (0, 0, 10, 255)),
         ),
     )
 

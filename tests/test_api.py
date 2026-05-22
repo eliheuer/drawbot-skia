@@ -2027,6 +2027,29 @@ def test_imageObject_thermal_uses_multistop_luminance_ramp():
     assert thermal._pilImage().tobytes() != falseColor._pilImage().tobytes()
 
 
+def test_imageObject_xray_uses_tinted_luminance_ramp():
+    image = Image.new("RGBA", (5, 1))
+    for x, value in enumerate((0, 64, 128, 192, 255)):
+        image.putpixel((x, 0), (value, value, value, 50 + x))
+
+    xray = ImageObject()
+    xray._setPILImage(image)
+    assert xray.XRay() is None
+    assert [xray._pilImage().getpixel((x, 0)) for x in range(5)] == [
+        (235, 250, 255, 50),
+        (135, 205, 235, 51),
+        (44, 93, 157, 52),
+        (10, 34, 77, 53),
+        (0, 0, 9, 54),
+    ]
+
+    generic = ImageObject()
+    generic._setPILImage(image)
+    assert generic.colorInvert() is None
+    assert generic.photoEffectMono() is None
+    assert xray._pilImage().tobytes() != generic._pilImage().tobytes()
+
+
 def test_imageObject_cmyk_halftone_uses_gcr_and_ucr(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "cmyk-halftone.png"
     colors = [
