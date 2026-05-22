@@ -1241,16 +1241,32 @@ class ImageObject:
         self._setPILImage(_spotLightImage(self._pilImage(), lightPosition, lightPointsAt, brightness, concentration, color))
 
     def highlightShadowAdjust(self, radius=0.0, shadowAmount=0.0, highlightAmount=1.0):
+        from PIL import ImageFilter
+
         image = self._pilImage()
+        luminance = image.convert("L")
+        radius = max(0, float(radius))
+        if radius:
+            luminance = luminance.filter(ImageFilter.GaussianBlur(radius))
+        luminancePixels = luminance.load()
+        sourcePixels = image.load()
         shadowAmount = float(shadowAmount)
         highlightAmount = float(highlightAmount)
-        self._setPILImage(
-            image.point(
-                lambda value: _clampByte(
-                    value * highlightAmount + (255 - value) * shadowAmount * 0.25
+        result = image.copy()
+        resultPixels = result.load()
+        for y in range(image.height):
+            for x in range(image.width):
+                lightness = luminancePixels[x, y] / 255
+                shadowLift = (1 - lightness) * shadowAmount * 80
+                highlightScale = 1 + (highlightAmount - 1) * lightness
+                red, green, blue, alpha = sourcePixels[x, y]
+                resultPixels[x, y] = (
+                    _clampByte(red * highlightScale + shadowLift),
+                    _clampByte(green * highlightScale + shadowLift),
+                    _clampByte(blue * highlightScale + shadowLift),
+                    alpha,
                 )
-            )
-        )
+        self._setPILImage(result)
 
     def heightFieldFromMask(self, radius=10.0):
         from PIL import ImageFilter

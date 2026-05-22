@@ -1398,6 +1398,34 @@ def test_imageObject_person_segmentation_uses_quality_level(tmpdir):
     assert [soft._pilImage().getpixel((x, 0))[0] for x in range(7)] == [33, 61, 103, 152, 196, 227, 244]
 
 
+def test_imageObject_highlight_shadow_adjust_uses_radius_and_preserves_alpha(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "highlight-shadow.png"
+    image = Image.new("RGBA", (5, 1))
+    for x, value in enumerate([0, 40, 120, 220, 255]):
+        image.putpixel((x, 0), (value, value, value, 128))
+    image.save(imagePath)
+
+    local = ImageObject(imagePath)
+    assert local.highlightShadowAdjust(radius=0, shadowAmount=1, highlightAmount=0.5) is None
+    assert [local._pilImage().getpixel((x, 0)) for x in range(5)] == [
+        (80, 80, 80, 128),
+        (104, 104, 104, 128),
+        (133, 133, 133, 128),
+        (135, 135, 135, 128),
+        (128, 128, 128, 128),
+    ]
+
+    blurred = ImageObject(imagePath)
+    assert blurred.highlightShadowAdjust(radius=2, shadowAmount=1, highlightAmount=0.5) is None
+    assert [blurred._pilImage().getpixel((x, 0)) for x in range(5)] == [
+        (62, 62, 62, 128),
+        (86, 86, 86, 128),
+        (129, 129, 129, 128),
+        (175, 175, 175, 128),
+        (177, 177, 177, 128),
+    ]
+
+
 def test_imageObject_depth_of_field_uses_focus_line(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "depth-of-field.png"
     image = Image.new("RGBA", (7, 5), (0, 0, 0, 255))
