@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-314 passed, 3 skipped, 3 warnings
+315 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -23,7 +23,6 @@ The fork has moved past the original upstream README blockers for animated GIF e
 The remaining parity work is concentrated in:
 
 - behavior gaps behind top-level compatibility names, especially PDF link annotations and macOS app/PDFKit helpers;
-- `BezierPath` gaps, especially `traceImage()`;
 - `ImageObject`, where only a small cross-platform subset exists compared with DrawBot's Core Image-backed API;
 - macOS/AppKit-only APIs that should be deliberately documented as unsupported instead of silently treated as parity gaps.
 
@@ -37,7 +36,7 @@ Do not call the larger feature-parity goal complete from this evidence.
 | Multi-line, single-style `text()` | Implemented | `Drawing.text()` handles multiline strings through `_formattedLines()`/line drawing; covered by `tests/apitests/multiLineText.py` |
 | `FormattedString` | Implemented | `src/drawbot_skia/formattedString.py`; macOS `getNSObject()` exists as an explicit unsupported API |
 | Multi-style `text()` | Implemented | `Drawing._textFormattedString()` and FormattedString API tests |
-| Remaining `BezierPath` methods | Incomplete | Missing `traceImage()`; macOS bridge methods not applicable |
+| Remaining `BezierPath` methods | Implemented | `intersectionPoints()`, `optimizePath()`, and `traceImage()` have been added; macOS bridge methods exist as explicit unsupported APIs |
 | Many-things-I-forgot-to-mention | Incomplete | Top-level namespace is complete; behavior gaps listed below |
 | `textBox()` | Implemented, not CoreText-identical | `Drawing.textBox()`, FormattedString text box layout, overflow return tests |
 | Fill further gaps in DrawBot API | Incomplete | Top-level, path, FormattedString, and ImageObject gaps listed below |
@@ -71,16 +70,14 @@ Static comparison source: public methods on `typemytype/drawbot` `BezierPath` ve
 Missing:
 
 ```text
-getNSBezierPath
-setNSBezierPath
-traceImage
+None
 ```
 
 Notes:
 
 - `getNSBezierPath` and `setNSBezierPath` are macOS bridge APIs and now exist as explicit unsupported APIs.
 - `intersectionPoints()` has been added using `fontTools.misc.bezierTools` segment intersections, with support for path-to-path intersections and self-intersections.
-- `traceImage()` is a real DrawBot user-facing path feature.
+- `traceImage()` has been added using DrawBot's external-tool model: it requires `mkbitmap` and `potrace`, raises `DrawbotError` if they are unavailable, and imports the traced SVG path data into the `BezierPath`.
 - `optimizePath()` has been added for DrawBot's trailing-empty-`moveTo` cleanup behavior.
 
 ## `FormattedString` Gaps
@@ -135,6 +132,6 @@ Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-
 ## Recommended Next Work
 
 1. Implement PDF link annotations for `linkURL`, `linkDestination`, `linkRect`, and richer `FormattedString.url()` behavior if a cross-platform PDF annotation backend is added.
-2. Scope `BezierPath.traceImage()` separately; it needs targeted tests and may need a new tracing dependency.
+2. Decide whether `mkbitmap`/`potrace` should be documented as optional traceImage dependencies, bundled, or replaced with a Python tracing dependency.
 3. Decide whether to keep explicit unsupported errors for macOS-only APIs or document them as permanently out of scope: `Variable`, `pdfImage`, `printImage`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`.
 4. Decide an `ImageObject` target subset rather than chasing all Core Image filters.

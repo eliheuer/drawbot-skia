@@ -1,8 +1,10 @@
 import os
 import pathlib
+import shutil
 import sys
 import pytest
 from PIL import Image
+from PIL import ImageDraw
 import numpy as np
 from drawbot_skia.runner import makeDrawbotNamespace, runScript, runScriptSource
 from drawbot_skia.drawing import Drawing
@@ -799,6 +801,26 @@ def test_bezier_path_mac_bridge_apis_raise_clear_errors():
         path.getNSBezierPath()
     with pytest.raises(DrawbotError, match="NSBezierPath"):
         path.setNSBezierPath(None)
+
+
+@pytest.mark.skipif(
+    shutil.which("mkbitmap") is None or shutil.which("potrace") is None,
+    reason="traceImage requires mkbitmap and potrace",
+)
+def test_bezier_path_traceImage(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "trace.png"
+    image = Image.new("RGBA", (40, 40), (255, 255, 255, 255))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((10, 10, 30, 30), fill=(0, 0, 0, 255))
+    image.save(imagePath)
+
+    path = BezierPath()
+    assert path.traceImage(imagePath) is None
+    assert path.bounds() == pytest.approx((10, 10, 31, 31))
+
+    offsetPath = BezierPath()
+    offsetPath.traceImage(imagePath, offset=(5, 7))
+    assert offsetPath.bounds() == pytest.approx((15, 17, 36, 38))
 
 
 def test_bezier_path_textBox_returns_overflow():

@@ -1,9 +1,16 @@
 import logging
 import math
+import os
+import re
+import shutil
+import subprocess
+import tempfile
+import xml.etree.ElementTree as ET
 import skia
 from collections.abc import Sequence
 from fontTools.misc.transform import Transform
 from fontTools.pens.basePen import BasePen
+from fontTools.pens.transformPen import TransformPen
 from fontTools.pens.pointPen import PointToSegmentPen, SegmentToPointPen
 from .errors import DrawbotError
 from .gstate import TextStyle, _strokeCapMapping, _strokeJoinMapping
@@ -302,6 +309,18 @@ class BezierPath(BasePen):
             lineY = firstBaseline - lineIndex * lineHeight
             self._addGlyphPaths(glyphsInfo, textStyle, lineX, lineY)
         return overflow
+
+    def traceImage(
+        self,
+        path,
+        threshold=0.2,
+        blur=None,
+        invert=False,
+        turd=2,
+        tolerance=0.2,
+        offset=(0, 0),
+    ):
+        _traceImage(path, self, threshold, blur, invert, turd, tolerance, offset)
 
     def _addGlyphPaths(self, glyphsInfo, textStyle, x, y):
         gids = sorted(set(glyphsInfo.gids))
@@ -741,6 +760,111 @@ class _IntersectionSegment:
         self.first = first
         self.last = last
         self.closed = closed
+
+
+def _traceImage(path, outPen, threshold, blur, invert, turd, tolerance, offset):
+    mkbitmap = shutil.which("mkbitmap")
+    potrace = shutil.which("potrace")
+    if mkbitmap is None or potrace is None:
+        raise DrawbotError("traceImage() requires mkbitmap and potrace")
+
+    from PIL import Image
+    from .imageObject import ImageObject
+
+    if isinstance(path, ImageObject):
+        image = path._pilImage()
+        imageOffset = path.offset()
+    else:
+        image = Image.open(os.fspath(path)).convert("RGBA")
+        imageOffset = (0, 0)
+    offset = (imageOffset[0] + offset[0], imageOffset[1] + offset[1])
+
+    with tempfile.TemporaryDirectory(prefix="drawbot-skia-trace-") as tempDir:
+        imagePath = os.path.join(tempDir, "image.bmp")
+        bitmapPath = os.path.join(tempDir, "image.pgm")
+        svgPath = os.path.join(tempDir, "image.svg")
+        background = Image.new("RGBA", image.size, (255, 255, 255, 255))
+        background.alpha_composite(image)
+        background.convert("RGB").save(imagePath)
+
+        command = [mkbitmap, "-x", "-t", str(threshold)]
+        if blur:
+            command.extend(["-b", str(blur)])
+        if invert:
+            command.append("-i")
+        command.extend(["-o", bitmapPath, imagePath])
+        _runTraceCommand(command)
+
+        command = [
+            potrace,
+            "-s",
+            "-t",
+            str(turd),
+            "-O",
+            str(tolerance),
+            "-o",
+            svgPath,
+            bitmapPath,
+        ]
+        _runTraceCommand(command)
+        _importSVGPaths(svgPath, outPen, offset)
+
+
+def _runTraceCommand(command):
+    result = subprocess.run(command, capture_output=True, text=True)
+    if result.returncode:
+        message = result.stderr.strip() or result.stdout.strip()
+        raise DrawbotError(f"traceImage() command failed: {message}")
+
+
+def _importSVGPaths(svgPath, outPen, offset):
+    from fontTools.svgLib.path import parse_path
+
+    root = ET.parse(svgPath).getroot()
+    identity = Transform()
+    offsetTransform = Transform().translate(*offset)
+    for element, transform in _iterSVGElements(root, identity):
+        if _stripXMLNamespace(element.tag) != "path":
+            continue
+        pathData = element.attrib.get("d")
+        if not pathData:
+            continue
+        pen = TransformPen(outPen, offsetTransform.transform(transform))
+        parse_path(pathData, pen)
+
+
+def _iterSVGElements(element, transform):
+    transform = transform.transform(_parseSVGTransform(element.attrib.get("transform")))
+    yield element, transform
+    for child in element:
+        yield from _iterSVGElements(child, transform)
+
+
+_svgTransformRE = re.compile(r"([a-zA-Z]+)\(([^)]*)\)")
+
+
+def _parseSVGTransform(value):
+    transform = Transform()
+    if not value:
+        return transform
+    for name, args in _svgTransformRE.findall(value):
+        values = [float(v) for v in re.split(r"[,\s]+", args.strip()) if v]
+        name = name.lower()
+        if name == "translate":
+            x = values[0]
+            y = values[1] if len(values) > 1 else 0
+            transform = transform.translate(x, y)
+        elif name == "scale":
+            x = values[0]
+            y = values[1] if len(values) > 1 else x
+            transform = transform.scale(x, y)
+        elif name == "matrix" and len(values) == 6:
+            transform = transform.transform(values)
+    return transform
+
+
+def _stripXMLNamespace(tag):
+    return tag.rsplit("}", 1)[-1]
 
 
 def _normalizePoint(point):
