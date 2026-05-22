@@ -622,8 +622,11 @@ class ImageObject:
         from PIL import Image
 
         image = self._pilImage()
+        angle = float(angle) % math.tau
+        if angle == 0:
+            return
         a = image.getchannel("A")
-        hueShift = int(round((float(angle) % 360) / 360 * 255))
+        hueShift = int(round(angle / math.tau * 255))
         h, s, v = image.convert("HSV").split()
         h = h.point(lambda value: (value + hueShift) % 256)
         adjusted = Image.merge("HSV", (h, s, v)).convert("RGBA")

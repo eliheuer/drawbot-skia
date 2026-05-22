@@ -1792,6 +1792,30 @@ def test_imageObject_color_monochrome_preserves_alpha(tmpdir):
     ]
 
 
+def test_imageObject_hue_adjust_uses_radians_and_preserves_noop(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "hue-adjust.png"
+    image = Image.new("RGBA", (3, 1))
+    image.putdata([(255, 0, 0, 77), (0, 255, 0, 88), (0, 0, 255, 99)])
+    image.save(imagePath)
+    baseline = ImageObject(imagePath)._pilImage().tobytes()
+
+    unchanged = ImageObject(imagePath)
+    assert unchanged.hueAdjust(angle=0) is None
+    assert unchanged._pilImage().tobytes() == baseline
+
+    fullTurn = ImageObject(imagePath)
+    assert fullTurn.hueAdjust(angle=math.tau) is None
+    assert fullTurn._pilImage().tobytes() == baseline
+
+    halfTurn = ImageObject(imagePath)
+    assert halfTurn.hueAdjust(angle=math.pi) is None
+    assert [halfTurn._pilImage().getpixel((x, 0)) for x in range(3)] == [
+        (0, 252, 255, 77),
+        (255, 0, 252, 88),
+        (255, 252, 0, 99),
+    ]
+
+
 def test_imageObject_white_point_adjust_preserves_alpha(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "white-point-alpha.png"
     image = Image.new("RGBA", (4, 1))
