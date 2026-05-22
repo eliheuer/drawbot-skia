@@ -308,6 +308,8 @@ def test_pageCount(tmpdir):
 
 
 def test_image_properties(tmpdir):
+    import inspect
+
     imagePath = pathlib.Path(tmpdir) / "props.png"
     image = Image.new("RGBA", (4, 3), (0, 0, 0, 0))
     image.putpixel((1, 0), (255, 0, 0, 128))
@@ -315,13 +317,18 @@ def test_image_properties(tmpdir):
     image.save(imagePath, dpi=(144, 144))
 
     db = Drawing()
+    assert list(inspect.signature(db.image).parameters) == ["path", "position", "alpha", "pageNumber"]
+    assert list(inspect.signature(db.imagePixelColor).parameters) == ["path", "xy"]
     assert db.imageSize(imagePath) == (4, 3)
     xDpi, yDpi = db.imageResolution(imagePath)
     assert xDpi == pytest.approx(144, abs=0.01)
     assert yDpi == pytest.approx(144, abs=0.01)
     assert db.imagePixelColor(imagePath, (1, 2)) == (1, 0, 0, 128 / 255)
+    assert db.imagePixelColor(path=imagePath, xy=(1, 2)) == (1, 0, 0, 128 / 255)
     assert db.imagePixelColor(imagePath, (2, 0)) == (0, 1, 0, 1)
     assert db.imagePixelColor(imagePath, (-1, 0)) is None
+    db.size(4, 3)
+    db.image(path=imagePath, position=(0, 0))
 
 
 def test_image_pageNumber(tmpdir):
@@ -3637,9 +3644,12 @@ def test_transform_default_arguments():
     db = Drawing()
     assert inspect.signature(db.translate).parameters["x"].default == 0
     assert inspect.signature(db.translate).parameters["y"].default == 0
-    assert inspect.signature(db.scale).parameters["sx"].default == 1
+    assert list(inspect.signature(db.scale).parameters) == ["x", "y", "center"]
+    assert inspect.signature(db.scale).parameters["x"].default == 1
+    assert list(inspect.signature(db.skew).parameters) == ["angle1", "angle2", "center"]
     db.translate()
     db.scale()
+    db.skew(angle1=0, angle2=0)
 
     path = BezierPath()
     path.rect(10, 20, 30, 40)

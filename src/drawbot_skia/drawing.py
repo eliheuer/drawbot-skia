@@ -232,10 +232,10 @@ class Drawing:
         image = self._getImage(path, pageNumber)
         return image.width(), image.height()
 
-    def imagePixelColor(self, path, position):
+    def imagePixelColor(self, path, xy):
         from PIL import Image
 
-        x, y = position
+        x, y = xy
         if hasattr(path, "_pilImage"):
             imageContext = path._pilImage()
         else:
@@ -1013,8 +1013,8 @@ class Drawing:
         finally:
             self._gstate = oldGState
 
-    def image(self, imagePath, position, alpha=1.0, pageNumber=None):
-        im = self._getImage(imagePath, pageNumber)
+    def image(self, path, position, alpha=1, pageNumber=None):
+        im = self._getImage(path, pageNumber)
         paint = skia.Paint()
         opacity = alpha * self._gstate.fillPaint.opacity
         if opacity != 1.0:
@@ -1046,25 +1046,25 @@ class Drawing:
         cx, cy = center
         self._canvas.rotate(angle, cx, cy)
 
-    def scale(self, sx=1, sy=None, center=(0, 0)):
-        if sy is None:
-            sy = sx
+    def scale(self, x=1, y=None, center=(0, 0)):
+        if y is None:
+            y = x
         cx, cy = center
         if cx != 0 or cy != 0:
             self._canvas.translate(cx, cy)
-            self._canvas.scale(sx, sy)
+            self._canvas.scale(x, y)
             self._canvas.translate(-cx, -cy)
         else:
-            self._canvas.scale(sx, sy)
+            self._canvas.scale(x, y)
 
-    def skew(self, sx, sy=0, center=(0, 0)):
+    def skew(self, angle1, angle2=0, center=(0, 0)):
         cx, cy = center
         if cx != 0 or cy != 0:
             self._canvas.translate(cx, cy)
-            self._canvas.skew(math.radians(sx), math.radians(sy))
+            self._canvas.skew(math.radians(angle1), math.radians(angle2))
             self._canvas.translate(-cx, -cy)
         else:
-            self._canvas.skew(math.radians(sx), math.radians(sy))
+            self._canvas.skew(math.radians(angle1), math.radians(angle2))
 
     def transform(self, matrix, center=(0, 0)):
         m = skia.Matrix()

@@ -61,6 +61,7 @@ Notes:
 - Drawing-state and `FormattedString` color setters expose DrawBot's named RGB/CMYK channel signatures while preserving gray, alpha, tuple, and `None` forms.
 - `textSize()` accepts DrawBot's `align`, `width`, and `height` arguments and measures width-constrained plain and formatted text through drawbot-skia's wrapping stack.
 - `image()` and `imageSize()` accept `pageNumber` for multi-frame raster image paths.
+- `image()`, `imagePixelColor()`, `scale()`, and `skew()` accept DrawBot's top-level keyword argument names.
 - `numberOfPages(path)` requires a path and returns external PDF/GIF page counts; use `pageCount()` for the current drawing.
 - `polygon()` and `BezierPath.polygon()` now match DrawBot's variadic point API and validation for too few points or unexpected keyword arguments.
 - `lineDash()` accepts DrawBot's `offset` keyword and passes that dash phase through to Skia's path effect.
