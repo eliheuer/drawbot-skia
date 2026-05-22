@@ -15,6 +15,7 @@ and are rendered by `drawbot-skia` so they can double as visual parity fixtures.
 - [Variables](variables.md)
 - [Quick Reference](quick-reference.md)
 - [Port showcase](port-showcase.md)
+- [DrawBot source map](source-map.md)
 - [Coverage notes](coverage-notes.md)
 
 Regenerate preview images with:

@@ -7,18 +7,21 @@ requested category.
 
 ## Current coverage
 
-- Shapes: primitives, Bezier paths, stroke caps, joins, and dashes.
+- Shapes: primitives, Bezier paths, drawing paths, clipping, stroke caps, joins,
+  and dashes.
 - Colors: RGB and CMYK color state, gradients, alpha, blend modes, and shadows.
-- Canvas: canvas size, transforms, state save/restore, and multipage export.
+- Canvas: canvas size, transforms, state save/restore, multipage export, and
+  export targets.
 - Text: point text, text boxes, `FormattedString`, line height, tracking,
-  baseline shift, underline, and hyphenation settings.
+  baseline shift, underline, hyphenation settings, and variable font axes.
 - Images: `ImageObject` generators, focused drawing, drawing images to the
-  canvas, and representative filters.
+  canvas, image size/pixel sampling, and representative filters.
 - Variables: repeatable examples using ordinary Python variables and parameter
   sweeps.
 - Quick Reference: visual grouping of the major local API families.
 - Port showcase: features called out by the upstream roadmap and compatibility
-  notes that this fork now supports.
+  notes that this fork now supports, including alpha-aware masks and barcode
+  generators.
 
 ## Expansion targets
 

@@ -14,3 +14,8 @@ Source:
 
 Source:
 [`examples/text/text_properties.py`](../examples/text/text_properties.py)
+
+![Font features](../examples/text/font_features.jpg)
+
+Source:
+[`examples/text/font_features.py`](../examples/text/font_features.py)

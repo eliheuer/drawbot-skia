@@ -16,3 +16,8 @@ Source:
 
 Source:
 [`examples/canvas/multiple_pages.py`](../examples/canvas/multiple_pages.py)
+
+![Saving formats](../examples/canvas/saving_formats.jpg)
+
+Source:
+[`examples/canvas/saving_formats.py`](../examples/canvas/saving_formats.py)

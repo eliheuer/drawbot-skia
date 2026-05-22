@@ -15,3 +15,8 @@ Source:
 
 Source:
 [`examples/images/focused_image_drawing.py`](../examples/images/focused_image_drawing.py)
+
+![Image properties](../examples/images/image_properties.jpg)
+
+Source:
+[`examples/images/image_properties.py`](../examples/images/image_properties.py)

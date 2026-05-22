@@ -17,3 +17,8 @@ Source: [`examples/shapes/bezier_path.py`](../examples/shapes/bezier_path.py)
 ![Path properties](../examples/shapes/path_properties.jpg)
 
 Source: [`examples/shapes/path_properties.py`](../examples/shapes/path_properties.py)
+
+![Drawing paths and clipping](../examples/shapes/drawing_paths_and_clipping.jpg)
+
+Source:
+[`examples/shapes/drawing_paths_and_clipping.py`](../examples/shapes/drawing_paths_and_clipping.py)

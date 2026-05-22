@@ -16,3 +16,8 @@ Source:
 
 Source:
 [`examples/showcase/imageobject_alpha_masks.py`](../examples/showcase/imageobject_alpha_masks.py)
+
+![Barcode generators](../examples/showcase/barcode_generators.jpg)
+
+Source:
+[`examples/showcase/barcode_generators.py`](../examples/showcase/barcode_generators.py)
