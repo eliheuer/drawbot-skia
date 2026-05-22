@@ -21,3 +21,11 @@ Source:
 
 Source:
 [`examples/showcase/barcode_generators.py`](../examples/showcase/barcode_generators.py)
+
+![Animation frame 1](../examples/showcase/animation_frames_0.jpg)
+![Animation frame 2](../examples/showcase/animation_frames_1.jpg)
+![Animation frame 3](../examples/showcase/animation_frames_2.jpg)
+![Animation frame 4](../examples/showcase/animation_frames_3.jpg)
+
+Source:
+[`examples/showcase/animation_frames.py`](../examples/showcase/animation_frames.py)

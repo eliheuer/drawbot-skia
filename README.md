@@ -40,7 +40,7 @@ are grouped after the main categories on drawbot.com, and `examples/showcase/`
 is reserved for features that this fork supports beyond the original upstream
 roadmap state.
 
-Regenerate the example previews with:
+Regenerate the example previews with the default 2x pixel scale:
 
 ```sh
 .venv/bin/python examples/render_examples.py

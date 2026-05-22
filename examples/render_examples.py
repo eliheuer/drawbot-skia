@@ -9,6 +9,7 @@ from pathlib import Path
 
 EXAMPLES_ROOT = Path(__file__).resolve().parent
 SKIP = {Path(__file__).name}
+DEFAULT_PIXEL_SCALE = 2
 
 
 def iter_example_scripts():
@@ -17,7 +18,7 @@ def iter_example_scripts():
             yield path
 
 
-def render_examples(output_root: Path | None = None) -> int:
+def render_examples(output_root: Path | None = None, pixel_scale: float = DEFAULT_PIXEL_SCALE) -> int:
     failures = []
     for script_path in iter_example_scripts():
         if output_root is None:
@@ -29,6 +30,8 @@ def render_examples(output_root: Path | None = None) -> int:
             sys.executable,
             "-m",
             "drawbot_skia",
+            "--pixelScale",
+            str(pixel_scale),
             str(script_path),
             str(output_path),
         ]
@@ -54,8 +57,14 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         help="Write previews to a mirrored output directory instead of next to the scripts.",
     )
+    parser.add_argument(
+        "--pixel-scale",
+        type=float,
+        default=DEFAULT_PIXEL_SCALE,
+        help=f"Raster preview scale factor. Defaults to {DEFAULT_PIXEL_SCALE}x.",
+    )
     arguments = parser.parse_args(argv)
-    return render_examples(arguments.output_root)
+    return render_examples(arguments.output_root, pixel_scale=arguments.pixel_scale)
 
 
 if __name__ == "__main__":

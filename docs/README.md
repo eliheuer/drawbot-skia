@@ -18,7 +18,7 @@ and are rendered by `drawbot-skia` so they can double as visual parity fixtures.
 - [DrawBot source map](source-map.md)
 - [Coverage notes](coverage-notes.md)
 
-Regenerate preview images with:
+Regenerate preview images with the default 2x pixel scale:
 
 ```sh
 .venv/bin/python examples/render_examples.py

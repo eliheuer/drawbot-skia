@@ -20,3 +20,8 @@ Source:
 
 Source:
 [`examples/images/image_properties.py`](../examples/images/image_properties.py)
+
+![Transition and distortion](../examples/images/transition_and_distortion.jpg)
+
+Source:
+[`examples/images/transition_and_distortion.py`](../examples/images/transition_and_distortion.py)

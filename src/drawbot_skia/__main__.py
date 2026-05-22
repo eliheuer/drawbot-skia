@@ -13,6 +13,12 @@ def main(args=None):
         description="Command line DrawBot tool.",
     )
     parser.add_argument(
+        "--pixelScale",
+        type=float,
+        default=1,
+        help="Scale factor for raster pixel output.",
+    )
+    parser.add_argument(
         "drawbot_script",
         type=argparse.FileType("r"),
         help="The Drawbot script to run.",
@@ -31,7 +37,7 @@ def main(args=None):
         arguments.drawbot_script.read(), arguments.drawbot_script.name, namespace
     )
     for path in arguments.output_file:
-        db.saveImage(path)
+        db.saveImage(path, pixelScale=arguments.pixelScale)
 
 
 if __name__ == "__main__":

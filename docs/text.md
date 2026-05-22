@@ -19,3 +19,8 @@ Source:
 
 Source:
 [`examples/text/font_features.py`](../examples/text/font_features.py)
+
+![Text metrics](../examples/text/text_metrics.jpg)
+
+Source:
+[`examples/text/text_metrics.py`](../examples/text/text_metrics.py)

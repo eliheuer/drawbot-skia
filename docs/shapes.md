@@ -22,3 +22,8 @@ Source: [`examples/shapes/path_properties.py`](../examples/shapes/path_propertie
 
 Source:
 [`examples/shapes/drawing_paths_and_clipping.py`](../examples/shapes/drawing_paths_and_clipping.py)
+
+![Path boolean operations](../examples/shapes/path_boolean_operations.jpg)
+
+Source:
+[`examples/shapes/path_boolean_operations.py`](../examples/shapes/path_boolean_operations.py)

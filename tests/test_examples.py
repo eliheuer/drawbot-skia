@@ -1,7 +1,13 @@
 from pathlib import Path
 import re
 
-from examples.render_examples import iter_example_scripts, render_examples
+from PIL import Image
+
+from examples.render_examples import (
+    DEFAULT_PIXEL_SCALE,
+    iter_example_scripts,
+    render_examples,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLE_CATEGORIES = {
@@ -30,6 +36,10 @@ def test_render_examples_to_output_root(tmp_path):
         for path in output_paths:
             assert path.exists()
             assert path.stat().st_size > 0
+        first_output = output_paths[0]
+        with Image.open(first_output) as image:
+            assert image.width >= DEFAULT_PIXEL_SCALE
+            assert image.height >= DEFAULT_PIXEL_SCALE
 
 
 def test_example_categories_have_source_and_preview():

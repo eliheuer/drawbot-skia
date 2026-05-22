@@ -20,11 +20,11 @@ port and use rendered examples from this repository.
 
 | Area | Covered locally | Still expanding |
 | --- | --- | --- |
-| Shapes | primitives, paths, path properties, clipping | path boolean operations, text-to-path, tracing |
+| Shapes | primitives, paths, path properties, clipping, boolean operations | text-to-path and tracing |
 | Colors | fill, stroke, CMYK, gradients, opacity, shadows, blend modes | color spaces and overprint-specific behavior |
-| Canvas | page size, transforms, state stack, multipage output, export targets | animation timing and format-specific export docs |
-| Text | point text, text boxes, formatting, line metrics, variable font axes | full OpenType feature matrix and font query examples |
-| Images | drawing, properties, focused drawing, generators, filters | transition, distortion, tiling, and segmentation groups |
+| Canvas | page size, transforms, state stack, multipage output, export targets, frame duration | format-specific export docs |
+| Text | point text, text boxes, formatting, line metrics, variable font axes, text metrics | full OpenType feature matrix and font query examples |
+| Images | drawing, properties, focused drawing, generators, filters, transition, distortion | tiling and segmentation groups |
 | Variables | deterministic Python variables and parameter sweeps | macOS `Variable()` UI remains out of scope |
 | Quick Reference | broad visual API overview | full function-by-function local quick reference |
-| Showcase | roadmap features, alpha-aware masks, barcode generators | shaping, path operations, animation, and more ImageObject parity wins |
+| Showcase | roadmap features, alpha-aware masks, barcode generators, animation frames, path operations | shaping and more ImageObject parity wins |

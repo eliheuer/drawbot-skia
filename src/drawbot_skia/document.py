@@ -124,11 +124,17 @@ class RecordingDocument(Document):
                 height,
             )
 
-    def _saveImage_png(self, path, **kwargs):
-        _savePixelImages(self._pictures, path, skia.kPNG)
+    def _saveImage_png(self, path, pixelScale=1, **kwargs):
+        _savePixelImages(self._pictures, path, skia.kPNG, pixelScale=pixelScale)
 
-    def _saveImage_jpeg(self, path, **kwargs):
-        _savePixelImages(self._pictures, path, skia.kJPEG, whiteBackground=True)
+    def _saveImage_jpeg(self, path, pixelScale=1, **kwargs):
+        _savePixelImages(
+            self._pictures,
+            path,
+            skia.kJPEG,
+            whiteBackground=True,
+            pixelScale=pixelScale,
+        )
 
     _saveImage_jpg = _saveImage_jpeg
 
@@ -173,9 +179,22 @@ class RecordingDocument(Document):
             generateMP4(imagesTemplate, path, frameRate, codec=codec)
 
 
-def _savePixelImages(pictures, path, format, whiteBackground=False, singlePage=None):
+def _savePixelImages(
+    pictures,
+    path,
+    format,
+    whiteBackground=False,
+    singlePage=None,
+    pixelScale=1,
+):
     for picture, framePath in _iteratePictures(pictures, path, singlePage):
-        _savePixelImage(picture, framePath, format, whiteBackground=whiteBackground)
+        _savePixelImage(
+            picture,
+            framePath,
+            format,
+            whiteBackground=whiteBackground,
+            pixelScale=pixelScale,
+        )
 
 
 def _iteratePictures(pictures, path, singlePage=None):
@@ -189,8 +208,12 @@ def _iteratePictures(pictures, path, singlePage=None):
         yield picture, framePath
 
 
-def _savePixelImage(picture, path, format, whiteBackground=False):
-    image = _pictureToSkiaImage(picture, whiteBackground=whiteBackground)
+def _savePixelImage(picture, path, format, whiteBackground=False, pixelScale=1):
+    image = _pictureToSkiaImage(
+        picture,
+        whiteBackground=whiteBackground,
+        pixelScale=pixelScale,
+    )
     image.save(os.fspath(path), format)
 
 
@@ -371,13 +394,21 @@ def _svgNumber(value):
     return f"{value:g}"
 
 
-def _pictureToSkiaImage(picture, whiteBackground=False):
+def _pictureToSkiaImage(picture, whiteBackground=False, pixelScale=1):
     x, y, width, height = picture.cullRect()
     assert x == 0 and y == 0
-    surface = skia.Surface(int(width), int(height))
+    pixelScale = float(pixelScale)
+    if pixelScale <= 0:
+        raise ValueError("pixelScale must be greater than zero")
+    surface = skia.Surface(
+        max(1, int(round(width * pixelScale))),
+        max(1, int(round(height * pixelScale))),
+    )
     with surface as canvas:
         if whiteBackground:
             canvas.clear(skia.ColorWHITE)
+        if pixelScale != 1:
+            canvas.scale(pixelScale, pixelScale)
         canvas.drawPicture(picture)
     return surface.makeImageSnapshot()
 
