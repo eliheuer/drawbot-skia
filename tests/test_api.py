@@ -1237,6 +1237,25 @@ def test_imageObject_depth_of_field_uses_focus_line(tmpdir):
     assert [blurred._pilImage().getpixel((x, 2))[0] for x in range(7)] == [1, 3, 12, 148, 12, 3, 1]
 
 
+def test_imageObject_saliency_map_uses_local_contrast(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "saliency.png"
+    image = Image.new("RGBA", (9, 9), (80, 80, 80, 255))
+    for y in range(3, 6):
+        for x in range(3, 6):
+            image.putpixel((x, y), (240, 240, 240, 255))
+    image.save(imagePath)
+
+    im = ImageObject(imagePath)
+    assert im.saliencyMapFilter() is None
+    result = im._pilImage()
+    center = result.getpixel((4, 4))
+    corner = result.getpixel((0, 0))
+    assert center[0] == center[1] == center[2]
+    assert corner[0] == corner[1] == corner[2]
+    assert center[0] > corner[0]
+    assert center[3] == corner[3] == 255
+
+
 def test_imageObject_shaded_material_uses_height_gradient(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "material.png"
     shadingPath = pathlib.Path(tmpdir) / "material-shading.png"

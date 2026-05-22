@@ -1179,12 +1179,16 @@ class ImageObject:
         self._setPILImage(_mergeRGBA(mask, mask, mask, image.getchannel("A")))
 
     def saliencyMapFilter(self):
+        from PIL import ImageChops
         from PIL import ImageFilter
+        from PIL import ImageOps
 
         image = self._pilImage()
-        blurred = image.filter(ImageFilter.GaussianBlur(3)).convert("L")
-        detail = image.convert("L").point(lambda value: value)
-        self._setPILImage(_mergeRGBA(detail, blurred, detail, image.getchannel("A")))
+        luminance = image.convert("L")
+        localAverage = luminance.filter(ImageFilter.GaussianBlur(max(1, min(image.size) / 6)))
+        saliency = ImageChops.difference(luminance, localAverage)
+        saliency = ImageOps.autocontrast(saliency)
+        self._setPILImage(_mergeRGBA(saliency, saliency, saliency, image.getchannel("A")))
 
     def shadedMaterial(self, shadingImage, scale=10.0):
         self._setPILImage(_shadedMaterialImage(self._pilImage(), _imageObjectToPIL(shadingImage), scale))
