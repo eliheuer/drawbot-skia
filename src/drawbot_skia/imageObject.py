@@ -1392,7 +1392,7 @@ class ImageObject:
         )
 
     def triangleKaleidoscope(self, point=(150.0, 150.0), size=700.0, rotation=5.924285296593801, decay=0.85):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=3, reflect=True, angle=rotation, center=point))
+        self._setPILImage(_triangleKaleidoscopeImage(self._pilImage(), point, size, rotation, decay))
 
     def fourfoldReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0, acuteAngle=math.pi / 2):
         image = _fourfoldTileSource(self._pilImage(), center, width, angle, acuteAngle)
@@ -4272,6 +4272,40 @@ def _tileImage(image, rotations=4, reflect=False, angle=0.0, center=None):
         )
         if reflect and index % 2:
             tile = tile.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+        result = ImageChops.lighter(result, tile)
+    return result
+
+
+def _triangleKaleidoscopeImage(image, point, size, rotation, decay):
+    from PIL import Image
+    from PIL import ImageChops
+    from PIL import ImageEnhance
+
+    base = image.convert("RGBA")
+    px, py = point
+    px = float(px)
+    py = float(py)
+    span = max(1, int(round(float(size))))
+    half = span / 2
+    left = int(round(px - half))
+    top = int(round(py - half))
+    wedge = base.crop((left, top, left + span, top + span))
+    if wedge.size != base.size:
+        framed = Image.new("RGBA", base.size, (0, 0, 0, 0))
+        framed.alpha_composite(wedge.resize(base.size, Image.Resampling.BICUBIC))
+        wedge = framed
+    decay = max(0, min(1, float(decay)))
+    result = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    for index in range(3):
+        tile = wedge.rotate(
+            float(rotation) + index * 120,
+            resample=Image.Resampling.BICUBIC,
+            center=(px, py),
+        )
+        if index % 2:
+            tile = tile.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+        if decay < 1:
+            tile = ImageEnhance.Brightness(tile).enhance(decay**index)
         result = ImageChops.lighter(result, tile)
     return result
 

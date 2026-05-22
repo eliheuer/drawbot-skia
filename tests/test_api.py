@@ -1188,6 +1188,28 @@ def test_imageObject_fourfold_and_parallelogram_tiles_use_phase_controls(tmpdir)
     assert rightAngle._pilImage().tobytes() != offCenter._pilImage().tobytes()
 
 
+def test_imageObject_triangle_kaleidoscope_uses_size_and_decay(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "triangle-kaleidoscope.png"
+    image = Image.new("RGBA", (7, 7), (0, 0, 0, 255))
+    for y in range(7):
+        for x in range(7):
+            image.putpixel((x, y), (x * 30, y * 30, (x + y) * 15, 255))
+    image.save(imagePath)
+
+    small = ImageObject(imagePath)
+    assert small.triangleKaleidoscope(point=(3, 3), size=3, rotation=0, decay=1) is None
+    large = ImageObject(imagePath)
+    assert large.triangleKaleidoscope(point=(3, 3), size=7, rotation=0, decay=1) is None
+    faded = ImageObject(imagePath)
+    assert faded.triangleKaleidoscope(point=(3, 3), size=7, rotation=0, decay=0.25) is None
+
+    assert [small._pilImage().getpixel((x, 3))[0] for x in range(7)] == [108, 99, 94, 90, 105, 117, 123]
+    assert [large._pilImage().getpixel((x, 3))[0] for x in range(7)] == [128, 108, 98, 90, 120, 150, 180]
+    assert [faded._pilImage().getpixel((x, 3))[0] for x in range(7)] == [8, 30, 60, 90, 120, 150, 180]
+    assert small._pilImage().tobytes() != large._pilImage().tobytes()
+    assert large._pilImage().tobytes() != faded._pilImage().tobytes()
+
+
 def test_imageObject_displacement_distortion_uses_red_green_channels(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "displacement.png"
     displacementPath = pathlib.Path(tmpdir) / "displacement-map.png"
