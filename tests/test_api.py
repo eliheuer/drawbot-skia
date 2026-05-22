@@ -1115,6 +1115,26 @@ def test_imageObject_tile_filters_use_center(tmpdir):
     assert centeredImage.tobytes() != offCenterImage.tobytes()
 
 
+def test_imageObject_rotated_tile_uses_width(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "tile-width.png"
+    image = Image.new("RGBA", (7, 5), (0, 0, 0, 255))
+    for y in range(5):
+        for x in range(7):
+            image.putpixel((x, y), (x * 30, y * 40, 0, 255))
+    image.save(imagePath)
+
+    narrow = ImageObject(imagePath)
+    assert narrow.fourfoldRotatedTile(center=(3, 2), angle=0, width=2) is None
+    wide = ImageObject(imagePath)
+    assert wide.fourfoldRotatedTile(center=(3, 2), angle=0, width=6) is None
+
+    narrowImage = narrow._pilImage()
+    wideImage = wide._pilImage()
+    assert [narrowImage.getpixel((x, 2))[0] for x in range(7)] == [135, 105, 75, 75, 105, 135, 165]
+    assert [wideImage.getpixel((x, 2))[0] for x in range(7)] == [105, 120, 120, 120, 120, 120, 135]
+    assert narrowImage.tobytes() != wideImage.tobytes()
+
+
 def test_imageObject_displacement_distortion_uses_red_green_channels(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "displacement.png"
     displacementPath = pathlib.Path(tmpdir) / "displacement-map.png"

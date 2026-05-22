@@ -1409,10 +1409,12 @@ class ImageObject:
         self._setPILImage(_tileImage(self._pilImage(), rotations=3, reflect=True, angle=rotation, center=point))
 
     def fourfoldReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0, acuteAngle=math.pi / 2):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=4, reflect=True, angle=angle, center=center))
+        image = _offsetTileImage(self._pilImage(), width, angle)
+        self._setPILImage(_tileImage(image, rotations=4, reflect=True, angle=angle, center=center))
 
     def fourfoldRotatedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=4, reflect=False, angle=angle, center=center))
+        image = _offsetTileImage(self._pilImage(), width, angle)
+        self._setPILImage(_tileImage(image, rotations=4, reflect=False, angle=angle, center=center))
 
     def fourfoldTranslatedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0, acuteAngle=math.pi / 2):
         self._setPILImage(_offsetTileImage(self._pilImage(), width, angle))
@@ -1422,19 +1424,24 @@ class ImageObject:
         self._setPILImage(_blendRGBA(tiled, _tileImage(tiled, rotations=2, reflect=True, center=center), 0.5))
 
     def eightfoldReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=8, reflect=True, angle=angle, center=center))
+        image = _offsetTileImage(self._pilImage(), width, angle)
+        self._setPILImage(_tileImage(image, rotations=8, reflect=True, angle=angle, center=center))
 
     def sixfoldReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=6, reflect=True, angle=angle, center=center))
+        image = _offsetTileImage(self._pilImage(), width, angle)
+        self._setPILImage(_tileImage(image, rotations=6, reflect=True, angle=angle, center=center))
 
     def sixfoldRotatedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=6, reflect=False, angle=angle, center=center))
+        image = _offsetTileImage(self._pilImage(), width, angle)
+        self._setPILImage(_tileImage(image, rotations=6, reflect=False, angle=angle, center=center))
 
     def twelvefoldReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=12, reflect=True, angle=angle, center=center))
+        image = _offsetTileImage(self._pilImage(), width, angle)
+        self._setPILImage(_tileImage(image, rotations=12, reflect=True, angle=angle, center=center))
 
     def triangleTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=3, reflect=False, angle=angle, center=center))
+        image = _offsetTileImage(self._pilImage(), width, angle)
+        self._setPILImage(_tileImage(image, rotations=3, reflect=False, angle=angle, center=center))
 
     def parallelogramTile(self, center=(150.0, 150.0), angle=0.0, acuteAngle=math.pi / 2, width=100.0):
         self._setPILImage(_skewTileImage(self._pilImage(), angle, acuteAngle, width))
