@@ -706,6 +706,19 @@ def test_bezier_path_dashStroke():
     assert dashed.contours[0][1] == ((5.0, 0.0),)
 
 
+def test_bezier_path_optimizePath():
+    path = BezierPath()
+    path.moveTo((0, 0))
+    path.lineTo((100, 0))
+    path.moveTo((200, 200))
+    assert path.path.countVerbs() == 3
+    assert path.controlPointBounds() == (0.0, 0.0, 200.0, 200.0)
+    assert path.optimizePath() is None
+    assert path.path.countVerbs() == 2
+    assert path.controlPointBounds() == (0.0, 0.0, 100.0, 0.0)
+    assert len(path.contours) == 1
+
+
 def test_bezier_path_textBox_returns_overflow():
     path = BezierPath()
     overflow = path.textBox(

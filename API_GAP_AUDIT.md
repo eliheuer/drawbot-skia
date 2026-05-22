@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-307 passed, 3 skipped, 3 warnings
+308 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -78,7 +78,6 @@ Missing:
 ```text
 getNSBezierPath
 intersectionPoints
-optimizePath
 setNSBezierPath
 traceImage
 ```
@@ -87,7 +86,7 @@ Notes:
 
 - `getNSBezierPath` and `setNSBezierPath` are macOS bridge APIs and should probably remain unsupported in `drawbot-skia`.
 - `intersectionPoints()` and `traceImage()` are real DrawBot user-facing path features.
-- `optimizePath()` may be implementable through existing path conversion or pathops cleanup, but needs behavior comparison.
+- `optimizePath()` has been added for DrawBot's trailing-empty-`moveTo` cleanup behavior.
 
 ## `FormattedString` Gaps
 

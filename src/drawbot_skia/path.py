@@ -358,6 +358,24 @@ class BezierPath(BasePen):
         path.draw(resultPath)
         self.path = resultPath.path
 
+    def optimizePath(self):
+        segments = list(_iterRawPathSegments(self.path))
+        while segments and segments[-1][0] == "moveTo":
+            segments.pop()
+        optimizedPath = BezierPath()
+        for segmentType, points in segments:
+            if segmentType == "moveTo":
+                optimizedPath.moveTo(points[0])
+            elif segmentType == "lineTo":
+                optimizedPath.lineTo(points[0])
+            elif segmentType == "curveTo":
+                optimizedPath.curveTo(*points)
+            elif segmentType == "qCurveTo":
+                optimizedPath.qCurveTo(*points)
+            elif segmentType == "closePath":
+                optimizedPath.closePath()
+        self.path = optimizedPath.path
+
     def expandStroke(
         self, width, lineCap="butt", lineJoin="miter", miterLimit=10
     ):
@@ -595,6 +613,25 @@ def _iterPathSegments(path):
             ):
                 continue
             yield segmentType, segmentPoints
+
+
+def _iterRawPathSegments(path):
+    for verb, points in skia.Path.RawIter(path):
+        segmentType, startIndex, numPoints = _pathVerbsToPenMethod.get(
+            verb, (None, None, None)
+        )
+        if segmentType is None:
+            continue
+        if segmentType == "conicTo":
+            yield "curveTo", tuple(
+                _normalizePoint(point) for point in _convertConicToCubicDirty(*points)
+            )
+        elif segmentType == "closePath":
+            yield segmentType, ()
+        else:
+            yield segmentType, tuple(
+                _normalizePoint(point) for point in points[startIndex:]
+            )
 
 
 def _normalizePoint(point):
