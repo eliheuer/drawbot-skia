@@ -277,7 +277,23 @@ class ImageObject:
         correctionLevel=0.0,
         alwaysSpecifyCompaction=False,
     ):
-        self._setPILImage(_pseudoBarcodeImage(size, message, "pdf417"))
+        self._setPILImage(
+            _pdf417BarcodeImage(
+                size,
+                message,
+                minWidth,
+                maxWidth,
+                minHeight,
+                maxHeight,
+                dataColumns,
+                rows,
+                preferredAspectRatio,
+                compactionMode,
+                compactStyle,
+                correctionLevel,
+                alwaysSpecifyCompaction,
+            )
+        )
         self._path = None
         self._offset = (0, 0)
 
@@ -2024,6 +2040,78 @@ def _pseudoBarcodeImage(size, message, kind):
             if x >= width:
                 break
     return image
+
+
+def _pdf417BarcodeImage(
+    size,
+    message,
+    minWidth=0.0,
+    maxWidth=0.0,
+    minHeight=0.0,
+    maxHeight=0.0,
+    dataColumns=0.0,
+    rows=0.0,
+    preferredAspectRatio=0.0,
+    compactionMode=0.0,
+    compactStyle=False,
+    correctionLevel=0.0,
+    alwaysSpecifyCompaction=False,
+):
+    from PIL import Image
+    import pdf417gen
+
+    width, height = _normalizeSize(size)
+    columns = _pdf417Columns(dataColumns, rows, message)
+    securityLevel = max(0, min(8, int(round(float(correctionLevel)))))
+    for candidateColumns in range(columns, 0, -1):
+        try:
+            codes = pdf417gen.encode(str(message), columns=candidateColumns, security_level=securityLevel)
+            break
+        except ValueError:
+            if candidateColumns == 1:
+                raise
+    barcode = pdf417gen.render_image(codes, scale=1, ratio=3, padding=0).convert("RGBA")
+    targetWidth, targetHeight = _pdf417TargetSize(width, height, minWidth, maxWidth, minHeight, maxHeight, preferredAspectRatio)
+    barcode = barcode.resize((targetWidth, targetHeight), Image.Resampling.NEAREST)
+    image = Image.new("RGBA", (width, height), (255, 255, 255, 255))
+    image.alpha_composite(barcode, ((width - targetWidth) // 2, (height - targetHeight) // 2))
+    return image
+
+
+def _pdf417Columns(dataColumns, rows, message):
+    if dataColumns:
+        return max(1, min(30, int(round(float(dataColumns)))))
+    if rows:
+        rowCount = max(1, int(round(float(rows))))
+        # PDF417 stores one length descriptor plus data and ECC codewords. This
+        # estimate lets the DrawBot rows argument influence layout without
+        # reimplementing pdf417gen's high-level compaction planner.
+        securityLevel = 2
+        estimatedCodewords = len(str(message).encode("utf-8")) + 1 + (2 << securityLevel)
+        return max(1, min(30, int(math.ceil(estimatedCodewords / rowCount))))
+    return 6
+
+
+def _pdf417TargetSize(width, height, minWidth, maxWidth, minHeight, maxHeight, preferredAspectRatio):
+    targetWidth = width
+    targetHeight = height
+    minWidth = max(0, int(round(float(minWidth))))
+    maxWidth = max(0, int(round(float(maxWidth))))
+    minHeight = max(0, int(round(float(minHeight))))
+    maxHeight = max(0, int(round(float(maxHeight))))
+    if minWidth:
+        targetWidth = max(targetWidth, minWidth)
+    if maxWidth:
+        targetWidth = min(targetWidth, maxWidth)
+    if minHeight:
+        targetHeight = max(targetHeight, minHeight)
+    if maxHeight:
+        targetHeight = min(targetHeight, maxHeight)
+    if preferredAspectRatio:
+        ratio = abs(float(preferredAspectRatio))
+        if ratio:
+            targetHeight = max(1, min(targetHeight, int(round(targetWidth / ratio))))
+    return max(1, min(width, targetWidth)), max(1, min(height, targetHeight))
 
 
 _QR_ECC_FORMAT_BITS = {

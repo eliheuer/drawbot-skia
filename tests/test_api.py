@@ -533,6 +533,25 @@ def test_imageObject_qr_code_generator():
     assert ["".join("1" if value else "0" for value in row) for row in _qrMatrix("drawbot", "M")] == expectedMatrix
 
 
+def test_imageObject_pdf417_barcode_generator():
+    import pdf417gen
+
+    im = ImageObject()
+    assert im.PDF417BarcodeGenerator((180, 60), "drawbot", dataColumns=4, correctionLevel=2) is None
+    image = im._pilImage()
+    assert image.size == (180, 60)
+
+    expectedCodes = [
+        [130728, 125680, 108640, 66956, 113056, 124742, 120032, 260649],
+        [130728, 128280, 102516, 97968, 97968, 97968, 129720, 260649],
+        [130728, 109040, 118606, 126452, 85054, 80140, 108792, 260649],
+        [130728, 89720, 90504, 73858, 85088, 69008, 89980, 260649],
+    ]
+    assert pdf417gen.encode("drawbot", columns=4, security_level=2) == expectedCodes
+    assert image.getbbox() == (0, 0, 180, 60)
+    assert any(image.getpixel((x, image.height // 2))[:3] == (0, 0, 0) for x in range(image.width))
+
+
 def test_imageObject_code128_barcode_generator():
     from drawbot_skia.imageObject import _CODE128_PATTERNS
 

@@ -30,6 +30,7 @@ setup(
         "unicodedata2",
         "blackrenderer",
         "pillow>=11",
+        "pdf417gen>=0.8.1",
     ],
     setup_requires=["setuptools_scm"],
     extras_require={
