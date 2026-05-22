@@ -792,22 +792,31 @@ class ImageObject:
 
         image = self._pilImage()
         colors = max(1, int(round(float(count))))
-        quantized = image.convert("RGB").quantize(colors=colors, method=Image.Quantize.MEDIANCUT).convert("RGBA")
-        quantized.putalpha(image.getchannel("A"))
-        self._setPILImage(quantized)
+        quantized = image.convert("RGB").quantize(colors=colors, method=Image.Quantize.MEDIANCUT)
+        palette = quantized.getpalette() or []
+        colorCounts = quantized.getcolors(image.width * image.height) or []
+        total = image.width * image.height or 1
+        data = []
+        for pixelCount, pixelIndex in sorted(colorCounts, key=lambda item: item[0], reverse=True):
+            offset = pixelIndex * 3
+            color = tuple(palette[offset:offset + 3])
+            if len(color) != 3:
+                color = (0, 0, 0)
+            data.append((*color, _clampByte(pixelCount / total * 255)))
+        while len(data) < colors:
+            data.append((0, 0, 0, 0))
+        self._setPILImage(_newRGBAWithData((colors, 1), data[:colors]))
+        self._offset = (0, 0)
 
     def paletteCentroid(self, paletteImage, perceptual=False):
-        palette = _imageObjectToPIL(paletteImage).resize(self.size())
-        self._setPILImage(_blendRGBA(self._pilImage(), palette, 0.5))
+        palette = _paletteColors(_imageObjectToPIL(paletteImage))
+        self._setPILImage(_paletteCentroidImage(self._pilImage(), palette, perceptual))
+        self._offset = (0, 0)
 
     def palettize(self, paletteImage, perceptual=False):
-        from PIL import Image
-
         image = self._pilImage()
-        palette = _imageObjectToPIL(paletteImage).convert("P", palette=Image.Palette.ADAPTIVE, colors=256)
-        converted = image.convert("RGB").quantize(palette=palette).convert("RGBA")
-        converted.putalpha(image.getchannel("A"))
-        self._setPILImage(converted)
+        palette = _paletteColors(_imageObjectToPIL(paletteImage))
+        self._setPILImage(_palettizedImage(image, palette, perceptual))
 
     def spotColor(
         self,
@@ -1981,6 +1990,87 @@ def _labBytesToRGB(l, a, b):
     y = _labPivotInv(fy)
     z = 1.08883 * _labPivotInv(fz)
     return _xyzToRGBBytes(x, y, z)
+
+
+def _paletteColors(paletteImage):
+    colors = []
+    seen = set()
+    for r, g, b, a in _getImageData(paletteImage.convert("RGBA")):
+        if a == 0:
+            continue
+        color = (r, g, b)
+        if color not in seen:
+            colors.append(color)
+            seen.add(color)
+    return colors or [(0, 0, 0)]
+
+
+def _palettizedImage(image, palette, perceptual=False):
+    data = []
+    paletteWithLab = [(color, _rgbBytesToLab(*color)) for color in palette] if perceptual else None
+    for r, g, b, a in _getImageData(image.convert("RGBA")):
+        color = _nearestPaletteColor((r, g, b), palette, paletteWithLab)
+        data.append((*color, a))
+    return _newRGBAWithData(image.size, data)
+
+
+def _paletteCentroidImage(image, palette, perceptual=False):
+    assignments = [
+        {
+            "count": 0,
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0,
+        }
+        for _ in palette
+    ]
+    paletteWithLab = [(color, _rgbBytesToLab(*color)) for color in palette] if perceptual else None
+    for r, g, b, a in _getImageData(image.convert("RGBA")):
+        index = _nearestPaletteIndex((r, g, b), palette, paletteWithLab)
+        bucket = assignments[index]
+        bucket["count"] += 1
+        bucket["r"] += r
+        bucket["g"] += g
+        bucket["b"] += b
+        bucket["a"] += a
+    total = image.width * image.height or 1
+    data = []
+    for color, bucket in zip(palette, assignments):
+        if bucket["count"]:
+            count = bucket["count"]
+            data.append(
+                (
+                    _clampByte(bucket["r"] / count),
+                    _clampByte(bucket["g"] / count),
+                    _clampByte(bucket["b"] / count),
+                    _clampByte(count / total * 255),
+                )
+            )
+        else:
+            data.append((*color, 0))
+    return _newRGBAWithData((len(palette), 1), data)
+
+
+def _nearestPaletteColor(color, palette, paletteWithLab=None):
+    return palette[_nearestPaletteIndex(color, palette, paletteWithLab)]
+
+
+def _nearestPaletteIndex(color, palette, paletteWithLab=None):
+    if paletteWithLab is not None:
+        lab = _rgbBytesToLab(*color)
+        return min(
+            range(len(paletteWithLab)),
+            key=lambda index: _distanceSquared(lab, paletteWithLab[index][1]),
+        )
+    return min(
+        range(len(palette)),
+        key=lambda index: _distanceSquared(color, palette[index]),
+    )
+
+
+def _distanceSquared(color1, color2):
+    return sum((a - b) ** 2 for a, b in zip(color1, color2))
 
 
 def _xyzToRGBBytes(x, y, z):

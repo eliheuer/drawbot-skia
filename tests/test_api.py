@@ -416,9 +416,6 @@ def test_imageObject_color_and_morphology_batch(tmpdir):
         ("convertRGBtoLab", (), {}),
         ("convertLabToRGB", (), {}),
         ("labDeltaE", (otherPath,), {}),
-        ("KMeans", (), {"count": 4}),
-        ("paletteCentroid", (gradientPath,), {}),
-        ("palettize", (gradientPath,), {}),
         ("spotColor", (), {}),
         ("mix", (otherPath,), {"amount": 0.5}),
         ("comicEffect", (), {}),
@@ -436,6 +433,47 @@ def test_imageObject_color_and_morphology_batch(tmpdir):
         im = ImageObject(sourcePath)
         assert getattr(im, methodName)(*args, **kwargs) is None
         assert im.size() == (12, 12)
+
+
+def test_imageObject_palette_filters(tmpdir):
+    from drawbot_skia.imageObject import _getImageData
+
+    sourcePath = pathlib.Path(tmpdir) / "palette-source.png"
+    palettePath = pathlib.Path(tmpdir) / "palette.png"
+    source = Image.new("RGBA", (4, 1))
+    source.putdata(
+        [
+            (250, 0, 0, 255),
+            (200, 0, 0, 255),
+            (0, 0, 250, 255),
+            (0, 0, 200, 255),
+        ]
+    )
+    source.save(sourcePath)
+    palette = Image.new("RGBA", (2, 1))
+    palette.putdata([(255, 0, 0, 255), (0, 0, 255, 255)])
+    palette.save(palettePath)
+
+    kmeans = ImageObject(sourcePath)
+    assert kmeans.KMeans(count=2) is None
+    assert kmeans.size() == (2, 1)
+    kmeansPixels = list(_getImageData(kmeans._pilImage()))
+    assert {pixel[:3] for pixel in kmeansPixels} == {(225, 0, 0), (0, 0, 225)}
+    assert sorted(pixel[3] for pixel in kmeansPixels) == [128, 128]
+
+    palettized = ImageObject(sourcePath)
+    assert palettized.palettize(palettePath) is None
+    assert list(_getImageData(palettized._pilImage())) == [
+        (255, 0, 0, 255),
+        (255, 0, 0, 255),
+        (0, 0, 255, 255),
+        (0, 0, 255, 255),
+    ]
+
+    centroid = ImageObject(sourcePath)
+    assert centroid.paletteCentroid(palettePath) is None
+    assert centroid.size() == (2, 1)
+    assert list(_getImageData(centroid._pilImage())) == [(225, 0, 0, 128), (0, 0, 225, 128)]
 
 
 def test_imageObject_lab_conversion_and_delta_e(tmpdir):
