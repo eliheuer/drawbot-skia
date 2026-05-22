@@ -951,6 +951,21 @@ def test_imageObject_bokeh_blur_uses_ring_parameters(tmpdir):
     assert [ringed._pilImage().getpixel((x, 2))[0] for x in range(7)] == [0, 0, 17, 29, 17, 0, 0]
 
 
+def test_imageObject_masked_variable_blur_uses_mask_as_radius(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "variable-blur.png"
+    maskPath = pathlib.Path(tmpdir) / "variable-blur-mask.png"
+    image = Image.new("RGBA", (7, 1), (0, 0, 0, 255))
+    image.putpixel((3, 0), (255, 255, 255, 255))
+    image.save(imagePath)
+    mask = Image.new("L", (7, 1))
+    mask.putdata([0, 0, 64, 128, 192, 255, 255])
+    mask.convert("RGBA").save(maskPath)
+
+    im = ImageObject(imagePath)
+    assert im.maskedVariableBlur(maskPath, radius=2) is None
+    assert [im._pilImage().getpixel((x, 0))[0] for x in range(7)] == [0, 0, 27, 103, 55, 33, 22]
+
+
 def test_imageObject_transition_batch(tmpdir):
     sourcePath = pathlib.Path(tmpdir) / "source.png"
     targetPath = pathlib.Path(tmpdir) / "target.png"

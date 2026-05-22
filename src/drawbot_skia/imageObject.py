@@ -1818,13 +1818,7 @@ class ImageObject:
         self._setPILImage(Image.composite(source, background, mask))
 
     def maskedVariableBlur(self, mask, radius=5.0):
-        from PIL import Image
-        from PIL import ImageFilter
-
-        source = self._pilImage()
-        blurred = source.filter(ImageFilter.GaussianBlur(float(radius)))
-        maskImage = _imageObjectToPIL(mask).resize(source.size).convert("L")
-        self._setPILImage(Image.composite(blurred, source, maskImage))
+        self._setPILImage(_maskedVariableBlurImage(self._pilImage(), _imageObjectToPIL(mask), radius))
 
     def edgePreserveUpsampleFilter(self, smallImage, spatialSigma=3.0, lumaSigma=0.15):
         from PIL import Image
@@ -2944,6 +2938,39 @@ def _bokehBlurImage(image, radius, ringAmount, ringSize, softness):
     source = image.convert("RGBA")
     channels = [channel.filter(kernel) for channel in source.split()]
     return Image.merge("RGBA", channels)
+
+
+def _maskedVariableBlurImage(image, mask, radius):
+    from PIL import Image
+    from PIL import ImageFilter
+
+    source = image.convert("RGBA")
+    maskImage = mask.resize(source.size).convert("L")
+    radius = max(0, float(radius))
+    if radius == 0:
+        return source
+    levels = 8
+    blurredLevels = [
+        source if level == 0 else source.filter(ImageFilter.GaussianBlur(radius * level / levels))
+        for level in range(levels + 1)
+    ]
+    maskPixels = maskImage.load()
+    levelPixels = [blurred.load() for blurred in blurredLevels]
+    result = Image.new("RGBA", source.size)
+    resultPixels = result.load()
+    for y in range(source.height):
+        for x in range(source.width):
+            position = maskPixels[x, y] / 255 * levels
+            lower = int(math.floor(position))
+            upper = min(levels, lower + 1)
+            amount = position - lower
+            if amount <= 0:
+                resultPixels[x, y] = levelPixels[lower][x, y]
+            else:
+                a = levelPixels[lower][x, y]
+                b = levelPixels[upper][x, y]
+                resultPixels[x, y] = tuple(_clampByte(a[index] * (1 - amount) + b[index] * amount) for index in range(4))
+    return result
 
 
 def _spotLightImage(image, lightPosition, lightPointsAt, brightness, concentration, color):
