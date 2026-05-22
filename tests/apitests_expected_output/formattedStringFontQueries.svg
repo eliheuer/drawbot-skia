@@ -10,4 +10,7 @@
 	<text transform="translate(24 128)" font-size="10" font-family="Helvetica" x="0, 7.2216797, 12.783203, 21.113281, 26.674805, 32.236328, 35.014648, 37.236328, 42.797852, 47.797852, 50.576172, 56.137695, 61.699219, 66.699219, 72.260742, 77.260742, 80.039062, 82.817383, " y="0, ">
 			Named instances: 6
 	</text>
+	<text transform="translate(24 162)" font-size="18" font-weight="800" font-stretch="ultra-expanded" font-family="MutatorMathTest" x="0, 22.860001, 47.717999, 66.977997, 90.666, 95.166, 119.808, 138.168, 161.856, " y="0, ">
+			BOLD WIDE
+	</text>
 </svg>

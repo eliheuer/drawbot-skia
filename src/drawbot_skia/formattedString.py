@@ -1,5 +1,5 @@
 import os
-from .gstate import TextStyle, _cmykArgs, _colorArgs, _getName
+from .gstate import TextStyle, _cmykArgs, _colorArgs, _getName, _namedInstances
 from .shaping import getFeatures
 
 
@@ -196,23 +196,19 @@ class FormattedString:
         return variations
 
     def listNamedInstances(self, fontNameOrPath=None, fontNumber=0):
-        ttFont = self._textStyleForFont(fontNameOrPath).ttFont
-        instances = {}
-        if "fvar" in ttFont:
-            nameTable = ttFont["name"]
-            psName = _getName(nameTable, 6)
-            for instance in ttFont["fvar"].instances:
-                if instance.postscriptNameID != 0xFFFF:
-                    name = _getName(nameTable, instance.postscriptNameID)
-                else:
-                    instanceStyleName = _getName(nameTable, instance.subfamilyNameID)
-                    styleName = _getName(nameTable, 2)
-                    if instanceStyleName == styleName:
-                        name = psName
-                    else:
-                        name = psName + "_" + instanceStyleName
-                instances[name] = instance.coordinates
-        return instances
+        return _namedInstances(self._textStyleForFont(fontNameOrPath).ttFont)
+
+    def fontNamedInstance(self, name, fontNameOrPath=None):
+        instances = self.listNamedInstances(fontNameOrPath)
+        try:
+            variations = dict(instances[name])
+        except KeyError:
+            raise KeyError(name) from None
+        if fontNameOrPath is not None:
+            self.font(fontNameOrPath)
+        self._variations.clear()
+        self._variations.update(variations)
+        return dict(self._variations)
 
     def appendGlyph(self, *glyphNames):
         cmap = self._ttFont().getBestCmap() or {}

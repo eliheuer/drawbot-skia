@@ -16,8 +16,12 @@ variations = t.listFontVariations()
 instances = t.listNamedInstances()
 assert set(variations) == {"wdth", "wght"}
 assert "MutatorMathTest-BoldWide" in instances
+selectedInstance = t.fontNamedInstance("MutatorMathTest-BoldWide")
+assert selectedInstance == instances["MutatorMathTest-BoldWide"]
+t += "BOLD WIDE"
 
 fill(0)
 text("Source Serif features: " + ", ".join(features[:8]), (24, 130))
 text("Mutator Sans axes: " + ", ".join(sorted(variations)), (24, 96))
 text("Named instances: " + str(len(instances)), (24, 62))
+text(t, (24, 28))

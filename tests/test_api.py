@@ -401,6 +401,14 @@ def test_formattedString_font_feature_queries():
     instances = t.listNamedInstances()
     assert "MutatorMathTest-BoldWide" in instances
     assert instances["MutatorMathTest-BoldWide"]["wght"] == 1000.0
+    namedInstance = t.fontNamedInstance("MutatorMathTest-BoldWide")
+    assert namedInstance == instances["MutatorMathTest-BoldWide"]
+    assert t.textProperties()["variations"]["wdth"] == 1000.0
+    db = Drawing()
+    db.font(mutatorSans)
+    assert db.fontNamedInstance("MutatorMathTest-BoldWide") == namedInstance
+    with pytest.raises(KeyError):
+        t.fontNamedInstance("notAnInstance")
 
 
 def test_cmyk_color_arguments():

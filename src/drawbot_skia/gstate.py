@@ -257,24 +257,19 @@ class GraphicsStateMixin:
         return variations
 
     def listNamedInstances(self):
-        ttFont = self.textStyle.ttFont
-        instances = {}
-        if "fvar" in ttFont:
-            nameTable = ttFont["name"]
-            psName = _getName(nameTable, 6)
-            for instance in ttFont["fvar"].instances:
-                if instance.postscriptNameID != 0xFFFF:
-                    name = _getName(nameTable, instance.postscriptNameID)
-                else:
-                    instanceStyleName = _getName(nameTable, instance.subfamilyNameID)
-                    styleName = _getName(nameTable, 2)
-                    # A dodgy heuristic here:
-                    if instanceStyleName == styleName:
-                        name = psName
-                    else:
-                        name = psName + "_" + instanceStyleName
-                instances[name] = instance.coordinates
-        return instances
+        return _namedInstances(self.textStyle.ttFont)
+
+    def fontNamedInstance(self, name, fontNameOrPath=None):
+        textStyle = self.textStyle
+        if fontNameOrPath is not None:
+            textStyle = textStyle.copy(font=fontNameOrPath)
+        instances = _namedInstances(textStyle.ttFont)
+        try:
+            variations = dict(instances[name])
+        except KeyError:
+            raise KeyError(name) from None
+        self.textStyle = textStyle.copy(variations=variations)
+        return variations
 
 
 def _getName(nameTable, nameID):
@@ -284,6 +279,26 @@ def _getName(nameTable, nameID):
     if nameRecord is not None:
         return nameRecord.toUnicode()
     return None
+
+
+def _namedInstances(ttFont):
+    instances = {}
+    if "fvar" in ttFont:
+        nameTable = ttFont["name"]
+        psName = _getName(nameTable, 6)
+        for instance in ttFont["fvar"].instances:
+            if instance.postscriptNameID != 0xFFFF:
+                name = _getName(nameTable, instance.postscriptNameID)
+            else:
+                instanceStyleName = _getName(nameTable, instance.subfamilyNameID)
+                styleName = _getName(nameTable, 2)
+                # A dodgy heuristic here:
+                if instanceStyleName == styleName:
+                    name = psName
+                else:
+                    name = psName + "_" + instanceStyleName
+            instances[name] = instance.coordinates
+    return instances
 
 
 class GraphicsState(GraphicsStateMixin):
