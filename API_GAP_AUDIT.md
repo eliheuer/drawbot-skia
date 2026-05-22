@@ -23,7 +23,7 @@ The fork has moved past the original upstream README blockers for animated GIF e
 The remaining parity work is concentrated in:
 
 - `ImageObject`, where many methods are cross-platform Pillow-backed approximations instead of Core Image-equivalent implementations;
-- true pixel parity for text layout and shaping where DrawBot delegates to macOS CoreText.
+- true pixel parity for text layout and shaping where DrawBot delegates to macOS CoreText; tracked in [#12](https://github.com/eliheuer/drawbot-skia/issues/12).
 
 The macOS/AppKit/PDFKit bridge APIs are intentionally out of scope for drawbot-skia's cross-platform package target. Their method names are present as explicit compatibility stubs that raise `DrawbotError`, so they should not be counted as open implementation gaps.
 
@@ -341,3 +341,4 @@ Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-
 ## Recommended Next Work
 
 1. Decide whether the Pillow-backed `ImageObject` approximations are sufficient for this fork or whether specific filters need Core Image-equivalent behavior; umbrella tracked in [#2](https://github.com/eliheuer/drawbot-skia/issues/2), with specific follow-up issues [#8](https://github.com/eliheuer/drawbot-skia/issues/8), [#9](https://github.com/eliheuer/drawbot-skia/issues/9), and [#10](https://github.com/eliheuer/drawbot-skia/issues/10).
+2. Build macOS DrawBot comparison fixtures for CoreText-backed text layout, shaping, hyphenation, and BezierPath text outlines; tracked in [#12](https://github.com/eliheuer/drawbot-skia/issues/12).
