@@ -1615,6 +1615,44 @@ def test_imageObject_canny_edge_detector_uses_hysteresis_and_perceptual(tmpdir):
     assert [perceptual._pilImage().getpixel((x, 0))[0] for x in range(6)] == [0, 255, 255, 255, 255, 255]
 
 
+def test_imageObject_line_overlay_uses_noise_sharpness_and_contrast(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "line-overlay.png"
+    image = Image.new("RGBA", (7, 3), (100, 100, 100, 121))
+    for x in range(7):
+        image.putpixel((x, 1), (100 + x * 10, 100 + x * 10, 100 + x * 10, 121))
+    image.putpixel((3, 1), (240, 240, 240, 121))
+    image.save(imagePath)
+
+    base = ImageObject(imagePath)
+    assert base.lineOverlay(NRNoiseLevel=0, NRSharpness=0, contrast=0, threshold=0.2, edgeIntensity=1) is None
+    assert [[base._pilImage().getpixel((x, y))[0] for x in range(7)] for y in range(3)] == [
+        [255, 255, 255, 255, 255, 255, 255],
+        [255, 255, 0, 255, 255, 255, 255],
+        [255, 255, 255, 255, 255, 255, 255],
+    ]
+    assert base._pilImage().getpixel((3, 1))[3] == 121
+
+    denoised = ImageObject(imagePath)
+    assert denoised.lineOverlay(NRNoiseLevel=0.1, NRSharpness=0, contrast=0, threshold=0.2, edgeIntensity=1) is None
+    assert [[denoised._pilImage().getpixel((x, y))[0] for x in range(7)] for y in range(3)] == [
+        [255, 255, 255, 255, 255, 255, 255],
+        [255, 0, 0, 0, 0, 0, 255],
+        [255, 255, 255, 255, 255, 255, 255],
+    ]
+
+    sharpened = ImageObject(imagePath)
+    assert sharpened.lineOverlay(NRNoiseLevel=0, NRSharpness=1, contrast=0, threshold=0.2, edgeIntensity=1) is None
+    assert [[sharpened._pilImage().getpixel((x, y))[0] for x in range(7)] for y in range(3)] == [
+        [255, 255, 255, 255, 255, 255, 255],
+        [255, 255, 255, 255, 255, 255, 255],
+        [255, 255, 255, 255, 255, 255, 255],
+    ]
+
+    highContrast = ImageObject(imagePath)
+    assert highContrast.lineOverlay(NRNoiseLevel=0, NRSharpness=0, contrast=100, threshold=0.8, edgeIntensity=1) is None
+    assert [highContrast._pilImage().getpixel((x, 1))[0] for x in range(7)] == [0, 0, 0, 255, 0, 255, 255]
+
+
 def test_imageObject_pixellate_uses_center(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "pixellate.png"
     image = Image.new("RGBA", (6, 1))

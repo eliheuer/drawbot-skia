@@ -1349,10 +1349,21 @@ class ImageObject:
         threshold=0.1,
         contrast=50.0,
     ):
+        from PIL import ImageEnhance
         from PIL import ImageFilter
 
         image = self._pilImage()
-        edges = image.filter(ImageFilter.FIND_EDGES).convert("L")
+        source = image
+        noiseRadius = max(0, int(round(float(NRNoiseLevel) * 20)))
+        if noiseRadius:
+            source = source.filter(ImageFilter.MedianFilter(noiseRadius * 2 + 1))
+        sharpness = max(0, float(NRSharpness))
+        if sharpness:
+            source = source.filter(ImageFilter.UnsharpMask(percent=int(sharpness * 250)))
+        edges = source.filter(ImageFilter.FIND_EDGES).convert("L")
+        contrast = max(0, float(contrast))
+        if contrast:
+            edges = ImageEnhance.Contrast(edges).enhance(1 + contrast / 50)
         limit = _clampByte(float(threshold) * 255)
         edges = edges.point(lambda value: 255 if value > limit else 0)
         overlay = _mergeRGBA(edges, edges, edges, image.getchannel("A"))
