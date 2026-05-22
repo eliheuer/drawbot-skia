@@ -83,6 +83,7 @@ Notes:
 - `traceImage()` has been added using DrawBot's external-tool model: it requires `mkbitmap` and `potrace`, raises `DrawbotError` if they are unavailable, imports the traced SVG path data into the `BezierPath`, and documents the optional system dependency in the README.
 - `optimizePath()` has been added for DrawBot's trailing-empty-`moveTo` cleanup behavior.
 - `textBox()` now supports plain-string hyphenation and `FormattedString` input when converting wrapped text into path outlines.
+- transformed arc/oval conic extraction can still lose precision because skia-python exposes an unusable `Path.Iter.conicWeight()` value in this environment; tracked in [#14](https://github.com/eliheuer/drawbot-skia/issues/14).
 
 ## `FormattedString` Gaps
 
@@ -343,3 +344,4 @@ Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-
 
 1. Decide whether the Pillow-backed `ImageObject` approximations are sufficient for this fork or whether specific filters need Core Image-equivalent behavior; umbrella tracked in [#2](https://github.com/eliheuer/drawbot-skia/issues/2), with specific follow-up issues [#8](https://github.com/eliheuer/drawbot-skia/issues/8), [#9](https://github.com/eliheuer/drawbot-skia/issues/9), and [#10](https://github.com/eliheuer/drawbot-skia/issues/10).
 2. Build macOS DrawBot comparison fixtures for CoreText-backed text layout, shaping, hyphenation, and BezierPath text outlines; tracked in [#12](https://github.com/eliheuer/drawbot-skia/issues/12).
+3. Revisit transformed conic extraction when skia-python exposes reliable conic weights; tracked in [#14](https://github.com/eliheuer/drawbot-skia/issues/14).

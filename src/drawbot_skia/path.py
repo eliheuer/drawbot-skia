@@ -239,8 +239,8 @@ class BezierPath(BasePen):
                 # https://github.com/kyamagu/skia-python/issues/116
                 # if abs(it.conicWeight() - 0.707...) > 1e-10:
                 #     logging.warning("unsupported conic form (weight != sqrt(2)/2): conic to cubic conversion will be bad")
-                # TODO: we should fall back to skia.Path.ConvertConicToQuads(),
-                # but that call is currently also not working.
+                # TODO(#14): fall back to skia.Path.ConvertConicToQuads()
+                # once skia-python exposes a reliable conic weight.
                 pen.curveTo(*_convertConicToCubicDirty(*points))
             elif penVerb == "closePath":
                 needEndPath = False
@@ -564,9 +564,10 @@ def _convertConicToCubicDirty(pt1, pt2, pt3):
     #
     # This no longer holds once a path has been transformed with skew or x/y
     # scale, in which case we need to fall back to
-    # skia.Path.ConvertConicToQuads(), but that is blocked by
-    # https://github.com/kyamagu/skia-python/issues/115
-    # https://github.com/justvanrossum/drawbot-skia/issues/7
+    # skia.Path.ConvertConicToQuads(), but that needs a reliable conic weight
+    # from skia-python's path iterator.
+    # https://github.com/kyamagu/skia-python/issues/116
+    # https://github.com/eliheuer/drawbot-skia/issues/14
     #
     (x1, y1), (x2, y2), (x3, y3) = pt1, pt2, pt3
     dx1 = x2 - x1
@@ -589,8 +590,8 @@ def _convertConicToCubicDirty(pt1, pt2, pt3):
             logging.warning(
                 "unsupported conic form (non-circular, non-90-degrees): conic to cubic conversion will be bad"
             )
-            # TODO: we should fall back to skia.Path.ConvertConicToQuads(),
-            # but that call is currently not working.
+            # TODO(#14): fall back to skia.Path.ConvertConicToQuads()
+            # once skia-python exposes a reliable conic weight.
         angleHalf = angleDiff / 2
         radius = d1 / math.tan(angleHalf)
         D = radius * (1 - math.cos(angleHalf))
