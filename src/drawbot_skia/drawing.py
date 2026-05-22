@@ -225,9 +225,7 @@ class Drawing:
             for index in range(len(self._document._pictures))
         )
 
-    def numberOfPages(self, path=None):
-        if path is None:
-            return self.pageCount()
+    def numberOfPages(self, path):
         return _imageNumberOfPages(path)
 
     def imageSize(self, path, pageNumber=None):

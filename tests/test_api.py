@@ -297,7 +297,8 @@ def test_newPage_dimensions_arguments():
 def test_pageCount(tmpdir):
     db = Drawing()
     assert db.pageCount() == 0
-    assert db.numberOfPages() == 0
+    with pytest.raises(TypeError):
+        db.numberOfPages()
     db.newPage(100, 100)
     assert db.pageCount() == 1
     db.newPage(100, 100)
