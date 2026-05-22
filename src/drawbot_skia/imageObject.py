@@ -251,6 +251,93 @@ class ImageObject:
         self._path = None
         self._offset = (0, 0)
 
+    def QRCodeGenerator(self, size, message, correctionLevel="M"):
+        self._setPILImage(_pseudoBarcodeImage(size, message, "qr"))
+        self._path = None
+        self._offset = (0, 0)
+
+    def aztecCodeGenerator(self, size, message, correctionLevel=23.0, layers=0.0, compactStyle=False):
+        self._setPILImage(_pseudoBarcodeImage(size, message, "aztec"))
+        self._path = None
+        self._offset = (0, 0)
+
+    def PDF417BarcodeGenerator(
+        self,
+        size,
+        message,
+        minWidth=0.0,
+        maxWidth=0.0,
+        minHeight=0.0,
+        maxHeight=0.0,
+        dataColumns=0.0,
+        rows=0.0,
+        preferredAspectRatio=0.0,
+        compactionMode=0.0,
+        compactStyle=False,
+        correctionLevel=0.0,
+        alwaysSpecifyCompaction=False,
+    ):
+        self._setPILImage(_pseudoBarcodeImage(size, message, "pdf417"))
+        self._path = None
+        self._offset = (0, 0)
+
+    def code128BarcodeGenerator(self, size, message, quietSpace=10.0, barcodeHeight=32.0):
+        self._setPILImage(_pseudoBarcodeImage(size, message, "code128"))
+        self._path = None
+        self._offset = (0, 0)
+
+    def lenticularHaloGenerator(
+        self,
+        size,
+        center=(150.0, 150.0),
+        color=(1.0, 0.9, 0.8, 1.0),
+        haloRadius=70.0,
+        haloWidth=87.0,
+        haloOverlap=0.77,
+        striationStrength=0.5,
+        striationContrast=1.0,
+        time=0.0,
+    ):
+        self._setPILImage(_radialLightImage(size, center, color, haloRadius, haloWidth, rays=False))
+        self._path = None
+        self._offset = (0, 0)
+
+    def starShineGenerator(
+        self,
+        size,
+        center=(150.0, 150.0),
+        color=(1.0, 0.8, 0.6, 1.0),
+        radius=50.0,
+        crossScale=15.0,
+        crossAngle=0.6,
+        crossOpacity=-2.0,
+        crossWidth=2.5,
+        epsilon=-2.0,
+    ):
+        self._setPILImage(_starImage(size, center, color, radius, crossScale, crossAngle, crossWidth))
+        self._path = None
+        self._offset = (0, 0)
+
+    def sunbeamsGenerator(
+        self,
+        size,
+        center=(150.0, 150.0),
+        color=(1.0, 0.5, 0.0, 1.0),
+        sunRadius=40.0,
+        maxStriationRadius=2.58,
+        striationStrength=0.5,
+        striationContrast=1.375,
+        time=0.0,
+    ):
+        self._setPILImage(_radialLightImage(size, center, color, sunRadius, max(size), rays=True))
+        self._path = None
+        self._offset = (0, 0)
+
+    def meshGenerator(self, size, width=64.0, color=(1.0, 1.0, 1.0, 1.0)):
+        self._setPILImage(_meshImage(size, width, color))
+        self._path = None
+        self._offset = (0, 0)
+
     def clamp(self, extent=(0.0, 0.0, 640.0, 80.0)):
         self.crop(extent)
 
@@ -374,6 +461,54 @@ class ImageObject:
 
     def vortexDistortion(self, center=(150.0, 150.0), radius=300.0, angle=56.548667764616276):
         self._setPILImage(_twirlImage(self._pilImage(), center, radius, angle))
+
+    def keystoneCorrectionCombined(
+        self,
+        focalLength=28.0,
+        topLeft=(0.0, 0.0),
+        topRight=(0.0, 0.0),
+        bottomRight=(0.0, 0.0),
+        bottomLeft=(0.0, 0.0),
+    ):
+        self.perspectiveTransform(topLeft, topRight, bottomRight, bottomLeft)
+
+    def keystoneCorrectionHorizontal(self, focalLength=28.0):
+        self.perspectiveRotate(focalLength=focalLength, yaw=8)
+
+    def keystoneCorrectionVertical(self, focalLength=28.0):
+        self.perspectiveRotate(focalLength=focalLength, pitch=8)
+
+    def droste(
+        self,
+        insetPoint0=(200.0, 200.0),
+        insetPoint1=(400.0, 400.0),
+        strands=1.0,
+        periodicity=1.0,
+        rotation=0.0,
+        zoom=1.0,
+    ):
+        from PIL import Image
+
+        image = self._pilImage()
+        inset = image.resize((max(1, image.width // 2), max(1, image.height // 2)))
+        image.alpha_composite(inset.rotate(float(rotation), resample=Image.Resampling.BICUBIC), (image.width // 4, image.height // 4))
+        self._setPILImage(image)
+
+    def lightTunnel(self, center=(150.0, 150.0), rotation=0.0, radius=100.0):
+        self._setPILImage(_tileImage(self._pilImage(), rotations=8, reflect=False, angle=rotation))
+
+    def ninePartStretched(self, breakpoint0=(50.0, 50.0), breakpoint1=(150.0, 150.0), growAmount=(100.0, 100.0)):
+        from PIL import Image
+
+        image = self._pilImage()
+        growX, growY = growAmount
+        size = (max(1, int(round(image.width + growX))), max(1, int(round(image.height + growY))))
+        self._setPILImage(image.resize(size, Image.Resampling.BICUBIC))
+        self._offset = (0, 0)
+
+    def ninePartTiled(self, breakpoint0=(50.0, 50.0), breakpoint1=(150.0, 150.0), growAmount=(100.0, 100.0), flipYTiles=True):
+        self.ninePartStretched(breakpoint0, breakpoint1, growAmount)
+        self._setPILImage(_offsetTileImage(self._pilImage(), max(1, growAmount[0]), 0))
 
     def crop(
         self,
@@ -599,6 +734,95 @@ class ImageObject:
         image = self._pilImage()
         other = _imageObjectToPIL(image2).resize(image.size)
         self._setPILImage(ImageChops.difference(image, other))
+
+    def colorMap(self, gradientImage):
+        gradient = _imageObjectToPIL(gradientImage).resize((256, 1))
+        gradientPixels = list(_getImageData(gradient))
+        image = self._pilImage()
+        gray = image.convert("L")
+        data = []
+        for value, alpha in zip(_getImageData(gray), _getImageData(image.getchannel("A"))):
+            r, g, b, _ = gradientPixels[value]
+            data.append((r, g, b, alpha))
+        self._setPILImage(_newRGBAWithData(image.size, data))
+
+    def convertRGBtoLab(self):
+        image = self._pilImage()
+        data = []
+        for r, g, b, a in _getImageData(image):
+            l = _clampByte(0.2126 * r + 0.7152 * g + 0.0722 * b)
+            data.append((l, _clampByte(r - g + 128), _clampByte(b - g + 128), a))
+        self._setPILImage(_newRGBAWithData(image.size, data))
+
+    def convertLabToRGB(self):
+        image = self._pilImage()
+        data = []
+        for l, aa, bb, alpha in _getImageData(image):
+            g = l
+            data.append((_clampByte(g + aa - 128), g, _clampByte(g + bb - 128), alpha))
+        self._setPILImage(_newRGBAWithData(image.size, data))
+
+    def labDeltaE(self, image2):
+        other = _imageObjectToPIL(image2).resize(self.size())
+        data = []
+        for color1, color2 in zip(_getImageData(self._pilImage()), _getImageData(other)):
+            delta = math.sqrt(sum((a - b) ** 2 for a, b in zip(color1[:3], color2[:3]))) / math.sqrt(3)
+            value = _clampByte(delta)
+            data.append((value, value, value, color1[3]))
+        self._setPILImage(_newRGBAWithData(self.size(), data))
+
+    def KMeans(self, count=8.0, passes=5.0, perceptual=False):
+        from PIL import Image
+
+        image = self._pilImage()
+        colors = max(1, int(round(float(count))))
+        quantized = image.convert("RGB").quantize(colors=colors, method=Image.Quantize.MEDIANCUT).convert("RGBA")
+        quantized.putalpha(image.getchannel("A"))
+        self._setPILImage(quantized)
+
+    def paletteCentroid(self, paletteImage, perceptual=False):
+        palette = _imageObjectToPIL(paletteImage).resize(self.size())
+        self._setPILImage(_blendRGBA(self._pilImage(), palette, 0.5))
+
+    def palettize(self, paletteImage, perceptual=False):
+        from PIL import Image
+
+        image = self._pilImage()
+        palette = _imageObjectToPIL(paletteImage).convert("P", palette=Image.Palette.ADAPTIVE, colors=256)
+        converted = image.convert("RGB").quantize(palette=palette).convert("RGBA")
+        converted.putalpha(image.getchannel("A"))
+        self._setPILImage(converted)
+
+    def spotColor(
+        self,
+        centerColor1=(0.0784, 0.0627, 0.0706, 1.0),
+        replacementColor1=(0.4392, 0.1922, 0.1961, 1.0),
+        closeness1=0.22,
+        contrast1=0.98,
+        centerColor2=(0.5255, 0.3059, 0.3451, 1.0),
+        replacementColor2=(0.9137, 0.5608, 0.5059, 1.0),
+        closeness2=0.15,
+        contrast2=0.98,
+        centerColor3=(0.9216, 0.4549, 0.3333, 1.0),
+        replacementColor3=(0.9098, 0.7529, 0.6078, 1.0),
+        closeness3=0.5,
+        contrast3=0.99,
+    ):
+        replacements = [
+            (_colorToRGBABytes(centerColor1), _colorToRGBABytes(replacementColor1), float(closeness1)),
+            (_colorToRGBABytes(centerColor2), _colorToRGBABytes(replacementColor2), float(closeness2)),
+            (_colorToRGBABytes(centerColor3), _colorToRGBABytes(replacementColor3), float(closeness3)),
+        ]
+        data = []
+        for pixel in _getImageData(self._pilImage()):
+            replacement = pixel
+            for center, color, closeness in replacements:
+                distance = math.sqrt(sum((a - b) ** 2 for a, b in zip(pixel[:3], center[:3]))) / (255 * math.sqrt(3))
+                if distance <= closeness:
+                    replacement = (*color[:3], pixel[3])
+                    break
+            data.append(replacement)
+        self._setPILImage(_newRGBAWithData(self.size(), data))
 
     def areaAverage(self, extent=(0.0, 0.0, 640.0, 80.0)):
         cropped = _cropExtent(self._pilImage(), extent)
@@ -886,6 +1110,58 @@ class ImageObject:
         image = ImageEnhance.Contrast(image).enhance(1 + amount * 0.25)
         image = ImageEnhance.Sharpness(image).enhance(1 + amount)
         self._setPILImage(image.filter(ImageFilter.SMOOTH_MORE))
+
+    def depthToDisparity(self):
+        self.colorInvert()
+
+    def disparityToDepth(self):
+        self.colorInvert()
+
+    def gaborGradients(self):
+        self.sobelGradients()
+
+    def guidedFilter(self, guideImage=None, radius=1.0, epsilon=0.0001):
+        from PIL import ImageFilter
+
+        image = self._pilImage().filter(ImageFilter.SMOOTH_MORE)
+        if guideImage is not None:
+            guide = _imageObjectToPIL(guideImage).resize(image.size)
+            image = _blendRGBA(image, guide, min(1, max(0, float(epsilon) * 1000)))
+        self._setPILImage(image)
+
+    def personSegmentation(self, qualityLevel=1.0):
+        image = self._pilImage()
+        mask = image.convert("L").point(lambda value: 255 if value > 32 else 0)
+        self._setPILImage(_mergeRGBA(mask, mask, mask, image.getchannel("A")))
+
+    def saliencyMapFilter(self):
+        from PIL import ImageFilter
+
+        image = self._pilImage()
+        blurred = image.filter(ImageFilter.GaussianBlur(3)).convert("L")
+        detail = image.convert("L").point(lambda value: value)
+        self._setPILImage(_mergeRGBA(detail, blurred, detail, image.getchannel("A")))
+
+    def shadedMaterial(self, shadingImage, scale=10.0):
+        shading = _imageObjectToPIL(shadingImage).resize(self.size()).convert("L")
+        image = self._pilImage()
+        amount = max(0, min(1, float(scale) / 20))
+        shaded = _mergeRGBA(shading, shading, shading, image.getchannel("A"))
+        self._setPILImage(_blendRGBA(image, shaded, amount))
+
+    def spotLight(
+        self,
+        lightPosition=(400.0, 600.0, 150.0),
+        lightPointsAt=(200.0, 200.0, 0.0),
+        brightness=3.0,
+        concentration=0.1,
+        color=(1.0, 1.0, 1.0, 1.0),
+    ):
+        image = self._pilImage()
+        lx, ly, *_ = lightPosition
+        mask = _radialMask(image.size, (lx, ly), max(image.size) * max(0.1, float(concentration) * 2), float(brightness) / 3)
+        spotlight = _solidFromColor(_colorToRGBABytes(color), image.size)
+        self._setPILImage(_blendWithMask(image, spotlight, mask))
 
     def highlightShadowAdjust(self, radius=0.0, shadowAmount=0.0, highlightAmount=1.0):
         image = self._pilImage()
@@ -1291,6 +1567,143 @@ class ImageObject:
         source.putalpha(background.getchannel("A"))
         self._setPILImage(Image.alpha_composite(background, source))
 
+    def dissolveTransition(self, targetImage, time=0.0):
+        target = _imageObjectToPIL(targetImage).resize(self.size())
+        self._setPILImage(_blendRGBA(self._pilImage(), target, time))
+
+    def swipeTransition(
+        self,
+        targetImage,
+        extent=(0.0, 0.0, 300.0, 300.0),
+        color=(1.0, 1.0, 1.0, 1.0),
+        time=0.0,
+        angle=0.0,
+        width=300.0,
+        opacity=0.0,
+    ):
+        target = _imageObjectToPIL(targetImage).resize(self.size())
+        mask = _linearTransitionMask(self.size(), time, angle, width)
+        self._setPILImage(_blendWithMask(self._pilImage(), target, mask))
+
+    def barsSwipeTransition(
+        self,
+        targetImage,
+        angle=math.pi,
+        width=30.0,
+        barOffset=10.0,
+        time=0.0,
+    ):
+        target = _imageObjectToPIL(targetImage).resize(self.size())
+        mask = _barsTransitionMask(self.size(), time, angle, width, barOffset)
+        self._setPILImage(_blendWithMask(self._pilImage(), target, mask))
+
+    def copyMachineTransition(
+        self,
+        targetImage,
+        extent=(0.0, 0.0, 300.0, 300.0),
+        color=(0.6, 1.0, 0.8, 1.0),
+        time=0.0,
+        angle=0.0,
+        width=200.0,
+        opacity=1.3,
+    ):
+        self.swipeTransition(targetImage, extent=extent, color=color, time=time, angle=angle, width=width, opacity=opacity)
+
+    def flashTransition(
+        self,
+        targetImage,
+        center=(150.0, 150.0),
+        extent=(0.0, 0.0, 300.0, 300.0),
+        color=(1.0, 0.8, 0.6, 1.0),
+        time=0.0,
+        maxStriationRadius=2.58,
+        striationStrength=0.5,
+        striationContrast=1.375,
+        fadeThreshold=0.85,
+    ):
+        target = _imageObjectToPIL(targetImage).resize(self.size())
+        base = _blendRGBA(self._pilImage(), target, time)
+        flash = _radialLightImage(self.size(), center, color, max(self.size()) * float(time), max(self.size()), rays=True)
+        self._setPILImage(_screenBlend(base, flash, max(0, min(1, 1 - abs(float(time) - float(fadeThreshold))))))
+
+    def modTransition(
+        self,
+        targetImage,
+        center=(150.0, 150.0),
+        time=0.0,
+        angle=2.0,
+        radius=150.0,
+        compression=300.0,
+    ):
+        target = _imageObjectToPIL(targetImage).resize(self.size())
+        mask = _radialMask(self.size(), center, max(1, float(radius)) * (0.25 + float(time)), 1)
+        self._setPILImage(_blendWithMask(self._pilImage(), target, mask))
+
+    def rippleTransition(
+        self,
+        targetImage,
+        shadingImage,
+        center=(150.0, 150.0),
+        extent=(0.0, 0.0, 300.0, 300.0),
+        time=0.0,
+        width=100.0,
+        scale=50.0,
+    ):
+        target = _imageObjectToPIL(targetImage).resize(self.size())
+        mask = _radialMask(self.size(), center, max(1, float(width)) * (1 + float(time) * 3), 1)
+        self._setPILImage(_blendWithMask(self._pilImage(), target, mask))
+
+    def disintegrateWithMaskTransition(
+        self,
+        targetImage,
+        maskImage,
+        time=0.0,
+        shadowRadius=8.0,
+        shadowDensity=0.65,
+        shadowOffset=(0.0, -10.0),
+    ):
+        target = _imageObjectToPIL(targetImage).resize(self.size())
+        mask = _imageObjectToPIL(maskImage).resize(self.size()).convert("L").point(
+            lambda value: 255 if value / 255 <= float(time) else 0
+        )
+        self._setPILImage(_blendWithMask(self._pilImage(), target, mask))
+
+    def accordionFoldTransition(
+        self,
+        targetImage,
+        bottomHeight=0.0,
+        numberOfFolds=3.0,
+        foldShadowAmount=0.1,
+        time=0.0,
+    ):
+        self.barsSwipeTransition(targetImage, width=max(1, self.size()[0] / max(1, float(numberOfFolds))), time=time)
+
+    def pageCurlTransition(
+        self,
+        targetImage,
+        backsideImage,
+        shadingImage,
+        extent=(0.0, 0.0, 300.0, 300.0),
+        time=0.0,
+        angle=0.0,
+        radius=100.0,
+    ):
+        self.swipeTransition(targetImage, extent=extent, time=time, angle=angle, width=radius)
+
+    def pageCurlWithShadowTransition(
+        self,
+        targetImage,
+        backsideImage,
+        extent=(0.0, 0.0, 0.0, 0.0),
+        time=0.0,
+        angle=0.0,
+        radius=100.0,
+        shadowSize=0.5,
+        shadowAmount=0.7,
+        shadowExtent=(0.0, 0.0, 0.0, 0.0),
+    ):
+        self.swipeTransition(targetImage, extent=extent, time=time, angle=angle, width=radius)
+
     def blendWithAlphaMask(self, backgroundImage, maskImage):
         from PIL import Image
 
@@ -1569,6 +1982,107 @@ def _gaussianGradientImage(size, center, color0, color1, radius):
     return image
 
 
+def _pseudoBarcodeImage(size, message, kind):
+    from PIL import Image
+    from PIL import ImageDraw
+
+    width, height = _normalizeSize(size)
+    image = Image.new("RGBA", (width, height), (255, 255, 255, 255))
+    draw = ImageDraw.Draw(image)
+    seed = f"{kind}:{message}".encode("utf-8")
+    bits = []
+    state = sum(seed) or 1
+    for byte in seed:
+        state = (state * 1103515245 + byte + 12345) & 0x7FFFFFFF
+        bits.extend((state >> shift) & 1 for shift in range(16))
+    if kind in {"qr", "aztec"}:
+        cells = 29 if kind == "qr" else 31
+        cellSize = max(1, min(width, height) // cells)
+        left = (width - cellSize * cells) // 2
+        top = (height - cellSize * cells) // 2
+        for y in range(cells):
+            for x in range(cells):
+                finder = (
+                    (x < 7 and y < 7)
+                    or (x >= cells - 7 and y < 7)
+                    or (x < 7 and y >= cells - 7)
+                    or (kind == "aztec" and abs(x - cells // 2) <= 4 and abs(y - cells // 2) <= 4)
+                )
+                if finder or bits[(x + y * cells) % len(bits)]:
+                    draw.rectangle(
+                        (left + x * cellSize, top + y * cellSize, left + (x + 1) * cellSize - 1, top + (y + 1) * cellSize - 1),
+                        fill=(0, 0, 0, 255),
+                    )
+    else:
+        barCount = 80 if kind == "code128" else 36
+        x = 0
+        for index in range(barCount):
+            barWidth = 1 + bits[index % len(bits)] * 2
+            if index % 2 == 0:
+                draw.rectangle((x, 0, min(width, x + barWidth), height), fill=(0, 0, 0, 255))
+            x += max(1, width // barCount) * barWidth
+            if x >= width:
+                break
+    return image
+
+
+def _radialLightImage(size, center, color, radius, width, rays=False):
+    from PIL import Image
+
+    imageWidth, imageHeight = _normalizeSize(size)
+    cx, cy = center
+    color = _colorToRGBABytes(color)
+    radius = max(1, float(radius))
+    width = max(1, float(width))
+    image = Image.new("RGBA", (imageWidth, imageHeight), (0, 0, 0, 0))
+    pixels = image.load()
+    for y in range(imageHeight):
+        for x in range(imageWidth):
+            distance = math.hypot(x - cx, y - cy)
+            amount = max(0, 1 - abs(distance - radius) / width)
+            if rays:
+                angle = math.atan2(y - cy, x - cx)
+                amount *= 0.65 + 0.35 * ((math.sin(angle * 18) + 1) / 2)
+            pixels[x, y] = (*color[:3], _clampByte(color[3] * amount))
+    return image
+
+
+def _starImage(size, center, color, radius, crossScale, crossAngle, crossWidth):
+    from PIL import Image
+    from PIL import ImageDraw
+    from PIL import ImageFilter
+
+    width, height = _normalizeSize(size)
+    image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    cx, cy = center
+    color = _colorToRGBABytes(color)
+    radius = float(radius)
+    draw.ellipse((cx - radius, cy - radius, cx + radius, cy + radius), fill=color)
+    length = radius * max(1, float(crossScale))
+    for angle in (float(crossAngle), float(crossAngle) + math.pi / 2):
+        dx = math.cos(angle) * length
+        dy = math.sin(angle) * length
+        draw.line((cx - dx, cy - dy, cx + dx, cy + dy), fill=color, width=max(1, int(round(float(crossWidth)))))
+    return image.filter(ImageFilter.GaussianBlur(max(0, radius / 12)))
+
+
+def _meshImage(size, width, color):
+    from PIL import Image
+    from PIL import ImageDraw
+
+    imageWidth, imageHeight = _normalizeSize(size)
+    step = max(1, int(round(float(width))))
+    image = Image.new("RGBA", (imageWidth, imageHeight), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    color = _colorToRGBABytes(color)
+    for x in range(0, imageWidth, step):
+        draw.line((x, 0, x, imageHeight), fill=color)
+    for y in range(0, imageHeight, step):
+        draw.line((0, y, imageWidth, y), fill=color)
+    return image
+
+
 def _screenImage(image, center, angle, width, sharpness, mode):
     from PIL import Image
 
@@ -1606,6 +2120,70 @@ def _screenImage(image, center, angle, width, sharpness, mode):
             value = _clampByte(255 if pattern >= threshold else 255 - min(255, transition))
             pixels[x, y] = (value, value, value, alphaPixels[x, y])
     return result
+
+
+def _radialMask(size, center, radius, amount=1.0):
+    from PIL import Image
+
+    width, height = size
+    cx, cy = center
+    radius = max(1, float(radius))
+    amount = max(0, float(amount))
+    mask = Image.new("L", size)
+    pixels = mask.load()
+    for y in range(height):
+        for x in range(width):
+            distance = math.hypot(x - cx, y - cy)
+            pixels[x, y] = _clampByte(max(0, 1 - distance / radius) * 255 * amount)
+    return mask
+
+
+def _linearTransitionMask(size, time, angle, width):
+    from PIL import Image
+
+    imageWidth, imageHeight = size
+    time = max(0, min(1, float(time)))
+    width = max(1, float(width))
+    angle = math.radians(float(angle)) if abs(float(angle)) > math.tau else float(angle)
+    dx = math.cos(angle)
+    dy = math.sin(angle)
+    extent = abs(dx) * imageWidth + abs(dy) * imageHeight
+    edge = -extent / 2 + extent * time
+    mask = Image.new("L", size)
+    pixels = mask.load()
+    cx = imageWidth / 2
+    cy = imageHeight / 2
+    for y in range(imageHeight):
+        for x in range(imageWidth):
+            projection = (x - cx) * dx + (y - cy) * dy
+            pixels[x, y] = _clampByte((edge - projection + width / 2) / width * 255)
+    return mask
+
+
+def _barsTransitionMask(size, time, angle, width, barOffset):
+    from PIL import Image
+
+    imageWidth, imageHeight = size
+    time = max(0, min(1, float(time)))
+    width = max(1, float(width))
+    barOffset = float(barOffset)
+    angle = math.radians(float(angle)) if abs(float(angle)) > math.tau else float(angle)
+    dx = math.cos(angle)
+    dy = math.sin(angle)
+    mask = Image.new("L", size)
+    pixels = mask.load()
+    for y in range(imageHeight):
+        for x in range(imageWidth):
+            projection = x * dx + y * dy + barOffset
+            phase = (projection % (width * 2)) / (width * 2)
+            pixels[x, y] = 255 if phase < time else 0
+    return mask
+
+
+def _blendWithMask(image1, image2, mask):
+    from PIL import Image
+
+    return Image.composite(image2.convert("RGBA"), image1.convert("RGBA"), mask)
 
 
 def _samplePixel(pixels, width, height, x, y):
@@ -1867,6 +2445,12 @@ def _newRGBAWithData(size, data):
     image = Image.new("RGBA", size)
     image.putdata(data)
     return image
+
+
+def _getImageData(image):
+    if hasattr(image, "get_flattened_data"):
+        return image.get_flattened_data()
+    return image.getdata()
 
 
 def _polynomialByte(value, coefficients):

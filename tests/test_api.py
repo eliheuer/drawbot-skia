@@ -397,8 +397,13 @@ def test_imageObject_blend_and_compositing_batch(tmpdir):
 def test_imageObject_color_and_morphology_batch(tmpdir):
     sourcePath = pathlib.Path(tmpdir) / "source.png"
     otherPath = pathlib.Path(tmpdir) / "other.png"
+    gradientPath = pathlib.Path(tmpdir) / "gradient.png"
     Image.new("RGBA", (12, 12), (80, 120, 200, 255)).save(sourcePath)
     Image.new("RGBA", (12, 12), (200, 80, 40, 255)).save(otherPath)
+    gradient = Image.new("RGBA", (16, 1))
+    for x in range(16):
+        gradient.putpixel((x, 0), (x * 16, 0, 255 - x * 16, 255))
+    gradient.save(gradientPath)
     calls = [
         ("colorClamp", (), {"minComponents": (0.1, 0.1, 0.1, 0), "maxComponents": (0.9, 0.9, 0.9, 1)}),
         ("colorMatrix", (), {"biasVector": (0.05, 0, 0, 0)}),
@@ -407,6 +412,14 @@ def test_imageObject_color_and_morphology_batch(tmpdir):
         ("colorThreshold", (), {"threshold": 0.4}),
         ("colorThresholdOtsu", (), {}),
         ("colorAbsoluteDifference", (otherPath,), {}),
+        ("colorMap", (gradientPath,), {}),
+        ("convertRGBtoLab", (), {}),
+        ("convertLabToRGB", (), {}),
+        ("labDeltaE", (otherPath,), {}),
+        ("KMeans", (), {"count": 4}),
+        ("paletteCentroid", (gradientPath,), {}),
+        ("palettize", (gradientPath,), {}),
+        ("spotColor", (), {}),
         ("mix", (otherPath,), {"amount": 0.5}),
         ("comicEffect", (), {}),
         ("XRay", (), {}),
@@ -438,6 +451,14 @@ def test_imageObject_generator_batch():
         ("roundedRectangleGenerator", ((16, 12),), {"extent": (2, 2, 10, 8)}),
         ("roundedRectangleStrokeGenerator", ((16, 12),), {"extent": (2, 2, 10, 8)}),
         ("blurredRectangleGenerator", ((16, 12),), {"extent": (2, 2, 10, 8), "sigma": 1}),
+        ("QRCodeGenerator", ((16, 12), "drawbot"), {}),
+        ("aztecCodeGenerator", ((16, 12), "drawbot"), {}),
+        ("PDF417BarcodeGenerator", ((16, 12), "drawbot"), {}),
+        ("code128BarcodeGenerator", ((16, 12), "drawbot"), {}),
+        ("lenticularHaloGenerator", ((16, 12),), {"center": (8, 6), "haloRadius": 4, "haloWidth": 6}),
+        ("starShineGenerator", ((16, 12),), {"center": (8, 6), "radius": 3}),
+        ("sunbeamsGenerator", ((16, 12),), {"center": (8, 6), "sunRadius": 3}),
+        ("meshGenerator", ((16, 12),), {"width": 4}),
     ]
     for methodName, args, kwargs in calls:
         im = ImageObject()
@@ -470,6 +491,9 @@ def test_imageObject_simple_geometry_batch(tmpdir):
         ("perspectiveCorrection", (), {"topLeft": (0, 0), "topRight": (20, 1), "bottomRight": (19, 12), "bottomLeft": (1, 11)}),
         ("perspectiveTile", (), {"topLeft": (0, 0), "topRight": (20, 1), "bottomRight": (19, 12), "bottomLeft": (1, 11)}),
         ("perspectiveRotate", (), {"pitch": 5, "yaw": 5, "roll": 5}),
+        ("keystoneCorrectionCombined", (), {"topLeft": (0, 0), "topRight": (20, 1), "bottomRight": (19, 12), "bottomLeft": (1, 11)}),
+        ("keystoneCorrectionHorizontal", (), {}),
+        ("keystoneCorrectionVertical", (), {}),
         ("bumpDistortion", (), {"center": (10, 6), "radius": 8, "scale": 0.4}),
         ("bumpDistortionLinear", (), {"center": (10, 6), "radius": 8, "angle": 15, "scale": 0.4}),
         ("circleSplashDistortion", (), {"center": (10, 6), "radius": 6}),
@@ -482,6 +506,10 @@ def test_imageObject_simple_geometry_batch(tmpdir):
         ("vortexDistortion", (), {"center": (10, 6), "radius": 8, "angle": 15}),
         ("displacementDistortion", (texturePath,), {"scale": 3}),
         ("glassDistortion", (texturePath,), {"scale": 3}),
+        ("droste", (), {"insetPoint0": (4, 3), "insetPoint1": (16, 9)}),
+        ("lightTunnel", (), {"center": (10, 6), "radius": 8}),
+        ("ninePartStretched", (), {"growAmount": (4, 4)}),
+        ("ninePartTiled", (), {"growAmount": (4, 4)}),
     ]
     for methodName, args, kwargs in calls:
         im = ImageObject(imagePath)
@@ -547,10 +575,16 @@ def test_imageObject_analysis_and_stylize_batch(tmpdir):
     calls = [
         ("SRGBToneCurveToLinear", (), {}),
         ("linearToSRGBToneCurve", (), {}),
+        ("depthToDisparity", (), {}),
+        ("disparityToDepth", (), {}),
         ("bokehBlur", (), {"radius": 2}),
         ("discBlur", (), {"radius": 2}),
         ("depthOfField", (), {"radius": 2}),
         ("documentEnhancer", (), {}),
+        ("gaborGradients", (), {}),
+        ("guidedFilter", (), {}),
+        ("personSegmentation", (), {}),
+        ("saliencyMapFilter", (), {}),
         ("highlightShadowAdjust", (), {"shadowAmount": 0.2}),
         ("heightFieldFromMask", (), {"radius": 1}),
         ("lineOverlay", (), {}),
@@ -578,10 +612,44 @@ def test_imageObject_analysis_and_stylize_batch(tmpdir):
     for methodName, args, kwargs in [
         ("maskedVariableBlur", (maskPath,), {"radius": 2}),
         ("edgePreserveUpsampleFilter", (maskPath,), {}),
+        ("shadedMaterial", (maskPath,), {"scale": 2}),
     ]:
         im = ImageObject(imagePath)
         assert getattr(im, methodName)(*args, **kwargs) is None
         assert im.size() == (24, 16)
+
+    im = ImageObject(imagePath)
+    assert im.spotLight(lightPosition=(12, 8, 20), concentration=0.4) is None
+    assert im.size() == (24, 16)
+
+
+def test_imageObject_transition_batch(tmpdir):
+    sourcePath = pathlib.Path(tmpdir) / "source.png"
+    targetPath = pathlib.Path(tmpdir) / "target.png"
+    maskPath = pathlib.Path(tmpdir) / "mask.png"
+    shadingPath = pathlib.Path(tmpdir) / "shading.png"
+    Image.new("RGBA", (18, 14), (220, 40, 80, 255)).save(sourcePath)
+    Image.new("RGBA", (18, 14), (40, 160, 220, 255)).save(targetPath)
+    Image.new("RGBA", (18, 14), (128, 128, 128, 255)).save(maskPath)
+    Image.new("RGBA", (18, 14), (220, 220, 220, 255)).save(shadingPath)
+
+    calls = [
+        ("dissolveTransition", (targetPath,), {"time": 0.5}),
+        ("swipeTransition", (targetPath,), {"time": 0.5, "width": 8}),
+        ("barsSwipeTransition", (targetPath,), {"time": 0.5, "width": 4}),
+        ("copyMachineTransition", (targetPath,), {"time": 0.5, "width": 8}),
+        ("flashTransition", (targetPath,), {"center": (9, 7), "time": 0.5}),
+        ("modTransition", (targetPath,), {"center": (9, 7), "time": 0.5}),
+        ("rippleTransition", (targetPath, shadingPath), {"center": (9, 7), "time": 0.5, "width": 6}),
+        ("disintegrateWithMaskTransition", (targetPath, maskPath), {"time": 0.5}),
+        ("accordionFoldTransition", (targetPath,), {"time": 0.5}),
+        ("pageCurlTransition", (targetPath, maskPath, shadingPath), {"time": 0.5}),
+        ("pageCurlWithShadowTransition", (targetPath, maskPath), {"time": 0.5}),
+    ]
+    for methodName, args, kwargs in calls:
+        im = ImageObject(sourcePath)
+        assert getattr(im, methodName)(*args, **kwargs) is None
+        assert im.size() == (18, 14)
 
 
 def test_numberOfPages_gif(tmpdir):

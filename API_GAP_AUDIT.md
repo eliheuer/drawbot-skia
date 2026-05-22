@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-321 passed, 3 skipped, 3 warnings
+322 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -105,6 +105,7 @@ Current fork supports:
 CMYKHalftone
 SRGBToneCurveToLinear
 XRay
+accordionFoldTransition
 additionCompositing
 affineClamp
 affineTile
@@ -117,6 +118,8 @@ areaMinMax
 areaMinMaxRed
 areaMinimum
 areaMinimumAlpha
+aztecCodeGenerator
+barsSwipeTransition
 blendWithAlphaMask
 blendWithBlueMask
 blendWithMask
@@ -134,6 +137,7 @@ circularScreen
 circularWrap
 clamp
 clearFilters
+code128BarcodeGenerator
 colorAbsoluteDifference
 colorBlendMode
 colorBurnBlendMode
@@ -142,6 +146,7 @@ colorControls
 colorCrossPolynomial
 colorDodgeBlendMode
 colorInvert
+colorMap
 colorMatrix
 colorMonochrome
 colorPolynomial
@@ -151,18 +156,26 @@ colorThresholdOtsu
 columnAverage
 comicEffect
 constantColorGenerator
+convertLabToRGB
+convertRGBtoLab
 copy
+copyMachineTransition
 crop
 crystallize
 darkenBlendMode
 depthOfField
+depthToDisparity
 differenceBlendMode
 discBlur
 dither
+disintegrateWithMaskTransition
+disparityToDepth
 displacementDistortion
+dissolveTransition
 divideBlendMode
 documentEnhancer
 dotScreen
+droste
 edgeWork
 edgePreserveUpsampleFilter
 eightfoldReflectedTile
@@ -170,9 +183,11 @@ edges
 exclusionBlendMode
 exposureAdjust
 falseColor
+flashTransition
 fourfoldReflectedTile
 fourfoldRotatedTile
 fourfoldTranslatedTile
+gaborGradients
 gammaAdjust
 gaussianBlur
 gaussianGradient
@@ -180,6 +195,7 @@ glassDistortion
 glassLozenge
 glideReflectedTile
 gloom
+guidedFilter
 hardLightBlendMode
 hatchedScreen
 heightFieldFromMask
@@ -190,8 +206,15 @@ holeDistortion
 hueAdjust
 hueBlendMode
 kaleidoscope
+keystoneCorrectionCombined
+keystoneCorrectionHorizontal
+keystoneCorrectionVertical
+KMeans
+labDeltaE
 lanczosScaleTransform
+lenticularHaloGenerator
 lightenBlendMode
+lightTunnel
 lineOverlay
 lineScreen
 linearBurnBlendMode
@@ -205,9 +228,11 @@ maskToAlpha
 maskedVariableBlur
 maximumComponent
 maximumCompositing
+meshGenerator
 minimumComponent
 minimumCompositing
 mix
+modTransition
 morphologyGradient
 morphologyMaximum
 morphologyMinimum
@@ -217,11 +242,19 @@ motionBlur
 multiplyBlendMode
 multiplyCompositing
 noiseReduction
+ninePartStretched
+ninePartTiled
 offset
 open
 opTile
 overlayBlendMode
+pageCurlTransition
+pageCurlWithShadowTransition
+paletteCentroid
+palettize
 parallelogramTile
+PDF417BarcodeGenerator
+personSegmentation
 perspectiveCorrection
 perspectiveRotate
 perspectiveTile
@@ -239,15 +272,19 @@ pinchDistortion
 pinLightBlendMode
 pixellate
 pointillize
+QRCodeGenerator
 radialGradient
 randomGenerator
+rippleTransition
 roundedRectangleGenerator
 roundedRectangleStrokeGenerator
 rowAverage
+saliencyMapFilter
 sampleNearest
 saturationBlendMode
 screenBlendMode
 sepiaTone
+shadedMaterial
 sharpenLuminance
 sixfoldReflectedTile
 sixfoldRotatedTile
@@ -259,10 +296,15 @@ sourceAtopCompositing
 sourceInCompositing
 sourceOutCompositing
 sourceOverCompositing
+spotColor
+spotLight
+starShineGenerator
 straightenFilter
 stretchCrop
 stripesGenerator
 subtractBlendMode
+sunbeamsGenerator
+swipeTransition
 temperatureAndTint
 thermal
 torusLensDistortion
@@ -281,15 +323,15 @@ whitePointAdjust
 zoomBlur
 ```
 
-DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 177 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, generators, simple geometry filters, analysis/statistical filters, stylization filters, screen/halftone filters, masked blur/upsample filters, distortion/tiling filters, and blend/compositing modes rather than pixel-identical Core Image implementations.
+DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports all 219 of those method names. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, generators, simple geometry filters, analysis/statistical filters, stylization filters, screen/halftone filters, masked blur/upsample filters, distortion/tiling filters, transition filters, barcode-like generators, segmentation/saliency/material filters, and blend/compositing modes rather than pixel-identical Core Image implementations.
 
-Representative missing groups:
+Representative behavior follow-up groups:
 
-- generators and barcodes: `QRCodeGenerator`, `PDF417BarcodeGenerator`, `aztecCodeGenerator`, `code128BarcodeGenerator`, advanced Core Image generators;
-- blur and stylization filters that still need deeper Core Image-equivalent behavior: `gaborGradients`, `guidedFilter`, `saliencyMapFilter`;
-- color/statistical filters that still need deeper Core Image-equivalent behavior: `KMeans`, `paletteCentroid`, `palettize`, `spotColor`, `labDeltaE`;
-- compositing, transitions, and mask workflows that need deeper Core Image-equivalent semantics: `disintegrateWithMaskTransition`, `pageCurlTransition`, `copyMachineTransition`;
-- geometry and distortion filters that still need deeper Core Image-equivalent behavior: `keystoneCorrectionCombined`, `droste`, `lightTunnel`.
+- generators and barcodes: barcode and advanced Core Image generator method names now exist, but barcode output is deterministic placeholder pattern generation rather than standards-compliant QR/PDF417/Aztec/Code 128 encoding;
+- blur, stylization, saliency, segmentation, material, and lighting filters now exist as Pillow-backed approximations and still need deeper Core Image-equivalent behavior;
+- color/statistical filters now exist as Pillow-backed approximations and still need deeper Core Image-equivalent behavior for true Lab, KMeans, palette, and spot-color semantics;
+- compositing, transition, and mask workflow method names now exist as Pillow-backed approximations and still need deeper Core Image-equivalent transition semantics;
+- geometry and distortion method names now exist as Pillow-backed approximations and still need deeper Core Image-equivalent behavior for keystone, Droste, and advanced warps.
 
 Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-heavy and "huge", this should not be treated as a blocker for the headline text/path parity milestone unless the project explicitly chooses an ImageObject parity target.
 
