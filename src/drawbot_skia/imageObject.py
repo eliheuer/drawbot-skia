@@ -834,20 +834,35 @@ class ImageObject:
             data.append((value, value, value, color1[3]))
         self._setPILImage(_newRGBAWithData(self.size(), data))
 
-    def KMeans(self, count=8.0, passes=5.0, perceptual=False):
+    def KMeans(
+        self,
+        means=None,
+        extent=(0.0, 0.0, 640.0, 80.0),
+        count=8.0,
+        passes=5.0,
+        perceptual=False,
+    ):
         from PIL import Image
 
-        image = self._pilImage()
+        if (
+            isinstance(means, (int, float))
+            and extent == (0.0, 0.0, 640.0, 80.0)
+            and count == 8.0
+        ):
+            count = means
+            means = None
+        image = _cropExtent(self._pilImage(), extent)
         colors = max(1, int(round(float(count))))
-        quantized = image.convert("RGB").quantize(colors=colors, method=Image.Quantize.MEDIANCUT)
-        palette = quantized.getpalette() or []
-        colorCounts = quantized.getcolors(image.width * image.height) or []
-        centers = []
-        for _pixelCount, pixelIndex in sorted(colorCounts, key=lambda item: item[0], reverse=True):
-            offset = pixelIndex * 3
-            color = tuple(palette[offset:offset + 3])
-            if len(color) == 3:
-                centers.append(tuple(float(value) for value in color))
+        centers = _kMeansSeedColors(means) if means is not None else []
+        if len(centers) < colors:
+            quantized = image.convert("RGB").quantize(colors=colors, method=Image.Quantize.MEDIANCUT)
+            palette = quantized.getpalette() or []
+            colorCounts = quantized.getcolors(image.width * image.height) or []
+            for _pixelCount, pixelIndex in sorted(colorCounts, key=lambda item: item[0], reverse=True):
+                offset = pixelIndex * 3
+                color = tuple(palette[offset:offset + 3])
+                if len(color) == 3:
+                    centers.append(tuple(float(value) for value in color))
         pixels = list(_getImageData(image))
         while len(centers) < colors:
             centers.append(tuple(float(value) for value in pixels[len(centers) % len(pixels)][:3]) if pixels else (0.0, 0.0, 0.0))
@@ -2448,6 +2463,18 @@ def _paletteColors(paletteImage):
             colors.append(color)
             seen.add(color)
     return colors or [(0, 0, 0)]
+
+
+def _kMeansSeedColors(means):
+    if isinstance(means, ImageObject) or isinstance(means, (str, os.PathLike)):
+        return [
+            tuple(float(value) for value in color)
+            for color in _paletteColors(_imageObjectToPIL(means))
+        ]
+    colors = []
+    for color in means:
+        colors.append(tuple(float(value) for value in _colorToRGBABytes(color)[:3]))
+    return colors
 
 
 def _palettizedImage(image, palette, perceptual=False):

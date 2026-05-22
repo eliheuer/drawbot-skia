@@ -623,6 +623,27 @@ def test_imageObject_palette_filters(tmpdir):
     assert {pixel[:3] for pixel in kmeansPixels} == {(225, 0, 0), (0, 0, 225)}
     assert sorted(pixel[3] for pixel in kmeansPixels) == [128, 128]
 
+    seeded = ImageObject(sourcePath)
+    assert seeded.KMeans(palettePath, count=2, passes=0) is None
+    assert list(_getImageData(seeded._pilImage())) == [
+        (255, 0, 0, 128),
+        (0, 0, 255, 128),
+    ]
+
+    cropped = ImageObject(sourcePath)
+    assert (
+        cropped.KMeans(
+            [(1, 0, 0), (0, 0, 1)],
+            extent=(0, 0, 2, 1),
+            count=2,
+            passes=1,
+        )
+        is None
+    )
+    croppedPixels = list(_getImageData(cropped._pilImage()))
+    assert croppedPixels[0] == (225, 0, 0, 255)
+    assert croppedPixels[1][3] == 0
+
     palettized = ImageObject(sourcePath)
     assert palettized.palettize(palettePath) is None
     assert list(_getImageData(palettized._pilImage())) == [
