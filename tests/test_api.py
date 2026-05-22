@@ -1853,6 +1853,42 @@ def test_imageObject_vignette_effect_preserves_alpha(tmpdir):
     ]
 
 
+def test_imageObject_bloom_and_gloom_preserve_alpha(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "glow-alpha.png"
+    image = Image.new("RGBA", (5, 1), (20, 40, 60, 40))
+    image.putpixel((2, 0), (240, 200, 120, 200))
+    image.save(imagePath)
+    baseline = ImageObject(imagePath)._pilImage().tobytes()
+
+    bloomZero = ImageObject(imagePath)
+    assert bloomZero.bloom(radius=1, intensity=0) is None
+    assert bloomZero._pilImage().tobytes() == baseline
+
+    bloom = ImageObject(imagePath)
+    assert bloom.bloom(radius=1, intensity=1) is None
+    assert [bloom._pilImage().getpixel((x, 0)) for x in range(5)] == [
+        (51, 77, 102, 40),
+        (83, 102, 115, 40),
+        (247, 223, 164, 200),
+        (83, 102, 115, 40),
+        (51, 77, 102, 40),
+    ]
+
+    gloomZero = ImageObject(imagePath)
+    assert gloomZero.gloom(radius=1, intensity=0) is None
+    assert gloomZero._pilImage().tobytes() == baseline
+
+    gloom = ImageObject(imagePath)
+    assert gloom.gloom(radius=1, intensity=1) is None
+    assert [gloom._pilImage().getpixel((x, 0)) for x in range(5)] == [
+        (32, 45, 64, 40),
+        (70, 77, 70, 40),
+        (108, 105, 82, 200),
+        (70, 77, 70, 40),
+        (32, 45, 64, 40),
+    ]
+
+
 def test_imageObject_masked_variable_blur_uses_mask_as_radius(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "variable-blur.png"
     maskPath = pathlib.Path(tmpdir) / "variable-blur-mask.png"

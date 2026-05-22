@@ -1585,14 +1585,18 @@ class ImageObject:
 
         image = self._pilImage()
         blurred = image.filter(ImageFilter.GaussianBlur(float(radius)))
-        self._setPILImage(_screenBlend(image, blurred, intensity))
+        result = _screenBlend(image, blurred, intensity)
+        result.putalpha(image.getchannel("A"))
+        self._setPILImage(result)
 
     def gloom(self, radius=10.0, intensity=0.5):
         from PIL import ImageFilter
 
         image = self._pilImage()
         blurred = image.filter(ImageFilter.GaussianBlur(float(radius)))
-        self._setPILImage(_blendRGBA(image, blurred, intensity))
+        result = _blendRGBA(image, blurred, intensity)
+        result.putalpha(image.getchannel("A"))
+        self._setPILImage(result)
 
     def additionCompositing(self, backgroundImage):
         from PIL import ImageChops
