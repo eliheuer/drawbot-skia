@@ -1507,7 +1507,7 @@ class ImageObject:
         from PIL import ImageFilter
 
         image = self._pilImage()
-        radius = max(1, int(round(float(radius))))
+        radius = max(0, int(round(float(radius))))
         size = radius * 2 + 1
         maximum = image.filter(ImageFilter.MaxFilter(size))
         minimum = image.filter(ImageFilter.MinFilter(size))

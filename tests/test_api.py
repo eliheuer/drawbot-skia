@@ -2054,6 +2054,18 @@ def test_imageObject_morphology_zero_radius_is_noop(tmpdir):
         (39, 81, 39, 123),
     ]
 
+    gradientZero = ImageObject(imagePath)
+    assert gradientZero.morphologyGradient(radius=0) is None
+    assert [gradientZero._pilImage().getpixel((x, 0)) for x in range(3)] == [(0, 0, 0, 0)] * 3
+
+    gradient = ImageObject(imagePath)
+    assert gradient.morphologyGradient(radius=1) is None
+    assert [gradient._pilImage().getpixel((x, 0)) for x in range(3)] == [
+        (191, 60, 9, 111),
+        (191, 200, 39, 111),
+        (162, 139, 31, 99),
+    ]
+
 
 def test_imageObject_morphology_rectangle_uses_width_and_height(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "morphology-rectangle.png"
