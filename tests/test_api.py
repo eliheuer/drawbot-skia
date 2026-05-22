@@ -254,6 +254,24 @@ def test_imageObject():
     im2.clearFilters()
     assert im2.offset() == (0, 0)
     assert im2.size() == (512, 512)
+    originalColor = db.imagePixelColor(im, (128, 128))
+    im2.colorInvert()
+    invertedColor = db.imagePixelColor(im2, (128, 128))
+    assert invertedColor[:3] != originalColor[:3]
+    im2.clearFilters()
+    im2.photoEffectMono()
+    monoColor = db.imagePixelColor(im2, (128, 128))
+    assert monoColor[0] == monoColor[1] == monoColor[2]
+    im2.clearFilters()
+    im2.sepiaTone(intensity=1)
+    sepiaColor = db.imagePixelColor(im2, (128, 128))
+    assert sepiaColor[0] >= sepiaColor[1] >= sepiaColor[2]
+    im2.clearFilters()
+    im2.boxBlur(radius=2)
+    im2.colorControls(saturation=0.5, brightness=0.1, contrast=1.2)
+    im2.sharpenLuminance()
+    im2.photoEffectNoir()
+    assert im2.size() == (512, 512)
 
 
 def test_numberOfPages_gif(tmpdir):
