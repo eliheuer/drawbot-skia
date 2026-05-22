@@ -3996,8 +3996,6 @@ def _twirlImage(image, center, radius, angle):
     cx, cy = center
     radius = max(1, float(radius))
     angle = float(angle)
-    if abs(angle) > math.tau:
-        angle = math.radians(angle)
 
     def mapPoint(x, y):
         dx = x - cx

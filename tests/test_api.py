@@ -1363,6 +1363,39 @@ def test_imageObject_linear_bump_uses_radian_angle(tmpdir):
     ]
 
 
+def test_imageObject_twirl_uses_large_values_as_radians(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "twirl-angle.png"
+    image = Image.new("RGBA", (7, 7))
+    for y in range(7):
+        for x in range(7):
+            image.putpixel((x, y), (x * 30, y * 30, (x + y) * 20, 255))
+    image.save(imagePath)
+
+    quarter = ImageObject(imagePath)
+    assert quarter.twirlDistortion(center=(3, 3), radius=4, angle=math.pi / 2) is None
+    assert [quarter._pilImage().getpixel((x, 3))[:3] for x in range(7)] == [
+        (0, 90, 60),
+        (30, 120, 100),
+        (60, 120, 120),
+        (90, 90, 120),
+        (120, 60, 120),
+        (150, 60, 140),
+        (180, 90, 180),
+    ]
+
+    largeRadians = ImageObject(imagePath)
+    assert largeRadians.twirlDistortion(center=(3, 3), radius=4, angle=90) is None
+    assert [largeRadians._pilImage().getpixel((x, 3))[:3] for x in range(7)] == [
+        (30, 30, 40),
+        (150, 60, 140),
+        (60, 90, 100),
+        (90, 90, 120),
+        (120, 90, 140),
+        (30, 120, 100),
+        (150, 150, 200),
+    ]
+
+
 def test_imageObject_glass_distortion_uses_centered_texture(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "glass.png"
     texturePath = pathlib.Path(tmpdir) / "glass-texture.png"
