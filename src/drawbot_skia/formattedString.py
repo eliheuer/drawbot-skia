@@ -73,6 +73,11 @@ class FormattedString:
     def lineHeight(self, value):
         self._properties["lineHeight"] = value
 
+    def tabs(self, *tabs):
+        if len(tabs) == 1 and tabs[0] is None:
+            tabs = None
+        self._properties["tabs"] = tabs
+
     def fill(self, *args):
         self._properties["fill"] = _colorArgs(args)
 
@@ -254,6 +259,7 @@ class FormattedString:
                 "variations",
                 "language",
                 "direction",
+                "tabs",
             )
             if name in properties
         }

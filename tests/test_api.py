@@ -295,6 +295,23 @@ def test_writingDirection():
     assert db._gstate.textStyle.direction is None
 
 
+def test_tabs():
+    db = Drawing()
+    db.fontSize(20)
+    db.tabs((50, "left"), (100, "right"), (150, "."))
+    assert db._gstate.textStyle.tabs == ((50, "left"), (100, "right"), (150, "."))
+    assert db.textSize("A\tB")[0] > 50
+    width, runs = db._textLineRuns("A\tB", db._gstate.textStyle)
+    assert len(runs) == 2
+    assert runs[1][0] == 50
+    db.tabs((150, "."))
+    width, runs = db._textLineRuns("\t12.3", db._gstate.textStyle)
+    decimalX = runs[0][0] + db._gstate.textStyle.shape("12").endPos[0]
+    assert decimalX == pytest.approx(150)
+    db.tabs(None)
+    assert db._gstate.textStyle.tabs is None
+
+
 def test_textBox_formattedString_returns_overflow():
     db = Drawing()
     db.size(200, 200)
@@ -328,6 +345,7 @@ def test_formattedString_properties():
     t.firstLineIndent(36)
     t.paragraphTopSpacing(5)
     t.paragraphBottomSpacing(7)
+    t.tabs((80, "center"))
     t.underline("single")
     t.strikethrough("double")
     t.writingDirection("RTL")
@@ -345,6 +363,7 @@ def test_formattedString_properties():
     assert runProperties["firstLineIndent"] == 36
     assert runProperties["paragraphTopSpacing"] == 5
     assert runProperties["paragraphBottomSpacing"] == 7
+    assert runProperties["tabs"] == ((80, "center"),)
     assert runProperties["underline"] == "single"
     assert runProperties["strikethrough"] == "double"
     assert runProperties["direction"] == "rtl"

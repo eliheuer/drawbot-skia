@@ -190,8 +190,8 @@ class Drawing:
             lineWidths = []
             for line in lines:
                 if line:
-                    glyphsInfo = self._gstate.textStyle.shape(line)
-                    lineWidths.append(glyphsInfo.endPos[0])
+                    lineWidth, runs = self._textLineRuns(line, self._gstate.textStyle)
+                    lineWidths.append(lineWidth)
                 else:
                     lineWidths.append(0)
             lineHeight = self._gstate.textStyle.getLineHeight()
@@ -219,9 +219,22 @@ class Drawing:
             for lineIndex, line in enumerate(txt.split("\n")):
                 if not line:
                     continue
-                glyphsInfo = textStyle.shape(line)
-                alignGlyphPositions(glyphsInfo, align)
-                self._drawGlyphs(glyphsInfo, lineIndex * textStyle.getLineHeight())
+                if not textStyle.tabs or "\t" not in line:
+                    glyphsInfo = textStyle.shape(line)
+                    alignGlyphPositions(glyphsInfo, align)
+                    self._drawGlyphs(
+                        glyphsInfo,
+                        lineIndex * textStyle.getLineHeight(),
+                    )
+                    continue
+                lineWidth, runs = self._textLineRuns(line, textStyle)
+                xOffset = _alignmentOffset(lineWidth, align)
+                for runX, glyphsInfo in runs:
+                    self._drawGlyphs(
+                        glyphsInfo,
+                        lineIndex * textStyle.getLineHeight(),
+                        x=runX + xOffset,
+                    )
 
     def textBox(self, txt, box, align=None):
         if isinstance(txt, FormattedString):
@@ -486,26 +499,56 @@ class Drawing:
                 if not part:
                     lineHeight = max(lineHeight, runLineHeight)
                     continue
-                glyphsInfo = textStyle.shape(part)
-                tracking = properties.get("tracking")
-                if tracking is not None:
-                    _applyTracking(glyphsInfo, tracking)
-                currentRuns.append(
-                    (
-                        lineWidth,
-                        glyphsInfo,
-                        textStyle,
-                        fillPaint,
-                        strokePaint,
-                        properties.get("baselineShift", 0),
-                        properties.get("underline"),
-                        properties.get("strikethrough"),
-                    )
+                runLineWidth, runSegments = self._textLineRuns(
+                    part, textStyle, properties.get("tracking")
                 )
-                lineWidth += glyphsInfo.endPos[0]
+                for runX, glyphsInfo in runSegments:
+                    currentRuns.append(
+                        (
+                            lineWidth + runX,
+                            glyphsInfo,
+                            textStyle,
+                            fillPaint,
+                            strokePaint,
+                            properties.get("baselineShift", 0),
+                            properties.get("underline"),
+                            properties.get("strikethrough"),
+                        )
+                    )
+                lineWidth += runLineWidth
                 lineHeight = max(lineHeight, runLineHeight)
         lines.append((lineWidth, lineHeight, currentRuns))
         return lines
+
+    def _textLineRuns(self, line, textStyle, tracking=None):
+        tabs = textStyle.tabs
+        if not tabs or "\t" not in line:
+            glyphsInfo = textStyle.shape(line)
+            if tracking is not None:
+                _applyTracking(glyphsInfo, tracking)
+            return glyphsInfo.endPos[0], [(0, glyphsInfo)]
+
+        runs = []
+        lineWidth = 0
+        pendingTab = None
+        for index, part in enumerate(line.split("\t")):
+            if index:
+                pendingTab = _nextTabStop(lineWidth, tabs)
+            if not part:
+                continue
+            glyphsInfo = textStyle.shape(part)
+            if tracking is not None:
+                _applyTracking(glyphsInfo, tracking)
+            runWidth = glyphsInfo.endPos[0]
+            if pendingTab is None:
+                runX = lineWidth
+            else:
+                tabPosition, alignment = pendingTab
+                runX = _alignedTabRunX(part, runWidth, tabPosition, alignment, textStyle)
+                pendingTab = None
+            runs.append((runX, glyphsInfo))
+            lineWidth = max(lineWidth, runX + runWidth)
+        return lineWidth, runs
 
     def _drawGlyphs(self, glyphsInfo, y, x=0):
         textStyle = self._gstate.textStyle
@@ -690,6 +733,7 @@ def _textStyleWithProperties(textStyle, properties):
         "variations",
         "language",
         "direction",
+        "tabs",
     ):
         if name in properties:
             textProperties[name] = properties[name]
@@ -741,6 +785,38 @@ def _alignmentOffset(lineWidth, align):
         return -lineWidth
     else:
         return 0
+
+
+def _nextTabStop(x, tabs):
+    for tab in tabs:
+        position = tab[0]
+        if position > x:
+            alignment = tab[1] if len(tab) > 1 else "left"
+            return position, alignment
+    position = tabs[-1][0]
+    if position <= 0:
+        return x, "left"
+    while position <= x:
+        position += tabs[-1][0]
+    alignment = tabs[-1][1] if len(tabs[-1]) > 1 else "left"
+    return position, alignment
+
+
+def _alignedTabRunX(part, runWidth, tabPosition, alignment, textStyle):
+    if alignment == "center":
+        return tabPosition - runWidth / 2
+    if alignment == "right":
+        return tabPosition - runWidth
+    if isinstance(alignment, str) and len(alignment) == 1:
+        index = part.find(alignment)
+        if index >= 0:
+            anchorText = part[:index]
+            if anchorText:
+                anchorWidth = textStyle.shape(anchorText).endPos[0]
+            else:
+                anchorWidth = 0
+            return tabPosition - anchorWidth
+    return tabPosition
 
 
 def _textBoxAlign(align):

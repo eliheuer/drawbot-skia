@@ -220,6 +220,11 @@ class GraphicsStateMixin:
     def lineHeight(self, value):
         self.textStyle = self.textStyle.copy(lineHeight=value)
 
+    def tabs(self, *tabs):
+        if len(tabs) == 1 and tabs[0] is None:
+            tabs = None
+        self.textStyle = self.textStyle.copy(tabs=tabs)
+
     def openTypeFeatures(self, *, resetFeatures=False, **features):
         if resetFeatures:
             currentFeatures = {}
@@ -493,6 +498,7 @@ class TextStyle(_ImmutableContainer):
     variations = {}  # won't get mutated
     language = None
     direction = None
+    tabs = None
     font = None
     lineHeight = None
 
