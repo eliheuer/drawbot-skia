@@ -1822,6 +1822,37 @@ def test_imageObject_unsharp_mask_preserves_alpha(tmpdir):
     ]
 
 
+def test_imageObject_vignette_effect_preserves_alpha(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "vignette-alpha.png"
+    image = Image.new("RGBA", (5, 1))
+    for x, pixel in enumerate(
+        [
+            (200, 100, 50, 50),
+            (200, 100, 50, 80),
+            (200, 100, 50, 110),
+            (200, 100, 50, 140),
+            (200, 100, 50, 170),
+        ]
+    ):
+        image.putpixel((x, 0), pixel)
+    image.save(imagePath)
+    baseline = ImageObject(imagePath)._pilImage().tobytes()
+
+    unchanged = ImageObject(imagePath)
+    assert unchanged.vignetteEffect(center=(2, 0), radius=2, intensity=0, falloff=0.5) is None
+    assert unchanged._pilImage().tobytes() == baseline
+
+    vignetted = ImageObject(imagePath)
+    assert vignetted.vignetteEffect(center=(2, 0), radius=2, intensity=1, falloff=0.5) is None
+    assert [vignetted._pilImage().getpixel((x, 0)) for x in range(5)] == [
+        (0, 0, 0, 50),
+        (201, 99, 51, 80),
+        (199, 100, 51, 110),
+        (200, 100, 49, 140),
+        (0, 0, 0, 170),
+    ]
+
+
 def test_imageObject_masked_variable_blur_uses_mask_as_radius(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "variable-blur.png"
     maskPath = pathlib.Path(tmpdir) / "variable-blur-mask.png"

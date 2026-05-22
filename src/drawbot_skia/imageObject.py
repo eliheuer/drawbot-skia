@@ -1576,7 +1576,9 @@ class ImageObject:
                 amount = max(0, min(1, (distance - radius * (1 - falloff)) / (radius * falloff)))
                 pixels[x, y] = _clampByte(amount * 255 * float(intensity))
         dark = Image.new("RGBA", image.size, (0, 0, 0, 255))
-        self._setPILImage(Image.composite(dark, image, mask))
+        result = Image.composite(dark, image, mask)
+        result.putalpha(image.getchannel("A"))
+        self._setPILImage(result)
 
     def bloom(self, radius=10.0, intensity=0.5):
         from PIL import ImageFilter
