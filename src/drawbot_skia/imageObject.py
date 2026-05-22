@@ -1146,13 +1146,8 @@ class ImageObject:
         self.sobelGradients()
 
     def guidedFilter(self, guideImage=None, radius=1.0, epsilon=0.0001):
-        from PIL import ImageFilter
-
-        image = self._pilImage().filter(ImageFilter.SMOOTH_MORE)
-        if guideImage is not None:
-            guide = _imageObjectToPIL(guideImage).resize(image.size)
-            image = _blendRGBA(image, guide, min(1, max(0, float(epsilon) * 1000)))
-        self._setPILImage(image)
+        guide = _imageObjectToPIL(guideImage) if guideImage is not None else None
+        self._setPILImage(_guidedFilterImage(self._pilImage(), guide, radius, epsilon))
 
     def personSegmentation(self, qualityLevel=1.0):
         image = self._pilImage()
@@ -2970,6 +2965,36 @@ def _maskedVariableBlurImage(image, mask, radius):
                 a = levelPixels[lower][x, y]
                 b = levelPixels[upper][x, y]
                 resultPixels[x, y] = tuple(_clampByte(a[index] * (1 - amount) + b[index] * amount) for index in range(4))
+    return result
+
+
+def _guidedFilterImage(image, guide, radius, epsilon):
+    from PIL import Image
+    from PIL import ImageFilter
+
+    source = image.convert("RGBA")
+    radius = max(0, float(radius))
+    if radius == 0:
+        return source
+    guideImage = source if guide is None else guide.resize(source.size).convert("RGBA")
+    smoothed = source.filter(ImageFilter.GaussianBlur(radius))
+    edges = guideImage.convert("L").filter(ImageFilter.FIND_EDGES)
+    epsilon = max(0.000001, float(epsilon))
+    edgeScale = max(1, epsilon * 255)
+    sourcePixels = source.load()
+    smoothPixels = smoothed.load()
+    edgePixels = edges.load()
+    result = Image.new("RGBA", source.size)
+    resultPixels = result.load()
+    for y in range(source.height):
+        for x in range(source.width):
+            preserve = edgePixels[x, y] / (edgePixels[x, y] + edgeScale)
+            original = sourcePixels[x, y]
+            smooth = smoothPixels[x, y]
+            resultPixels[x, y] = tuple(
+                _clampByte(smooth[index] * (1 - preserve) + original[index] * preserve)
+                for index in range(4)
+            )
     return result
 
 

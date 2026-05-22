@@ -966,6 +966,25 @@ def test_imageObject_masked_variable_blur_uses_mask_as_radius(tmpdir):
     assert [im._pilImage().getpixel((x, 0))[0] for x in range(7)] == [0, 0, 27, 103, 55, 33, 22]
 
 
+def test_imageObject_guided_filter_preserves_guide_edges(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "guided.png"
+    guidePath = pathlib.Path(tmpdir) / "guide.png"
+    image = Image.new("RGBA", (7, 1), (0, 0, 0, 255))
+    image.putpixel((3, 0), (255, 255, 255, 255))
+    image.save(imagePath)
+    guide = Image.new("L", (7, 1))
+    guide.putdata([0, 0, 0, 255, 255, 255, 255])
+    guide.convert("RGBA").save(guidePath)
+
+    preserved = ImageObject(imagePath)
+    assert preserved.guidedFilter(guideImage=guidePath, radius=2, epsilon=0.01) is None
+    assert [preserved._pilImage().getpixel((x, 0))[0] for x in range(7)] == [22, 33, 44, 253, 0, 0, 0]
+
+    smoothed = ImageObject(imagePath)
+    assert smoothed.guidedFilter(guideImage=guidePath, radius=2, epsilon=1) is None
+    assert [smoothed._pilImage().getpixel((x, 0))[0] for x in range(7)] == [22, 33, 44, 152, 22, 16, 11]
+
+
 def test_imageObject_transition_batch(tmpdir):
     sourcePath = pathlib.Path(tmpdir) / "source.png"
     targetPath = pathlib.Path(tmpdir) / "target.png"
