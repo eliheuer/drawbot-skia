@@ -3588,6 +3588,21 @@ def test_cmyk_color_arguments():
     assert not db._gstate.strokePaint.somethingToDraw
 
 
+def test_line_dash_offset():
+    import inspect
+
+    db = Drawing()
+    assert "offset" in inspect.signature(db.lineDash).parameters
+
+    db.lineDash(5, 10, offset=3)
+    assert db._gstate.strokePaint.lineDash == (5, 10)
+    assert db._gstate.strokePaint.lineDashOffset == 3
+
+    db.lineDash()
+    assert db._gstate.strokePaint.lineDash is None
+    assert db._gstate.strokePaint.lineDashOffset == 0
+
+
 def test_color_space_and_languages():
     db = Drawing()
     assert db.listColorSpaces() == [

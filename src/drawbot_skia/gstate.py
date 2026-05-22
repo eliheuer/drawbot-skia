@@ -86,7 +86,7 @@ class GraphicsStateMixin:
             raise DrawbotError(f"lineJoin must be one of: {sorted(_strokeJoinMapping)}")
         self.strokePaint = self.strokePaint.copy(lineJoin=lineJoin)
 
-    def lineDash(self, firstValue=None, *values):
+    def lineDash(self, firstValue=None, *values, offset=0):
         if firstValue is None:
             if values:
                 raise TypeError(
@@ -94,9 +94,12 @@ class GraphicsStateMixin:
                 )
         if firstValue is None:
             assert not values
-            self.strokePaint = self.strokePaint.copy(lineDash=None)
+            self.strokePaint = self.strokePaint.copy(lineDash=None, lineDashOffset=0)
         else:
-            self.strokePaint = self.strokePaint.copy(lineDash=(firstValue,) + values)
+            self.strokePaint = self.strokePaint.copy(
+                lineDash=(firstValue,) + values,
+                lineDashOffset=offset,
+            )
 
     def miterLimit(self, miterLimit):
         self.strokePaint = self.strokePaint.copy(miterLimit=miterLimit)
@@ -471,6 +474,7 @@ class StrokePaint(FillPaint):
     lineCap = "butt"
     lineJoin = "miter"
     lineDash = None
+    lineDashOffset = 0
     _skPaintStyle = skia.Paint.kStroke_Style
 
     @cached_property
@@ -486,7 +490,7 @@ class StrokePaint(FillPaint):
                 # Skia requires the intervals list to be of even length;
                 # doubling the list matches macOS/CoreGraphics behavior
                 intervals = intervals * 2
-            paint.setPathEffect(skia.DashPathEffect.Make(intervals, 0))
+            paint.setPathEffect(skia.DashPathEffect.Make(intervals, self.lineDashOffset))
         return paint
 
 
