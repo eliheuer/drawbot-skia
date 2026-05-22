@@ -230,8 +230,8 @@ class Drawing:
             return self.pageCount()
         return _imageNumberOfPages(path)
 
-    def imageSize(self, path):
-        image = self._getImage(path)
+    def imageSize(self, path, pageNumber=None):
+        image = self._getImage(path, pageNumber)
         return image.width(), image.height()
 
     def imagePixelColor(self, path, position):
@@ -1015,8 +1015,8 @@ class Drawing:
         finally:
             self._gstate = oldGState
 
-    def image(self, imagePath, position, alpha=1.0):
-        im = self._getImage(imagePath)
+    def image(self, imagePath, position, alpha=1.0, pageNumber=None):
+        im = self._getImage(imagePath, pageNumber)
         paint = skia.Paint()
         opacity = alpha * self._gstate.fillPaint.opacity
         if opacity != 1.0:
@@ -1032,9 +1032,13 @@ class Drawing:
 
     @staticmethod
     @functools.lru_cache(maxsize=32)
-    def _getImage(imagePath):
+    def _getImage(imagePath, pageNumber=None):
         if hasattr(imagePath, "_skiaImage"):
+            if pageNumber is not None:
+                raise DrawbotError("pageNumber is only supported for image file paths")
             return imagePath._skiaImage()
+        if pageNumber is not None:
+            return _skiaImageFromImagePage(imagePath, pageNumber)
         return skia.Image.open(os.fspath(imagePath))
 
     def translate(self, x, y):
@@ -1488,6 +1492,25 @@ def _imageNumberOfPages(path):
         with Image.open(path) as image:
             return getattr(image, "n_frames", 1)
     return None
+
+
+@functools.lru_cache(maxsize=32)
+def _skiaImageFromImagePage(path, pageNumber):
+    from PIL import Image
+
+    pageNumber = int(pageNumber)
+    if pageNumber < 1:
+        raise DrawbotError("pageNumber must be 1 or greater")
+    with Image.open(path) as image:
+        frameCount = getattr(image, "n_frames", 1)
+        if pageNumber > frameCount:
+            raise DrawbotError(
+                f"pageNumber out of range for '{path}': {pageNumber} "
+                f"not in range 1..{frameCount}"
+            )
+        image.seek(pageNumber - 1)
+        image = image.convert("RGBA")
+        return skia.Image.frombytes(image.tobytes(), image.size)
 
 
 # Inject GraphicsStateMixin method wrappers into Drawing

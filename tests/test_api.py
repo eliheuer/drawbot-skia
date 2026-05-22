@@ -323,6 +323,34 @@ def test_image_properties(tmpdir):
     assert db.imagePixelColor(imagePath, (-1, 0)) is None
 
 
+def test_image_pageNumber(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "pages.gif"
+    frames = [
+        Image.new("RGBA", (4, 3), (255, 0, 0, 255)),
+        Image.new("RGBA", (4, 3), (0, 255, 0, 255)),
+    ]
+    frames[0].save(
+        imagePath,
+        save_all=True,
+        append_images=frames[1:],
+        duration=[100, 100],
+        loop=0,
+    )
+
+    db = Drawing()
+    assert db.imageSize(imagePath, pageNumber=1) == (4, 3)
+    assert db.imageSize(imagePath, pageNumber=2) == (4, 3)
+    with pytest.raises(DrawbotError, match="pageNumber out of range"):
+        db.imageSize(imagePath, pageNumber=3)
+
+    outputPath = pathlib.Path(tmpdir) / "page2.png"
+    db.size(4, 3)
+    db.image(imagePath, (0, 0), pageNumber=2)
+    db.saveImage(outputPath)
+    with Image.open(outputPath) as image:
+        assert image.convert("RGBA").getpixel((0, 0)) == (0, 255, 0, 255)
+
+
 def test_imageObject():
     db = Drawing()
     imagePath = testDir / "images" / "drawbot.png"
