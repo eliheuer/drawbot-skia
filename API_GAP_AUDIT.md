@@ -125,9 +125,13 @@ bloom
 blurredRectangleGenerator
 bokehBlur
 boxBlur
+bumpDistortion
+bumpDistortionLinear
 cannyEdgeDetector
 checkerboardGenerator
+circleSplashDistortion
 circularScreen
+circularWrap
 clamp
 clearFilters
 colorAbsoluteDifference
@@ -155,18 +159,26 @@ depthOfField
 differenceBlendMode
 discBlur
 dither
+displacementDistortion
 divideBlendMode
 documentEnhancer
 dotScreen
 edgeWork
 edgePreserveUpsampleFilter
+eightfoldReflectedTile
 edges
 exclusionBlendMode
 exposureAdjust
 falseColor
+fourfoldReflectedTile
+fourfoldRotatedTile
+fourfoldTranslatedTile
 gammaAdjust
 gaussianBlur
 gaussianGradient
+glassDistortion
+glassLozenge
+glideReflectedTile
 gloom
 hardLightBlendMode
 hatchedScreen
@@ -174,8 +186,10 @@ heightFieldFromMask
 hexagonalPixellate
 highlightShadowAdjust
 histogramDisplayFilter
+holeDistortion
 hueAdjust
 hueBlendMode
+kaleidoscope
 lanczosScaleTransform
 lightenBlendMode
 lineOverlay
@@ -205,7 +219,14 @@ multiplyCompositing
 noiseReduction
 offset
 open
+opTile
 overlayBlendMode
+parallelogramTile
+perspectiveCorrection
+perspectiveRotate
+perspectiveTile
+perspectiveTransform
+perspectiveTransformWithExtent
 photoEffectChrome
 photoEffectFade
 photoEffectInstant
@@ -214,6 +235,7 @@ photoEffectNoir
 photoEffectProcess
 photoEffectTonal
 photoEffectTransfer
+pinchDistortion
 pinLightBlendMode
 pixellate
 pointillize
@@ -227,6 +249,8 @@ saturationBlendMode
 screenBlendMode
 sepiaTone
 sharpenLuminance
+sixfoldReflectedTile
+sixfoldRotatedTile
 size
 smoothLinearGradient
 sobelGradients
@@ -241,17 +265,23 @@ stripesGenerator
 subtractBlendMode
 temperatureAndTint
 thermal
+torusLensDistortion
+triangleKaleidoscope
+triangleTile
+twelvefoldReflectedTile
+twirlDistortion
 unlockFocus
 unsharpMask
 vibrance
 vignette
 vignetteEffect
 vividLightBlendMode
+vortexDistortion
 whitePointAdjust
 zoomBlur
 ```
 
-DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 147 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, generators, simple geometry filters, analysis/statistical filters, stylization filters, screen/halftone filters, masked blur/upsample filters, and blend/compositing modes rather than pixel-identical Core Image implementations.
+DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 177 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, generators, simple geometry filters, analysis/statistical filters, stylization filters, screen/halftone filters, masked blur/upsample filters, distortion/tiling filters, and blend/compositing modes rather than pixel-identical Core Image implementations.
 
 Representative missing groups:
 
@@ -259,7 +289,7 @@ Representative missing groups:
 - blur and stylization filters that still need deeper Core Image-equivalent behavior: `gaborGradients`, `guidedFilter`, `saliencyMapFilter`;
 - color/statistical filters that still need deeper Core Image-equivalent behavior: `KMeans`, `paletteCentroid`, `palettize`, `spotColor`, `labDeltaE`;
 - compositing, transitions, and mask workflows that need deeper Core Image-equivalent semantics: `disintegrateWithMaskTransition`, `pageCurlTransition`, `copyMachineTransition`;
-- geometry and distortion filters: `perspectiveTransform`, `twirlDistortion`, `bumpDistortion`, `kaleidoscope`.
+- geometry and distortion filters that still need deeper Core Image-equivalent behavior: `keystoneCorrectionCombined`, `droste`, `lightTunnel`.
 
 Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-heavy and "huge", this should not be treated as a blocker for the headline text/path parity milestone unless the project explicitly chooses an ImageObject parity target.
 

@@ -289,6 +289,92 @@ class ImageObject:
         self._setPILImage(image.resize((targetWidth, targetHeight), Image.Resampling.BICUBIC))
         self._offset = (0, 0)
 
+    def perspectiveTransform(
+        self,
+        topLeft=(118.0, 484.0),
+        topRight=(646.0, 507.0),
+        bottomRight=(548.0, 140.0),
+        bottomLeft=(155.0, 153.0),
+    ):
+        self._setPILImage(_quadTransformImage(self._pilImage(), topLeft, topRight, bottomRight, bottomLeft))
+
+    def perspectiveTransformWithExtent(
+        self,
+        extent=(0.0, 0.0, 300.0, 300.0),
+        topLeft=(118.0, 484.0),
+        topRight=(646.0, 507.0),
+        bottomRight=(548.0, 140.0),
+        bottomLeft=(155.0, 153.0),
+    ):
+        self.perspectiveTransform(topLeft, topRight, bottomRight, bottomLeft)
+        self.crop(extent)
+
+    def perspectiveCorrection(
+        self,
+        topLeft=(118.0, 484.0),
+        topRight=(646.0, 507.0),
+        bottomRight=(548.0, 140.0),
+        bottomLeft=(155.0, 153.0),
+        crop=True,
+    ):
+        self.perspectiveTransform(topLeft, topRight, bottomRight, bottomLeft)
+
+    def perspectiveTile(
+        self,
+        topLeft=(118.0, 484.0),
+        topRight=(646.0, 507.0),
+        bottomRight=(548.0, 140.0),
+        bottomLeft=(155.0, 153.0),
+    ):
+        self.perspectiveTransform(topLeft, topRight, bottomRight, bottomLeft)
+        self._setPILImage(_tileImage(self._pilImage(), rotations=2, reflect=True))
+
+    def perspectiveRotate(self, focalLength=28.0, pitch=0.0, yaw=0.0, roll=0.0):
+        from PIL import Image
+
+        image = self._pilImage()
+        rotated = image.rotate(float(roll), resample=Image.Resampling.BICUBIC)
+        scaleX = max(0.1, 1 - abs(float(yaw)) / 180)
+        scaleY = max(0.1, 1 - abs(float(pitch)) / 180)
+        size = (max(1, int(round(image.width * scaleX))), max(1, int(round(image.height * scaleY))))
+        self._setPILImage(rotated.resize(size, Image.Resampling.BICUBIC).resize(image.size, Image.Resampling.BICUBIC))
+
+    def bumpDistortion(self, center=(150.0, 150.0), radius=300.0, scale=0.5):
+        self._setPILImage(_radialDistortImage(self._pilImage(), center, radius, scale, "bump"))
+
+    def bumpDistortionLinear(self, center=(150.0, 150.0), radius=300.0, angle=0.0, scale=0.5):
+        self._setPILImage(_linearBumpImage(self._pilImage(), center, radius, angle, scale))
+
+    def circleSplashDistortion(self, center=(150.0, 150.0), radius=150.0):
+        self._setPILImage(_radialDistortImage(self._pilImage(), center, radius, 0.6, "splash"))
+
+    def circularWrap(self, center=(150.0, 150.0), radius=150.0, angle=0.0):
+        self._setPILImage(_twirlImage(self._pilImage(), center, radius, angle))
+
+    def displacementDistortion(self, displacementImage, scale=50.0):
+        self._setPILImage(_displacementImage(self._pilImage(), _imageObjectToPIL(displacementImage), scale))
+
+    def glassDistortion(self, texture, center=(150.0, 150.0), scale=200.0):
+        self.displacementDistortion(texture, scale=scale)
+
+    def glassLozenge(self, point0=(150.0, 150.0), point1=(350.0, 150.0), radius=100.0, refraction=1.7):
+        self._setPILImage(_lozengeDistortImage(self._pilImage(), point0, point1, radius, refraction))
+
+    def holeDistortion(self, center=(150.0, 150.0), radius=150.0):
+        self._setPILImage(_radialDistortImage(self._pilImage(), center, radius, -1, "pinch"))
+
+    def pinchDistortion(self, center=(150.0, 150.0), radius=300.0, scale=0.5):
+        self._setPILImage(_radialDistortImage(self._pilImage(), center, radius, scale, "pinch"))
+
+    def torusLensDistortion(self, center=(150.0, 150.0), radius=160.0, width=80.0, refraction=1.7):
+        self._setPILImage(_torusDistortImage(self._pilImage(), center, radius, width, refraction))
+
+    def twirlDistortion(self, center=(150.0, 150.0), radius=300.0, angle=math.pi):
+        self._setPILImage(_twirlImage(self._pilImage(), center, radius, angle))
+
+    def vortexDistortion(self, center=(150.0, 150.0), radius=300.0, angle=56.548667764616276):
+        self._setPILImage(_twirlImage(self._pilImage(), center, radius, angle))
+
     def crop(
         self,
         rectangle=(
@@ -861,6 +947,47 @@ class ImageObject:
         UCR=0.5,
     ):
         self._setPILImage(_screenImage(self._pilImage(), center, angle, width, sharpness, "dot"))
+
+    def kaleidoscope(self, count=6.0, center=(150.0, 150.0), angle=0.0):
+        self._setPILImage(_tileImage(self._pilImage(), rotations=max(1, int(round(float(count)))), reflect=True, angle=angle))
+
+    def triangleKaleidoscope(self, point=(150.0, 150.0), size=700.0, rotation=5.924285296593801, decay=0.85):
+        self._setPILImage(_tileImage(self._pilImage(), rotations=3, reflect=True, angle=rotation))
+
+    def fourfoldReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0, acuteAngle=math.pi / 2):
+        self._setPILImage(_tileImage(self._pilImage(), rotations=4, reflect=True, angle=angle))
+
+    def fourfoldRotatedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
+        self._setPILImage(_tileImage(self._pilImage(), rotations=4, reflect=False, angle=angle))
+
+    def fourfoldTranslatedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0, acuteAngle=math.pi / 2):
+        self._setPILImage(_offsetTileImage(self._pilImage(), width, angle))
+
+    def glideReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
+        tiled = _offsetTileImage(self._pilImage(), width, angle)
+        self._setPILImage(_blendRGBA(tiled, _tileImage(tiled, rotations=2, reflect=True), 0.5))
+
+    def eightfoldReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
+        self._setPILImage(_tileImage(self._pilImage(), rotations=8, reflect=True, angle=angle))
+
+    def sixfoldReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
+        self._setPILImage(_tileImage(self._pilImage(), rotations=6, reflect=True, angle=angle))
+
+    def sixfoldRotatedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
+        self._setPILImage(_tileImage(self._pilImage(), rotations=6, reflect=False, angle=angle))
+
+    def twelvefoldReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
+        self._setPILImage(_tileImage(self._pilImage(), rotations=12, reflect=True, angle=angle))
+
+    def triangleTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
+        self._setPILImage(_tileImage(self._pilImage(), rotations=3, reflect=False, angle=angle))
+
+    def parallelogramTile(self, center=(150.0, 150.0), angle=0.0, acuteAngle=math.pi / 2, width=100.0):
+        self._setPILImage(_skewTileImage(self._pilImage(), angle, acuteAngle, width))
+
+    def opTile(self, center=(150.0, 150.0), scale=2.8, angle=0.0, width=65.0):
+        image = _offsetTileImage(self._pilImage(), width, angle)
+        self._setPILImage(_tileImage(image, rotations=max(1, int(round(float(scale)))), reflect=True, angle=angle))
 
     def crystallize(self, radius=20.0, center=(150.0, 150.0)):
         self.pixellate(center=center, scale=radius)
@@ -1479,6 +1606,209 @@ def _screenImage(image, center, angle, width, sharpness, mode):
             value = _clampByte(255 if pattern >= threshold else 255 - min(255, transition))
             pixels[x, y] = (value, value, value, alphaPixels[x, y])
     return result
+
+
+def _samplePixel(pixels, width, height, x, y):
+    x = max(0, min(width - 1, int(round(x))))
+    y = max(0, min(height - 1, int(round(y))))
+    return pixels[x, y]
+
+
+def _distortImage(image, mapPoint):
+    from PIL import Image
+
+    source = image.convert("RGBA")
+    result = Image.new("RGBA", source.size, (0, 0, 0, 0))
+    sourcePixels = source.load()
+    resultPixels = result.load()
+    for y in range(source.height):
+        for x in range(source.width):
+            sx, sy = mapPoint(x, y)
+            resultPixels[x, y] = _samplePixel(sourcePixels, source.width, source.height, sx, sy)
+    return result
+
+
+def _radialDistortImage(image, center, radius, scale, mode):
+    cx, cy = center
+    radius = max(1, float(radius))
+    scale = float(scale)
+
+    def mapPoint(x, y):
+        dx = x - cx
+        dy = y - cy
+        distance = math.hypot(dx, dy)
+        if distance <= 0 or distance >= radius:
+            return x, y
+        amount = (1 - distance / radius) ** 2
+        if mode == "bump":
+            factor = 1 - scale * amount
+        elif mode == "splash":
+            factor = 1 + scale * math.sin((1 - distance / radius) * math.pi) * 0.35
+        else:
+            factor = 1 + scale * amount
+        return cx + dx * factor, cy + dy * factor
+
+    return _distortImage(image, mapPoint)
+
+
+def _linearBumpImage(image, center, radius, angle, scale):
+    cx, cy = center
+    radius = max(1, float(radius))
+    scale = float(scale)
+    radians = math.radians(float(angle))
+    normalX = -math.sin(radians)
+    normalY = math.cos(radians)
+
+    def mapPoint(x, y):
+        distance = (x - cx) * normalX + (y - cy) * normalY
+        absolute = abs(distance)
+        if absolute >= radius:
+            return x, y
+        amount = (1 - absolute / radius) ** 2 * scale * radius * 0.25
+        sign = 1 if distance >= 0 else -1
+        return x - normalX * amount * sign, y - normalY * amount * sign
+
+    return _distortImage(image, mapPoint)
+
+
+def _twirlImage(image, center, radius, angle):
+    cx, cy = center
+    radius = max(1, float(radius))
+    angle = float(angle)
+    if abs(angle) > math.tau:
+        angle = math.radians(angle)
+
+    def mapPoint(x, y):
+        dx = x - cx
+        dy = y - cy
+        distance = math.hypot(dx, dy)
+        if distance >= radius or distance == 0:
+            return x, y
+        theta = math.atan2(dy, dx) - angle * ((radius - distance) / radius) ** 2
+        return cx + math.cos(theta) * distance, cy + math.sin(theta) * distance
+
+    return _distortImage(image, mapPoint)
+
+
+def _displacementImage(image, displacement, scale):
+    displacement = displacement.resize(image.size).convert("L")
+    displacementPixels = displacement.load()
+    scale = float(scale)
+
+    def mapPoint(x, y):
+        amount = (displacementPixels[x, y] - 128) / 128 * scale
+        return x + amount, y + amount
+
+    return _distortImage(image, mapPoint)
+
+
+def _lozengeDistortImage(image, point0, point1, radius, refraction):
+    x0, y0 = point0
+    x1, y1 = point1
+    radius = max(1, float(radius))
+    refraction = float(refraction)
+    lengthSquared = (x1 - x0) ** 2 + (y1 - y0) ** 2 or 1
+
+    def mapPoint(x, y):
+        t = max(0, min(1, ((x - x0) * (x1 - x0) + (y - y0) * (y1 - y0)) / lengthSquared))
+        cx = x0 + (x1 - x0) * t
+        cy = y0 + (y1 - y0) * t
+        dx = x - cx
+        dy = y - cy
+        distance = math.hypot(dx, dy)
+        if distance <= 0 or distance > radius:
+            return x, y
+        factor = 1 - (refraction - 1) * (1 - distance / radius) * 0.2
+        return cx + dx * factor, cy + dy * factor
+
+    return _distortImage(image, mapPoint)
+
+
+def _torusDistortImage(image, center, radius, width, refraction):
+    cx, cy = center
+    radius = max(1, float(radius))
+    halfWidth = max(1, float(width) / 2)
+    refraction = float(refraction)
+
+    def mapPoint(x, y):
+        dx = x - cx
+        dy = y - cy
+        distance = math.hypot(dx, dy)
+        delta = abs(distance - radius)
+        if distance <= 0 or delta > halfWidth:
+            return x, y
+        amount = (1 - delta / halfWidth) * (refraction - 1) * 0.25
+        factor = 1 - amount
+        return cx + dx * factor, cy + dy * factor
+
+    return _distortImage(image, mapPoint)
+
+
+def _quadTransformImage(image, topLeft, topRight, bottomRight, bottomLeft):
+    from PIL import Image
+
+    width, height = image.size
+    xs = [point[0] for point in (topLeft, topRight, bottomRight, bottomLeft)]
+    ys = [point[1] for point in (topLeft, topRight, bottomRight, bottomLeft)]
+    minX = min(xs)
+    minY = min(ys)
+    maxX = max(xs)
+    maxY = max(ys)
+    targetWidth = max(1, int(round(maxX - minX)))
+    targetHeight = max(1, int(round(maxY - minY)))
+    data = (
+        topLeft[0] - minX,
+        topLeft[1] - minY,
+        topRight[0] - minX,
+        topRight[1] - minY,
+        bottomRight[0] - minX,
+        bottomRight[1] - minY,
+        bottomLeft[0] - minX,
+        bottomLeft[1] - minY,
+    )
+    return image.transform((targetWidth, targetHeight), Image.Transform.QUAD, data, Image.Resampling.BICUBIC).resize(
+        (width, height),
+        Image.Resampling.BICUBIC,
+    )
+
+
+def _tileImage(image, rotations=4, reflect=False, angle=0.0):
+    from PIL import Image
+    from PIL import ImageChops
+
+    base = image.convert("RGBA")
+    rotations = max(1, int(rotations))
+    result = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    for index in range(rotations):
+        tile = base.rotate(float(angle) + 360 * index / rotations, resample=Image.Resampling.BICUBIC)
+        if reflect and index % 2:
+            tile = tile.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+        result = ImageChops.lighter(result, tile)
+    return result
+
+
+def _offsetTileImage(image, width, angle):
+    from PIL import ImageChops
+
+    width = int(round(float(width))) or 1
+    radians = math.radians(float(angle))
+    dx = int(round(math.cos(radians) * width / 2))
+    dy = int(round(math.sin(radians) * width / 2))
+    shifted = ImageChops.offset(image.convert("RGBA"), dx, dy)
+    return _blendRGBA(image, shifted, 0.5)
+
+
+def _skewTileImage(image, angle, acuteAngle, width):
+    from PIL import Image
+
+    shear = math.cos(float(acuteAngle)) * 0.25
+    transformed = image.transform(
+        image.size,
+        Image.Transform.AFFINE,
+        (1, shear, 0, 0, 1, 0),
+        resample=Image.Resampling.BICUBIC,
+    )
+    return _offsetTileImage(transformed.rotate(float(angle), resample=Image.Resampling.BICUBIC), width, angle)
 
 
 def _cropExtent(image, extent):

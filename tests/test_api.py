@@ -448,7 +448,12 @@ def test_imageObject_generator_batch():
 
 def test_imageObject_simple_geometry_batch(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "geometry.png"
-    Image.new("RGBA", (20, 12), (120, 80, 40, 255)).save(imagePath)
+    texturePath = pathlib.Path(tmpdir) / "texture.png"
+    image = Image.new("RGBA", (20, 12), (120, 80, 40, 255))
+    for x in range(20):
+        image.putpixel((x, x % 12), (220, 40, 120, 255))
+    image.save(imagePath)
+    Image.new("RGBA", (20, 12), (80, 160, 200, 255)).save(texturePath)
 
     im = ImageObject(imagePath)
     assert im.clamp((2, 3, 10, 6)) is None
@@ -460,6 +465,23 @@ def test_imageObject_simple_geometry_batch(tmpdir):
         ("affineTile", (), {}),
         ("straightenFilter", (), {"angle": 0.2}),
         ("stretchCrop", (), {"size": (16, 16)}),
+        ("perspectiveTransform", (), {"topLeft": (0, 0), "topRight": (20, 1), "bottomRight": (19, 12), "bottomLeft": (1, 11)}),
+        ("perspectiveTransformWithExtent", (), {"extent": (0, 0, 20, 12), "topLeft": (0, 0), "topRight": (20, 1), "bottomRight": (19, 12), "bottomLeft": (1, 11)}),
+        ("perspectiveCorrection", (), {"topLeft": (0, 0), "topRight": (20, 1), "bottomRight": (19, 12), "bottomLeft": (1, 11)}),
+        ("perspectiveTile", (), {"topLeft": (0, 0), "topRight": (20, 1), "bottomRight": (19, 12), "bottomLeft": (1, 11)}),
+        ("perspectiveRotate", (), {"pitch": 5, "yaw": 5, "roll": 5}),
+        ("bumpDistortion", (), {"center": (10, 6), "radius": 8, "scale": 0.4}),
+        ("bumpDistortionLinear", (), {"center": (10, 6), "radius": 8, "angle": 15, "scale": 0.4}),
+        ("circleSplashDistortion", (), {"center": (10, 6), "radius": 6}),
+        ("circularWrap", (), {"center": (10, 6), "radius": 8, "angle": 15}),
+        ("glassLozenge", (), {"point0": (5, 6), "point1": (15, 6), "radius": 4}),
+        ("holeDistortion", (), {"center": (10, 6), "radius": 8}),
+        ("pinchDistortion", (), {"center": (10, 6), "radius": 8, "scale": 0.4}),
+        ("torusLensDistortion", (), {"center": (10, 6), "radius": 5, "width": 3}),
+        ("twirlDistortion", (), {"center": (10, 6), "radius": 8, "angle": 15}),
+        ("vortexDistortion", (), {"center": (10, 6), "radius": 8, "angle": 15}),
+        ("displacementDistortion", (texturePath,), {"scale": 3}),
+        ("glassDistortion", (texturePath,), {"scale": 3}),
     ]
     for methodName, args, kwargs in calls:
         im = ImageObject(imagePath)
@@ -467,6 +489,26 @@ def test_imageObject_simple_geometry_batch(tmpdir):
         width, height = im.size()
         assert width > 0
         assert height > 0
+
+    tileCalls = [
+        ("kaleidoscope", (), {"count": 4}),
+        ("triangleKaleidoscope", (), {"size": 10}),
+        ("fourfoldReflectedTile", (), {"width": 8}),
+        ("fourfoldRotatedTile", (), {"width": 8}),
+        ("fourfoldTranslatedTile", (), {"width": 8}),
+        ("glideReflectedTile", (), {"width": 8}),
+        ("eightfoldReflectedTile", (), {"width": 8}),
+        ("sixfoldReflectedTile", (), {"width": 8}),
+        ("sixfoldRotatedTile", (), {"width": 8}),
+        ("twelvefoldReflectedTile", (), {"width": 8}),
+        ("triangleTile", (), {"width": 8}),
+        ("parallelogramTile", (), {"width": 8}),
+        ("opTile", (), {"width": 8}),
+    ]
+    for methodName, args, kwargs in tileCalls:
+        im = ImageObject(imagePath)
+        assert getattr(im, methodName)(*args, **kwargs) is None
+        assert im.size() == (20, 12)
 
 
 def test_imageObject_analysis_and_stylize_batch(tmpdir):
