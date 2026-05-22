@@ -54,6 +54,12 @@ class BezierPath(BasePen):
     def _closePath(self):
         self.path.close()
 
+    def moveTo(self, point):
+        super().moveTo(point)
+
+    def lineTo(self, point):
+        super().lineTo(point)
+
     def beginPath(self, identifier=None):
         self._pointToSegmentPen = PointToSegmentPen(self)
         self._pointToSegmentPen.beginPath()
@@ -192,8 +198,8 @@ class BezierPath(BasePen):
         path.reverseAddPath(self.path)
         self.path = path
 
-    def appendPath(self, other):
-        self.path.addPath(other.path)
+    def appendPath(self, otherPath):
+        self.path.addPath(otherPath.path)
 
     def copy(self):
         path = skia.Path(self.path)
@@ -217,11 +223,11 @@ class BezierPath(BasePen):
         t = t.skew(math.radians(x), math.radians(y))
         self.transform(t, center=center)
 
-    def transform(self, transform, center=(0, 0)):
+    def transform(self, transformMatrix, center=(0, 0)):
         cx, cy = center
         t = Transform()
         t = t.translate(cx, cy)
-        t = t.transform(transform)
+        t = t.transform(transformMatrix)
         t = t.translate(-cx, -cy)
         matrix = skia.Matrix()
         matrix.setAffine(t)
@@ -260,8 +266,8 @@ class BezierPath(BasePen):
         if needEndPath:
             pen.endPath()
 
-    def drawToPointPen(self, pen):
-        self.drawToPen(SegmentToPointPen(pen))
+    def drawToPointPen(self, pointPen):
+        self.drawToPen(SegmentToPointPen(pointPen))
 
     def text(self, txt, offset=None, font=None, fontSize=10, align=None, fontNumber=0):
         if not txt:

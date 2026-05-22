@@ -1,4 +1,5 @@
 from drawbot_skia.path import BezierPath
+from fontTools.pens.recordingPen import RecordingPointPen
 import pytest
 
 
@@ -41,12 +42,26 @@ def test_path_line_args():
 
 def test_path_drawbot_keyword_point_args():
     path = BezierPath()
+    path.moveTo(point=(0, 0))
+    path.lineTo(point=(10, 0))
     path.line(point1=(0, 0), point2=(0, 100))
-    assert path.bounds() == (0.0, 0.0, 0.0, 100.0)
+    assert path.bounds() == (0.0, 0.0, 10.0, 100.0)
+
+    otherPath = BezierPath()
+    otherPath.rect(20, 20, 10, 10)
+    path.appendPath(otherPath=otherPath)
+    assert path.bounds() == (0.0, 0.0, 30.0, 100.0)
+
+    path.transform(transformMatrix=(1, 0, 0, 1, 5, 0))
+    assert path.bounds() == (5.0, 0.0, 35.0, 100.0)
 
     path.rect(0, 0, 10, 10)
     assert path.pointInside(xy=(5, 5))
-    assert not path.pointInside(xy=(15, 15))
+    assert not path.pointInside(xy=(40, 40))
+
+    pointPen = RecordingPointPen()
+    path.drawToPointPen(pointPen=pointPen)
+    assert pointPen.value[0][0] == "beginPath"
 
 
 def test_path_points():
