@@ -26,7 +26,7 @@ The remaining parity work is concentrated in:
 - true pixel parity for text layout and shaping where DrawBot delegates to macOS CoreText; tracked in [#12](https://github.com/eliheuer/drawbot-skia/issues/12);
 - BezierPath text containers for `textBox()`, `textOverflow()`, `textBoxBaselines()`, and `textBoxCharacterBounds()`; tracked in [#15](https://github.com/eliheuer/drawbot-skia/issues/15).
 
-The macOS/AppKit/PDFKit bridge APIs are intentionally out of scope for drawbot-skia's cross-platform package target. Their method names are present as explicit compatibility stubs that raise `DrawbotError`, so they should not be counted as open implementation gaps.
+The macOS/AppKit/PDFKit bridge APIs are intentionally out of scope for drawbot-skia's cross-platform package target. Their method names are present as explicit compatibility stubs that raise `DrawbotError`, so they should not be counted as open implementation gaps; tracked in [#17](https://github.com/eliheuer/drawbot-skia/issues/17).
 
 Do not call the larger feature-parity goal complete from this evidence.
 
@@ -76,7 +76,7 @@ Notes:
 - `installedFonts()`, `installFont()`, and `uninstallFont()` have been added. Temporary font installation is process-local in drawbot-skia: `installFont(path)` returns the font's PostScript name and registers that name as an alias for the path so it can be passed to `font()`. As in DrawBot, these functions are deprecated in favor of passing font paths directly.
 - `pages()` has been added for recorded drawings, including context-manager support for drawing back into an existing page.
 - `linkURL`, `linkDestination`, and `linkRect` have been added with SVG output annotations and PDF link annotations. PDF support is implemented as a post-processing pass over Skia's emitted PDF because skia-python's PDF API does not expose URL/destination annotation hooks.
-- `Variable`, `pdfImage`, and `printImage` are intentionally out of scope for drawbot-skia's cross-platform package target. They now exist and raise explicit `DrawbotError`s explaining that they are macOS application/PDFKit features and are unavailable in drawbot-skia.
+- `Variable`, `pdfImage`, and `printImage` are intentionally out of scope for drawbot-skia's cross-platform package target. They now exist and raise explicit `DrawbotError`s explaining that they are macOS application/PDFKit features and are unavailable in drawbot-skia; tracked in [#17](https://github.com/eliheuer/drawbot-skia/issues/17).
 - `ImageObject.lockFocus()`, `ImageObject.unlockFocus()`, and `with ImageObject():` drawing have been added for module-level drawing into image objects while preserving the surrounding drawing state.
 
 ## `BezierPath` Gaps
@@ -91,7 +91,7 @@ None
 
 Notes:
 
-- `getNSBezierPath` and `setNSBezierPath` are intentionally out-of-scope macOS bridge APIs and now exist as explicit unsupported APIs.
+- `getNSBezierPath` and `setNSBezierPath` are intentionally out-of-scope macOS bridge APIs and now exist as explicit unsupported APIs; tracked in [#17](https://github.com/eliheuer/drawbot-skia/issues/17).
 - `intersectionPoints()` has been added using `fontTools.misc.bezierTools` segment intersections, with support for path-to-path intersections and self-intersections.
 - `traceImage()` has been added using DrawBot's external-tool model: it requires `mkbitmap` and `potrace`, raises `DrawbotError` if they are unavailable, imports the traced SVG path data into the `BezierPath`, and documents the optional system dependency in the README.
 - `optimizePath()` has been added for DrawBot's trailing-empty-`moveTo` cleanup behavior.
@@ -113,7 +113,7 @@ None
 
 Notes:
 
-- `getNSObject()` is an intentionally out-of-scope macOS bridge API and now exists as an explicit unsupported API.
+- `getNSObject()` is an intentionally out-of-scope macOS bridge API and now exists as an explicit unsupported API; tracked in [#17](https://github.com/eliheuer/drawbot-skia/issues/17).
 - `url()` has been added as text-style state; rendering URL annotations still depends on the output context and is tracked with the link APIs.
 
 ## `ImageObject` Gaps
