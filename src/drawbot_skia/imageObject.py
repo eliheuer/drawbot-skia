@@ -584,6 +584,39 @@ class ImageObject:
         self._setPILImage(image)
         self._offset = (0, 0)
 
+    def areaLogarithmicHistogram(
+        self,
+        extent=(0.0, 0.0, 640.0, 80.0),
+        scale=1.0,
+        count=64.0,
+        minimumStop=-10.0,
+        maximumStop=4.0,
+    ):
+        from PIL import Image
+
+        cropped = _cropExtent(self._pilImage(), extent).convert("L")
+        bins = max(1, int(round(float(count))))
+        histogram = cropped.histogram()
+        grouped = []
+        step = 256 / bins
+        for index in range(bins):
+            start = int(round(index * step))
+            end = int(round((index + 1) * step))
+            grouped.append(sum(histogram[start:end]))
+        total = max(1, sum(grouped))
+        minimumStop = float(minimumStop)
+        maximumStop = float(maximumStop)
+        stopRange = maximumStop - minimumStop or 1
+        data = []
+        for value in grouped:
+            normalized = max(value / total, 1e-12)
+            logarithmic = (math.log10(normalized) - minimumStop) / stopRange
+            data.append(_clampByte(logarithmic * 255 * float(scale)))
+        image = Image.new("RGBA", (bins, 1))
+        image.putdata([(value, value, value, 255) for value in data])
+        self._setPILImage(image)
+        self._offset = (0, 0)
+
     def histogramDisplayFilter(self, height=100.0, highLimit=1.0, lowLimit=0.0):
         from PIL import Image
         from PIL import ImageDraw
@@ -661,6 +694,32 @@ class ImageObject:
         image = self._pilImage()
         edge = image.filter(ImageFilter.FIND_EDGES)
         self._setPILImage(_blendRGBA(image, edge, intensity))
+
+    def cannyEdgeDetector(
+        self,
+        gaussianSigma=1.6,
+        perceptual=False,
+        thresholdHigh=0.05,
+        thresholdLow=0.02,
+        hysteresisPasses=1.0,
+    ):
+        from PIL import ImageFilter
+
+        image = self._pilImage()
+        gray = image.convert("L").filter(ImageFilter.GaussianBlur(float(gaussianSigma)))
+        edge = gray.filter(ImageFilter.FIND_EDGES)
+        high = _clampByte(float(thresholdHigh) * 255)
+        low = _clampByte(float(thresholdLow) * 255)
+        threshold = max(0, min(255, (high + low) // 2))
+        edge = edge.point(lambda value: 255 if value >= threshold else 0)
+        self._setPILImage(_mergeRGBA(edge, edge, edge, image.getchannel("A")))
+
+    def sobelGradients(self):
+        from PIL import ImageFilter
+
+        image = self._pilImage()
+        edge = image.convert("L").filter(ImageFilter.FIND_EDGES)
+        self._setPILImage(_mergeRGBA(edge, edge, edge, image.getchannel("A")))
 
     def edgeWork(self, radius=3.0):
         from PIL import ImageFilter
@@ -777,6 +836,31 @@ class ImageObject:
         edges = edges.point(lambda value: 255 if value > limit else 0)
         overlay = _mergeRGBA(edges, edges, edges, image.getchannel("A"))
         self._setPILImage(_blendRGBA(image, overlay, edgeIntensity))
+
+    def dotScreen(self, center=(150.0, 150.0), angle=0.0, width=6.0, sharpness=0.7):
+        self._setPILImage(_screenImage(self._pilImage(), center, angle, width, sharpness, "dot"))
+
+    def lineScreen(self, center=(150.0, 150.0), angle=0.0, width=6.0, sharpness=0.7):
+        self._setPILImage(_screenImage(self._pilImage(), center, angle, width, sharpness, "line"))
+
+    def circularScreen(self, center=(150.0, 150.0), width=6.0, sharpness=0.7):
+        self._setPILImage(_screenImage(self._pilImage(), center, 0, width, sharpness, "circular"))
+
+    def hatchedScreen(self, center=(150.0, 150.0), angle=0.0, width=6.0, sharpness=0.7):
+        image = _screenImage(self._pilImage(), center, angle, width, sharpness, "line")
+        cross = _screenImage(self._pilImage(), center, angle + 90, width, sharpness, "line")
+        self._setPILImage(_blendRGBA(image, cross, 0.5))
+
+    def CMYKHalftone(
+        self,
+        center=(150.0, 150.0),
+        width=6.0,
+        angle=0.0,
+        sharpness=0.7,
+        GCR=1.0,
+        UCR=0.5,
+    ):
+        self._setPILImage(_screenImage(self._pilImage(), center, angle, width, sharpness, "dot"))
 
     def crystallize(self, radius=20.0, center=(150.0, 150.0)):
         self.pixellate(center=center, scale=radius)
@@ -1096,6 +1180,43 @@ class ImageObject:
         mask = _imageObjectToPIL(maskImage).resize(source.size).convert("L")
         self._setPILImage(Image.composite(source, background, mask))
 
+    def blendWithRedMask(self, backgroundImage, maskImage):
+        from PIL import Image
+
+        source = self._pilImage()
+        background = _imageObjectToPIL(backgroundImage).resize(source.size)
+        mask = _imageObjectToPIL(maskImage).resize(source.size).getchannel("R")
+        self._setPILImage(Image.composite(source, background, mask))
+
+    def blendWithBlueMask(self, backgroundImage, maskImage):
+        from PIL import Image
+
+        source = self._pilImage()
+        background = _imageObjectToPIL(backgroundImage).resize(source.size)
+        mask = _imageObjectToPIL(maskImage).resize(source.size).getchannel("B")
+        self._setPILImage(Image.composite(source, background, mask))
+
+    def maskedVariableBlur(self, mask, radius=5.0):
+        from PIL import Image
+        from PIL import ImageFilter
+
+        source = self._pilImage()
+        blurred = source.filter(ImageFilter.GaussianBlur(float(radius)))
+        maskImage = _imageObjectToPIL(mask).resize(source.size).convert("L")
+        self._setPILImage(Image.composite(blurred, source, maskImage))
+
+    def edgePreserveUpsampleFilter(self, smallImage, spatialSigma=3.0, lumaSigma=0.15):
+        from PIL import Image
+        from PIL import ImageFilter
+
+        source = self._pilImage()
+        small = _imageObjectToPIL(smallImage)
+        upsampled = small.resize(source.size, Image.Resampling.BICUBIC)
+        radius = max(0, float(spatialSigma) / 2)
+        if radius:
+            upsampled = upsampled.filter(ImageFilter.SMOOTH_MORE)
+        self._setPILImage(_blendRGBA(source, upsampled, max(0, min(1, float(lumaSigma) * 2))))
+
     def photoEffectMono(self, extrapolate=False):
         self._monochrome()
 
@@ -1319,6 +1440,45 @@ def _gaussianGradientImage(size, center, color0, color1, radius):
             amount = 1 - math.exp(-((distance ** 2) / (2 * radius * radius)))
             pixels[x, y] = _mixColor(color0, color1, amount)
     return image
+
+
+def _screenImage(image, center, angle, width, sharpness, mode):
+    from PIL import Image
+
+    width = max(1, float(width))
+    sharpness = max(0, min(1, float(sharpness)))
+    centerX, centerY = center
+    angle = math.radians(float(angle))
+    cosAngle = math.cos(angle)
+    sinAngle = math.sin(angle)
+    gray = image.convert("L")
+    alpha = image.getchannel("A")
+    result = Image.new("RGBA", image.size)
+    pixels = result.load()
+    grayPixels = gray.load()
+    alphaPixels = alpha.load()
+    transition = max(1, 128 * (1 - sharpness))
+    for y in range(image.height):
+        for x in range(image.width):
+            tx = x - centerX
+            ty = y - centerY
+            if mode == "circular":
+                phase = math.hypot(tx, ty) / width
+                pattern = (math.sin(phase * math.tau) + 1) * 127.5
+            elif mode == "line":
+                phase = (tx * cosAngle + ty * sinAngle) / width
+                pattern = (math.sin(phase * math.tau) + 1) * 127.5
+            else:
+                rx = tx * cosAngle + ty * sinAngle
+                ry = -tx * sinAngle + ty * cosAngle
+                cx = (rx / width) - round(rx / width)
+                cy = (ry / width) - round(ry / width)
+                distance = min(1, math.hypot(cx, cy) * 2)
+                pattern = (1 - distance) * 255
+            threshold = 255 - grayPixels[x, y]
+            value = _clampByte(255 if pattern >= threshold else 255 - min(255, transition))
+            pixels[x, y] = (value, value, value, alphaPixels[x, y])
+    return result
 
 
 def _cropExtent(image, extent):

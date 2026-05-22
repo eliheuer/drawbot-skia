@@ -386,6 +386,12 @@ def test_imageObject_blend_and_compositing_batch(tmpdir):
     im = ImageObject(sourcePath)
     assert im.blendWithMask(backgroundPath, maskPath) is None
     assert im.size() == (12, 12)
+    im = ImageObject(sourcePath)
+    assert im.blendWithRedMask(backgroundPath, maskPath) is None
+    assert im.size() == (12, 12)
+    im = ImageObject(sourcePath)
+    assert im.blendWithBlueMask(backgroundPath, maskPath) is None
+    assert im.size() == (12, 12)
 
 
 def test_imageObject_color_and_morphology_batch(tmpdir):
@@ -488,6 +494,7 @@ def test_imageObject_analysis_and_stylize_batch(tmpdir):
         ("rowAverage", ((0, 0, 24, 16),), {}, (1, 16)),
         ("columnAverage", ((0, 0, 24, 16),), {}, (24, 1)),
         ("areaHistogram", (), {"extent": (0, 0, 24, 16), "count": 8}, (8, 1)),
+        ("areaLogarithmicHistogram", (), {"extent": (0, 0, 24, 16), "count": 8}, (8, 1)),
         ("histogramDisplayFilter", (), {"height": 12}, (256, 12)),
     ]
     for methodName, args, kwargs, expectedSize in sizedCalls:
@@ -505,6 +512,13 @@ def test_imageObject_analysis_and_stylize_batch(tmpdir):
         ("highlightShadowAdjust", (), {"shadowAmount": 0.2}),
         ("heightFieldFromMask", (), {"radius": 1}),
         ("lineOverlay", (), {}),
+        ("cannyEdgeDetector", (), {}),
+        ("sobelGradients", (), {}),
+        ("dotScreen", (), {"width": 4}),
+        ("lineScreen", (), {"width": 4}),
+        ("circularScreen", (), {"width": 4}),
+        ("hatchedScreen", (), {"width": 4}),
+        ("CMYKHalftone", (), {"width": 4}),
         ("crystallize", (), {"radius": 4}),
         ("hexagonalPixellate", (), {"scale": 4}),
         ("pointillize", (), {"radius": 4}),
@@ -515,6 +529,17 @@ def test_imageObject_analysis_and_stylize_batch(tmpdir):
         width, height = im.size()
         assert width > 0
         assert height > 0
+
+    maskPath = pathlib.Path(tmpdir) / "analysis-mask.png"
+    mask = Image.new("RGBA", (24, 16), (0, 0, 255, 255))
+    mask.save(maskPath)
+    for methodName, args, kwargs in [
+        ("maskedVariableBlur", (maskPath,), {"radius": 2}),
+        ("edgePreserveUpsampleFilter", (maskPath,), {}),
+    ]:
+        im = ImageObject(imagePath)
+        assert getattr(im, methodName)(*args, **kwargs) is None
+        assert im.size() == (24, 16)
 
 
 def test_numberOfPages_gif(tmpdir):
