@@ -86,7 +86,7 @@ class GraphicsStateMixin:
             raise DrawbotError(f"lineJoin must be one of: {sorted(_strokeJoinMapping)}")
         self.strokePaint = self.strokePaint.copy(lineJoin=value)
 
-    def lineDash(self, value=None, *values, offset=0):
+    def lineDash(self, value, *values, offset=0):
         if value is None:
             if values:
                 raise TypeError(
@@ -208,8 +208,8 @@ class GraphicsStateMixin:
                 fontNumber=fontNumber,
             )
 
-    def fontSize(self, size):
-        self.textStyle = self.textStyle.copy(fontSize=size)
+    def fontSize(self, fontSize):
+        self.textStyle = self.textStyle.copy(fontSize=fontSize)
 
     def lineHeight(self, value):
         self.textStyle = self.textStyle.copy(lineHeight=value)
@@ -254,12 +254,12 @@ class GraphicsStateMixin:
         self.textStyle = self.textStyle.copy(features=currentFeatures)
         return currentFeatures
 
-    def fontVariations(self, *, resetVariations=False, **variations):
+    def fontVariations(self, *, resetVariations=False, **axes):
         if resetVariations:
             currentVariations = {}
         else:
             currentVariations = dict(self.textStyle.variations)
-        currentVariations.update(variations)
+        currentVariations.update(axes)
         self.textStyle = self.textStyle.copy(variations=currentVariations)
         return currentVariations
 

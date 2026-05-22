@@ -24,8 +24,8 @@ class FormattedString:
         if txt:
             self.append(txt)
 
-    def append(self, txt, **properties):
-        properties = self._normalizedProperties(properties)
+    def append(self, txt, **kwargs):
+        properties = self._normalizedProperties(kwargs)
         runProperties = self._currentProperties()
         runProperties.update(properties)
         self._runs.append((str(txt), runProperties))
@@ -72,16 +72,17 @@ class FormattedString:
     def fallbackFontNumber(self, fontNumber):
         self._properties["fallbackFontNumber"] = fontNumber
 
-    def fontSize(self, size):
-        self._properties["fontSize"] = size
+    def fontSize(self, fontSize):
+        self._properties["fontSize"] = fontSize
 
-    def lineHeight(self, value):
-        self._properties["lineHeight"] = value
+    def lineHeight(self, lineHeight):
+        self._properties["lineHeight"] = lineHeight
 
     def hyphenation(self, value):
         self._properties["hyphenation"] = value
 
-    def tabs(self, *tabs):
+    def tabs(self, tab, *tabs):
+        tabs = (tab,) + tabs
         if len(tabs) == 1 and tabs[0] is None:
             tabs = None
         self._properties["tabs"] = tabs
@@ -140,10 +141,10 @@ class FormattedString:
         self._features.update(features)
         return dict(self._features)
 
-    def fontVariations(self, *, resetVariations=False, **variations):
+    def fontVariations(self, *, resetVariations=False, **axes):
         if resetVariations:
             self._variations.clear()
-        self._variations.update(variations)
+        self._variations.update(axes)
         return dict(self._variations)
 
     def language(self, language):

@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-406 passed, 3 skipped, 3 warnings
+412 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -62,6 +62,7 @@ Notes:
 - `textSize()` accepts DrawBot's `align`, `width`, and `height` arguments and measures width-constrained plain and formatted text through drawbot-skia's wrapping stack.
 - `image()` and `imageSize()` accept `pageNumber` for multi-frame raster image paths.
 - `image()`, `imagePixelColor()`, `scale()`, and `skew()` accept DrawBot's top-level keyword argument names.
+- Public `Drawing`, `BezierPath`, and `FormattedString` signatures now match the audited DrawBot source signatures for implemented public methods.
 - `numberOfPages(path)` requires a path and returns external PDF/GIF page counts; use `pageCount()` for the current drawing.
 - `polygon()` and `BezierPath.polygon()` now match DrawBot's variadic point API and validation for too few points or unexpected keyword arguments.
 - Path construction and stroke-style top-level wrappers accept DrawBot's keyword argument names, including `moveTo(xy=...)`, `lineTo(xy=...)`, `curveTo(xy1=..., xy2=..., xy3=...)`, `arcTo(xy1=..., xy2=...)`, `line(point1=..., point2=...)`, `blendMode(operation=...)`, `strokeWidth(value=...)`, `lineCap(value=...)`, `lineJoin(value=...)`, `lineDash(value=..., offset=...)`, and `miterLimit(value=...)`.

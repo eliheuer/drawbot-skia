@@ -133,8 +133,8 @@ class Drawing:
             self._canvas.translate(0, height)
             self._canvas.scale(1, -1)
 
-    def frameDuration(self, duration):
-        self._document.setFrameDuration(duration)
+    def frameDuration(self, seconds):
+        self._document.setFrameDuration(seconds)
 
     def colorSpace(self, colorSpace):
         if colorSpace is None:
@@ -1103,10 +1103,18 @@ class Drawing:
         finally:
             self._canvas.restore()
 
-    def saveImage(self, fileName, **kwargs):
+    def saveImage(self, path, *args, **options):
+        if args:
+            if len(args) == 1:
+                warnings.warn(
+                    "'multipage' should be a keyword argument: use 'saveImage(path, multipage=True)'"
+                )
+                options["multipage"] = args[0]
+            else:
+                raise TypeError("saveImage(path, **options) takes only keyword arguments")
         if self._document.isDrawing:
             self._document.endPage()
-        self._document.saveImage(fileName, **kwargs)
+        self._document.saveImage(path, **options)
 
     # Helpers
 

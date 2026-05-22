@@ -5,7 +5,7 @@ values = [
     (8, "round", "round", [8, 10, 15]),
     (5, "round", "round", [0, 7, 7, 7]),
     (5, "round", "round", [None]),  # reset
-    (5, "round", "round", []),  # reset
+    (5, "round", "round", [None]),  # reset
 ]
 
 size(100, 100 * len(values))

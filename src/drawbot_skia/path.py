@@ -218,9 +218,9 @@ class BezierPath(BasePen):
         t = t.rotate(math.radians(angle))
         self.transform(t, center=center)
 
-    def skew(self, x, y=0, center=(0, 0)):
+    def skew(self, angle1, angle2=0, center=(0, 0)):
         t = Transform()
-        t = t.skew(math.radians(x), math.radians(y))
+        t = t.skew(math.radians(angle1), math.radians(angle2))
         self.transform(t, center=center)
 
     def transform(self, transformMatrix, center=(0, 0)):

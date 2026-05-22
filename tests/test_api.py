@@ -3633,6 +3633,7 @@ def test_line_dash_offset():
     assert list(inspect.signature(db.lineJoin).parameters) == ["value"]
     assert list(inspect.signature(db.miterLimit).parameters) == ["value"]
     assert list(inspect.signature(db.lineDash).parameters) == ["value", "values", "offset"]
+    assert inspect.signature(db.lineDash).parameters["value"].default is inspect.Signature.empty
 
     db.blendMode(operation="multiply")
     assert db._gstate.fillPaint.blendMode == "multiply"
@@ -3648,7 +3649,7 @@ def test_line_dash_offset():
     assert db._gstate.strokePaint.lineDash == (5, 10)
     assert db._gstate.strokePaint.lineDashOffset == 3
 
-    db.lineDash()
+    db.lineDash(None)
     assert db._gstate.strokePaint.lineDash is None
     assert db._gstate.strokePaint.lineDashOffset == 0
 
@@ -3672,9 +3673,42 @@ def test_transform_default_arguments():
     assert inspect.signature(path.translate).parameters["x"].default == 0
     assert inspect.signature(path.translate).parameters["y"].default == 0
     assert inspect.signature(path.scale).parameters["x"].default == 1
+    assert list(inspect.signature(path.skew).parameters) == ["angle1", "angle2", "center"]
     path.translate()
     path.scale()
+    path.skew(angle1=0)
     assert path.bounds() == bounds
+
+
+def test_drawbot_signature_keyword_names():
+    import inspect
+
+    db = Drawing()
+    assert list(inspect.signature(db.saveImage).parameters) == ["path", "args", "options"]
+    assert list(inspect.signature(db.frameDuration).parameters) == ["seconds"]
+    assert list(inspect.signature(db.fontSize).parameters) == ["fontSize"]
+    assert list(inspect.signature(db.fontVariations).parameters) == [
+        "resetVariations",
+        "axes",
+    ]
+
+    text = FormattedString()
+    assert list(inspect.signature(text.append).parameters) == ["txt", "kwargs"]
+    assert list(inspect.signature(text.fontSize).parameters) == ["fontSize"]
+    assert list(inspect.signature(text.lineHeight).parameters) == ["lineHeight"]
+    assert list(inspect.signature(text.fontVariations).parameters) == [
+        "resetVariations",
+        "axes",
+    ]
+    assert list(inspect.signature(text.tabs).parameters) == ["tab", "tabs"]
+    text.fontSize(fontSize=12)
+    text.lineHeight(lineHeight=14)
+    text.fontVariations(wght=700)
+    text.tabs((80, "center"))
+    assert text.textProperties()["fontSize"] == 12
+    assert text.textProperties()["lineHeight"] == 14
+    assert text.textProperties()["variations"]["wght"] == 700
+    assert text.textProperties()["tabs"] == ((80, "center"),)
 
 
 def test_gradient_default_arguments_reset_to_black_fill():
