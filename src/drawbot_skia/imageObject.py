@@ -115,10 +115,19 @@ class ImageObject:
         image = Image.new("RGBA", (widthPx, heightPx))
         pixels = image.load()
         centerX, centerY = center
+        sharpness = max(0, min(1, float(sharpness)))
+        transition = (1 - sharpness) * 0.5
         for y in range(heightPx):
             for x in range(widthPx):
-                index = (math.floor((x - centerX) / cell) + math.floor((y - centerY) / cell)) & 1
-                pixels[x, y] = c1 if index else c0
+                xPhase = (x - centerX) / cell
+                yPhase = (y - centerY) / cell
+                index = (math.floor(xPhase) + math.floor(yPhase)) & 1
+                color = c1 if index else c0
+                if transition:
+                    distance = min(xPhase % 1, 1 - (xPhase % 1), yPhase % 1, 1 - (yPhase % 1))
+                    if distance < transition:
+                        color = _mixRGBABytes(color, c0 if index else c1, 0.5 * (1 - distance / transition))
+                pixels[x, y] = color
         self._setPILImage(image)
         self._path = None
         self._offset = (0, 0)
@@ -141,9 +150,19 @@ class ImageObject:
         image = Image.new("RGBA", (widthPx, heightPx))
         pixels = image.load()
         centerX, centerY = center
+        sharpness = max(0, min(1, float(sharpness)))
+        transition = (1 - sharpness) * 0.5
         for y in range(heightPx):
             for x in range(widthPx):
-                pixels[x, y] = c1 if math.floor((x - centerX) / stripeWidth) & 1 else c0
+                phase = (x - centerX) / stripeWidth
+                index = math.floor(phase) & 1
+                color = c1 if index else c0
+                if transition:
+                    fraction = phase % 1
+                    distance = min(fraction, 1 - fraction)
+                    if distance < transition:
+                        color = _mixRGBABytes(color, c0 if index else c1, 0.5 * (1 - distance / transition))
+                pixels[x, y] = color
         self._setPILImage(image)
         self._path = None
         self._offset = (0, 0)
@@ -2156,6 +2175,11 @@ def _mixColor(color0, color1, amount):
     c0 = _colorToRGBABytes(color0)
     c1 = _colorToRGBABytes(color1)
     return tuple(_clampByte(a + (b - a) * amount) for a, b in zip(c0, c1))
+
+
+def _mixRGBABytes(color0, color1, amount):
+    amount = max(0, min(1, float(amount)))
+    return tuple(_clampByte(a + (b - a) * amount) for a, b in zip(color0, color1))
 
 
 def _rgbBytesToLab(r, g, b):

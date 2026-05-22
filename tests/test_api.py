@@ -594,6 +594,32 @@ def test_imageObject_generator_batch():
         assert im.offset() == (0, 0)
 
 
+def test_imageObject_checkerboard_and_stripes_use_sharpness():
+    hardChecker = ImageObject()
+    assert hardChecker.checkerboardGenerator((5, 3), center=(0.5, 0.5), width=2, sharpness=1) is None
+    assert [[hardChecker._pilImage().getpixel((x, y))[0] for x in range(5)] for y in range(3)] == [
+        [255, 0, 0, 255, 255],
+        [0, 255, 255, 0, 0],
+        [0, 255, 255, 0, 0],
+    ]
+
+    softChecker = ImageObject()
+    assert softChecker.checkerboardGenerator((5, 3), center=(0.5, 0.5), width=2, sharpness=0) is None
+    assert [[softChecker._pilImage().getpixel((x, y))[0] for x in range(5)] for y in range(3)] == [
+        [191, 64, 64, 191, 191],
+        [64, 191, 191, 64, 64],
+        [64, 191, 191, 64, 64],
+    ]
+
+    hardStripes = ImageObject()
+    assert hardStripes.stripesGenerator((5, 1), center=(0.5, 0), width=2, sharpness=1) is None
+    assert [hardStripes._pilImage().getpixel((x, 0))[0] for x in range(5)] == [0, 255, 255, 0, 0]
+
+    softStripes = ImageObject()
+    assert softStripes.stripesGenerator((5, 1), center=(0.5, 0), width=2, sharpness=0) is None
+    assert [softStripes._pilImage().getpixel((x, 0))[0] for x in range(5)] == [64, 191, 191, 64, 64]
+
+
 def test_imageObject_qr_code_generator():
     from drawbot_skia.imageObject import _qrInterleavedCodewords
     from drawbot_skia.imageObject import _qrMatrix
