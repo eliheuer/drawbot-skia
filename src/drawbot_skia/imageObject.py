@@ -1106,7 +1106,7 @@ class ImageObject:
         self._setPILImage(converted)
 
     def bokehBlur(self, radius=20.0, ringAmount=0.0, ringSize=0.1, softness=1.0):
-        self.gaussianBlur(radius)
+        self._setPILImage(_bokehBlurImage(self._pilImage(), radius, ringAmount, ringSize, softness))
 
     def discBlur(self, radius=8.0):
         from PIL import ImageFilter
@@ -2911,6 +2911,39 @@ def _radialMask(size, center, radius, amount=1.0):
             distance = math.hypot(x - cx, y - cy)
             pixels[x, y] = _clampByte(max(0, 1 - distance / radius) * 255 * amount)
     return mask
+
+
+def _bokehBlurImage(image, radius, ringAmount, ringSize, softness):
+    from PIL import Image
+    from PIL import ImageFilter
+
+    radius = max(1, int(round(float(radius))))
+    size = radius * 2 + 1
+    ringAmount = max(0, float(ringAmount))
+    ringSize = max(0, min(1, float(ringSize)))
+    softness = max(0, min(1, float(softness)))
+    weights = []
+    for y in range(size):
+        for x in range(size):
+            distance = math.hypot(x - radius, y - radius) / radius
+            if distance > 1:
+                weight = 0.0
+            elif softness:
+                edgeStart = max(0, 1 - softness)
+                weight = 1.0 if distance <= edgeStart else max(0, (1 - distance) / max(0.0001, softness))
+            else:
+                weight = 1.0
+            if weight and ringAmount:
+                ringDistance = abs(distance - ringSize)
+                ringWidth = max(0.05, 0.2 * (1 - softness) + 0.05)
+                ring = max(0, 1 - ringDistance / ringWidth)
+                weight *= 1 + ring * ringAmount
+            weights.append(weight)
+    total = sum(weights) or 1
+    kernel = ImageFilter.Kernel((size, size), [weight / total for weight in weights], scale=1)
+    source = image.convert("RGBA")
+    channels = [channel.filter(kernel) for channel in source.split()]
+    return Image.merge("RGBA", channels)
 
 
 def _spotLightImage(image, lightPosition, lightPointsAt, brightness, concentration, color):

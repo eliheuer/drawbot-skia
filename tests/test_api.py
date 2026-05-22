@@ -935,6 +935,22 @@ def test_imageObject_spot_light_targets_light_points_at(tmpdir):
     assert image.getpixel((0, 0)) == (0, 0, 0, 0)
 
 
+def test_imageObject_bokeh_blur_uses_ring_parameters(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "bokeh.png"
+    image = Image.new("RGBA", (7, 7), (0, 0, 0, 255))
+    image.putpixel((3, 3), (255, 255, 255, 255))
+    image.save(imagePath)
+
+    plain = ImageObject(imagePath)
+    assert plain.bokehBlur(radius=2, ringAmount=0, ringSize=0.5, softness=0) is None
+    assert [plain._pilImage().getpixel((x, 3))[0] for x in range(7)] == [0, 0, 20, 20, 20, 0, 0]
+
+    ringed = ImageObject(imagePath)
+    assert ringed.bokehBlur(radius=2, ringAmount=1, ringSize=0.5, softness=0) is None
+    assert [ringed._pilImage().getpixel((x, 3))[0] for x in range(7)] == [0, 0, 29, 14, 29, 0, 0]
+    assert [ringed._pilImage().getpixel((x, 2))[0] for x in range(7)] == [0, 0, 17, 29, 17, 0, 0]
+
+
 def test_imageObject_transition_batch(tmpdir):
     sourcePath = pathlib.Path(tmpdir) / "source.png"
     targetPath = pathlib.Path(tmpdir) / "target.png"
