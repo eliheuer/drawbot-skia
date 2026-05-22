@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-319 passed, 3 skipped, 3 warnings
+320 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -104,12 +104,15 @@ Current fork supports:
 ```text
 XRay
 additionCompositing
+affineClamp
+affineTile
 blendWithAlphaMask
 blendWithMask
 bloom
 blurredRectangleGenerator
 boxBlur
 checkerboardGenerator
+clamp
 clearFilters
 colorAbsoluteDifference
 colorBlendMode
@@ -197,6 +200,8 @@ sourceAtopCompositing
 sourceInCompositing
 sourceOutCompositing
 sourceOverCompositing
+straightenFilter
+stretchCrop
 stripesGenerator
 subtractBlendMode
 temperatureAndTint
@@ -211,7 +216,7 @@ whitePointAdjust
 zoomBlur
 ```
 
-DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 107 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, generators, and blend/compositing modes rather than pixel-identical Core Image implementations.
+DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 112 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, generators, simple geometry filters, and blend/compositing modes rather than pixel-identical Core Image implementations.
 
 Representative missing groups:
 
@@ -219,7 +224,7 @@ Representative missing groups:
 - blur and stylization filters: `bokehBlur`, `crystallize`, `pointillize`;
 - color/statistical filters that still need deeper Core Image-equivalent behavior: `KMeans`, `paletteCentroid`, `palettize`, `spotColor`;
 - compositing, transitions, and mask workflows that need deeper Core Image-equivalent semantics: `disintegrateWithMaskTransition`, `pageCurlTransition`, `copyMachineTransition`;
-- geometry and distortion filters: `affineTile`, `perspectiveTransform`, `twirlDistortion`, `bumpDistortion`, `kaleidoscope`.
+- geometry and distortion filters: `perspectiveTransform`, `twirlDistortion`, `bumpDistortion`, `kaleidoscope`.
 
 Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-heavy and "huge", this should not be treated as a blocker for the headline text/path parity milestone unless the project explicitly chooses an ImageObject parity target.
 

@@ -440,6 +440,29 @@ def test_imageObject_generator_batch():
         assert im.offset() == (0, 0)
 
 
+def test_imageObject_simple_geometry_batch(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "geometry.png"
+    Image.new("RGBA", (20, 12), (120, 80, 40, 255)).save(imagePath)
+
+    im = ImageObject(imagePath)
+    assert im.clamp((2, 3, 10, 6)) is None
+    assert im.size() == (10, 6)
+    assert im.offset() == (2, 3)
+
+    calls = [
+        ("affineClamp", (), {}),
+        ("affineTile", (), {}),
+        ("straightenFilter", (), {"angle": 0.2}),
+        ("stretchCrop", (), {"size": (16, 16)}),
+    ]
+    for methodName, args, kwargs in calls:
+        im = ImageObject(imagePath)
+        assert getattr(im, methodName)(*args, **kwargs) is None
+        width, height = im.size()
+        assert width > 0
+        assert height > 0
+
+
 def test_numberOfPages_gif(tmpdir):
     source = """
 for i in range(3):

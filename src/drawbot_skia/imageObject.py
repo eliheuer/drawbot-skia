@@ -251,6 +251,44 @@ class ImageObject:
         self._path = None
         self._offset = (0, 0)
 
+    def clamp(self, extent=(0.0, 0.0, 640.0, 80.0)):
+        self.crop(extent)
+
+    def affineClamp(self, transform=(0.4, 0.0, 0.0, 0.4, 0.0, 0.0)):
+        self._affineTransform(transform)
+
+    def affineTile(self, transform=(0.4, 0.0, 0.0, 0.4, 0.0, 0.0)):
+        self._affineTransform(transform)
+
+    def straightenFilter(self, angle=0.0):
+        from PIL import Image
+
+        self._setPILImage(
+            self._pilImage().rotate(
+                math.degrees(float(angle)),
+                expand=True,
+                resample=Image.Resampling.BICUBIC,
+            )
+        )
+
+    def stretchCrop(self, size=(1280.0, 720.0), cropAmount=0.25, centerStretchAmount=0.25):
+        from PIL import Image
+
+        targetWidth, targetHeight = _normalizeSize(size)
+        image = self._pilImage()
+        sourceRatio = image.width / image.height
+        targetRatio = targetWidth / targetHeight
+        if sourceRatio > targetRatio:
+            cropWidth = int(round(image.height * targetRatio))
+            left = (image.width - cropWidth) // 2
+            image = image.crop((left, 0, left + cropWidth, image.height))
+        else:
+            cropHeight = int(round(image.width / targetRatio))
+            top = (image.height - cropHeight) // 2
+            image = image.crop((0, top, image.width, top + cropHeight))
+        self._setPILImage(image.resize((targetWidth, targetHeight), Image.Resampling.BICUBIC))
+        self._offset = (0, 0)
+
     def crop(
         self,
         rectangle=(
@@ -971,6 +1009,20 @@ class ImageObject:
         blended = blendFunction(source.convert("RGBA"), background.convert("RGBA"))
         alpha = source.getchannel("A")
         self._setPILImage(Image.composite(blended, background, alpha))
+
+    def _affineTransform(self, transform):
+        from PIL import Image
+
+        xx, xy, yx, yy, dx, dy = transform
+        image = self._pilImage()
+        self._setPILImage(
+            image.transform(
+                image.size,
+                Image.Transform.AFFINE,
+                (xx, yx, dx, xy, yy, dy),
+                resample=Image.Resampling.BICUBIC,
+            )
+        )
 
     def _monochrome(self):
         self._setPILImage(self._monochromeImage())
