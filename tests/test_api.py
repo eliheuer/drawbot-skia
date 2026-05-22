@@ -2392,6 +2392,26 @@ def test_imageObject_noise_reduction_controls_noise_and_sharpness(tmpdir):
     assert sum(denoised._pilImage().tobytes()) == 15095
 
 
+def test_imageObject_noise_reduction_preserves_alpha(tmpdir):
+    from drawbot_skia.imageObject import _getImageData
+
+    imagePath = pathlib.Path(tmpdir) / "noise-reduction-alpha.png"
+    image = Image.new("RGBA", (5, 5))
+    alphaValues = []
+    for y in range(5):
+        for x in range(5):
+            alpha = 20 + x * 35 + y * 8
+            alphaValues.append(alpha)
+            image.putpixel((x, y), ((x * 50) % 256, (y * 60) % 256, ((x + y) * 40) % 256, alpha))
+    image.save(imagePath)
+
+    denoised = ImageObject(imagePath)
+    assert denoised.noiseReduction(noiseLevel=0.04, sharpness=0.8) is None
+    denoisedPixels = list(_getImageData(denoised._pilImage()))
+    assert [pixel[3] for pixel in denoisedPixels] == alphaValues
+    assert [pixel[:3] for pixel in denoisedPixels] != [pixel[:3] for pixel in _getImageData(image)]
+
+
 def test_imageObject_color_monochrome_preserves_alpha(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "color-monochrome-alpha.png"
     image = Image.new("RGBA", (4, 1))
@@ -2681,6 +2701,26 @@ def test_imageObject_document_enhancer_uses_amount(tmpdir):
     assert full.documentEnhancer(amount=1) is None
     assert full._pilImage().getpixel((2, 2)) == (160, 175, 190, 255)
     assert sum(full._pilImage().tobytes()) == 15244
+
+
+def test_imageObject_document_enhancer_preserves_alpha(tmpdir):
+    from drawbot_skia.imageObject import _getImageData
+
+    imagePath = pathlib.Path(tmpdir) / "document-enhancer-alpha.png"
+    image = Image.new("RGBA", (4, 4))
+    alphaValues = []
+    for y in range(4):
+        for x in range(4):
+            alpha = 24 + x * 40 + y * 13
+            alphaValues.append(alpha)
+            image.putpixel((x, y), (40 + x * 45, 60 + y * 35, 90 + (x + y) * 20, alpha))
+    image.save(imagePath)
+
+    enhanced = ImageObject(imagePath)
+    assert enhanced.documentEnhancer(amount=1) is None
+    enhancedPixels = list(_getImageData(enhanced._pilImage()))
+    assert [pixel[3] for pixel in enhancedPixels] == alphaValues
+    assert [pixel[:3] for pixel in enhancedPixels] != [pixel[:3] for pixel in _getImageData(image)]
 
 
 def test_imageObject_edges_preserves_alpha(tmpdir):

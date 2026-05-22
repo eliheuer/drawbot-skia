@@ -1155,13 +1155,17 @@ class ImageObject:
         from PIL import ImageFilter
 
         image = self._pilImage()
+        alpha = image.getchannel("A")
+        adjusted = image.convert("RGB")
         radius = max(0, int(round(float(noiseLevel) * 50)))
         if radius:
-            image = image.filter(ImageFilter.MedianFilter(size=radius * 2 + 1))
+            adjusted = adjusted.filter(ImageFilter.MedianFilter(size=radius * 2 + 1))
         sharpness = max(0, float(sharpness))
         if sharpness:
-            image = image.filter(ImageFilter.UnsharpMask(percent=int(sharpness * 250)))
-        self._setPILImage(image)
+            adjusted = adjusted.filter(ImageFilter.UnsharpMask(percent=int(sharpness * 250)))
+        adjusted = adjusted.convert("RGBA")
+        adjusted.putalpha(alpha)
+        self._setPILImage(adjusted)
 
     def edges(self, intensity=1.0):
         from PIL import ImageFilter
@@ -1274,9 +1278,11 @@ class ImageObject:
 
         amount = max(0, float(amount))
         image = self._pilImage()
-        enhanced = ImageEnhance.Contrast(image).enhance(1 + amount * 0.25)
+        alpha = image.getchannel("A")
+        enhanced = ImageEnhance.Contrast(image.convert("RGB")).enhance(1 + amount * 0.25)
         enhanced = ImageEnhance.Sharpness(enhanced).enhance(1 + amount)
-        enhanced = enhanced.filter(ImageFilter.SMOOTH_MORE)
+        enhanced = enhanced.filter(ImageFilter.SMOOTH_MORE).convert("RGBA")
+        enhanced.putalpha(alpha)
         self._setPILImage(_blendRGBA(image, enhanced, min(1, amount)))
 
     def depthToDisparity(self):
