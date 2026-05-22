@@ -438,6 +438,40 @@ def test_imageObject_color_and_morphology_batch(tmpdir):
         assert im.size() == (12, 12)
 
 
+def test_imageObject_lab_conversion_and_delta_e(tmpdir):
+    from drawbot_skia.imageObject import _labToBytes
+    from drawbot_skia.imageObject import _rgbBytesToLab
+
+    sourcePath = pathlib.Path(tmpdir) / "lab-source.png"
+    samePath = pathlib.Path(tmpdir) / "lab-same.png"
+    otherPath = pathlib.Path(tmpdir) / "lab-other.png"
+    image = Image.new("RGBA", (2, 1))
+    image.putdata([(255, 0, 0, 255), (80, 120, 200, 128)])
+    image.save(sourcePath)
+    image.save(samePath)
+    Image.new("RGBA", (2, 1), (0, 255, 0, 255)).save(otherPath)
+
+    im = ImageObject(sourcePath)
+    assert im.convertRGBtoLab() is None
+    labImage = im._pilImage()
+    assert labImage.getpixel((0, 0)) == (*_labToBytes(*_rgbBytesToLab(255, 0, 0)), 255)
+    assert labImage.getpixel((1, 0))[3] == 128
+
+    assert im.convertLabToRGB() is None
+    roundTripped = im._pilImage()
+    assert roundTripped.getpixel((0, 0))[:3] == (255, 2, 1)
+    assert all(abs(a - b) <= 5 for a, b in zip(roundTripped.getpixel((1, 0))[:3], (80, 120, 200)))
+    assert roundTripped.getpixel((1, 0))[3] == 128
+
+    same = ImageObject(sourcePath)
+    assert same.labDeltaE(samePath) is None
+    assert same._pilImage().getpixel((0, 0)) == (0, 0, 0, 255)
+
+    different = ImageObject(sourcePath)
+    assert different.labDeltaE(otherPath) is None
+    assert different._pilImage().getpixel((0, 0))[0] > 100
+
+
 def test_imageObject_generator_batch():
     calls = [
         ("constantColorGenerator", ((16, 12),), {}),

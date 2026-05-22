@@ -766,23 +766,23 @@ class ImageObject:
         image = self._pilImage()
         data = []
         for r, g, b, a in _getImageData(image):
-            l = _clampByte(0.2126 * r + 0.7152 * g + 0.0722 * b)
-            data.append((l, _clampByte(r - g + 128), _clampByte(b - g + 128), a))
+            data.append((*_labToBytes(*_rgbBytesToLab(r, g, b)), a))
         self._setPILImage(_newRGBAWithData(image.size, data))
 
     def convertLabToRGB(self):
         image = self._pilImage()
         data = []
         for l, aa, bb, alpha in _getImageData(image):
-            g = l
-            data.append((_clampByte(g + aa - 128), g, _clampByte(g + bb - 128), alpha))
+            data.append((*_labBytesToRGB(l, aa, bb), alpha))
         self._setPILImage(_newRGBAWithData(image.size, data))
 
     def labDeltaE(self, image2):
         other = _imageObjectToPIL(image2).resize(self.size())
         data = []
         for color1, color2 in zip(_getImageData(self._pilImage()), _getImageData(other)):
-            delta = math.sqrt(sum((a - b) ** 2 for a, b in zip(color1[:3], color2[:3]))) / math.sqrt(3)
+            lab1 = _rgbBytesToLab(*color1[:3])
+            lab2 = _rgbBytesToLab(*color2[:3])
+            delta = math.sqrt(sum((a - b) ** 2 for a, b in zip(lab1, lab2)))
             value = _clampByte(delta)
             data.append((value, value, value, color1[3]))
         self._setPILImage(_newRGBAWithData(self.size(), data))
@@ -1945,6 +1945,81 @@ def _mixColor(color0, color1, amount):
     c0 = _colorToRGBABytes(color0)
     c1 = _colorToRGBABytes(color1)
     return tuple(_clampByte(a + (b - a) * amount) for a, b in zip(c0, c1))
+
+
+def _rgbBytesToLab(r, g, b):
+    x, y, z = _rgbBytesToXYZ(r, g, b)
+    x /= 0.95047
+    z /= 1.08883
+    fx = _labPivotXYZ(x)
+    fy = _labPivotXYZ(y)
+    fz = _labPivotXYZ(z)
+    return 116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)
+
+
+def _rgbBytesToXYZ(r, g, b):
+    r, g, b = (_srgbToLinear(component / 255) for component in (r, g, b))
+    return (
+        r * 0.4124564 + g * 0.3575761 + b * 0.1804375,
+        r * 0.2126729 + g * 0.7151522 + b * 0.0721750,
+        r * 0.0193339 + g * 0.1191920 + b * 0.9503041,
+    )
+
+
+def _labToBytes(l, a, b):
+    return _clampByte(l * 255 / 100), _clampByte(a + 128), _clampByte(b + 128)
+
+
+def _labBytesToRGB(l, a, b):
+    l = l * 100 / 255
+    a = a - 128
+    b = b - 128
+    fy = (l + 16) / 116
+    fx = fy + a / 500
+    fz = fy - b / 200
+    x = 0.95047 * _labPivotInv(fx)
+    y = _labPivotInv(fy)
+    z = 1.08883 * _labPivotInv(fz)
+    return _xyzToRGBBytes(x, y, z)
+
+
+def _xyzToRGBBytes(x, y, z):
+    r = x * 3.2404542 + y * -1.5371385 + z * -0.4985314
+    g = x * -0.9692660 + y * 1.8760108 + z * 0.0415560
+    b = x * 0.0556434 + y * -0.2040259 + z * 1.0572252
+    return tuple(_linearToSrgbByte(component) for component in (r, g, b))
+
+
+def _srgbToLinear(value):
+    if value <= 0.04045:
+        return value / 12.92
+    return ((value + 0.055) / 1.055) ** 2.4
+
+
+def _linearToSrgbByte(value):
+    value = max(0, min(1, value))
+    if value <= 0.0031308:
+        srgb = value * 12.92
+    else:
+        srgb = 1.055 * (value ** (1 / 2.4)) - 0.055
+    return _clampByte(srgb * 255)
+
+
+def _labPivotXYZ(value):
+    epsilon = 216 / 24389
+    kappa = 24389 / 27
+    if value > epsilon:
+        return value ** (1 / 3)
+    return (kappa * value + 16) / 116
+
+
+def _labPivotInv(value):
+    epsilon = 216 / 24389
+    kappa = 24389 / 27
+    value3 = value ** 3
+    if value3 > epsilon:
+        return value3
+    return (116 * value - 16) / kappa
 
 
 def _linearGradientImage(size, point0, point1, color0, color1):
