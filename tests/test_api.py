@@ -3624,6 +3624,37 @@ def test_bezier_path_textBox_returns_overflow():
     assert yMax <= 48
 
 
+def test_bezier_path_text_uses_font_number(tmpdir):
+    collectionPath = pathlib.Path(tmpdir) / "collection.ttc"
+    collection = TTCollection()
+    collection.fonts = [
+        TTFont(testDir / "fonts" / "MutatorSans.ttf"),
+        TTFont(testDir / "fonts" / "SourceSerifPro-Regular.otf"),
+    ]
+    collection.save(collectionPath)
+    collection.close()
+
+    mutatorText = BezierPath()
+    mutatorText.text("A", font=collectionPath, fontSize=80, fontNumber=0)
+    sourceText = BezierPath()
+    sourceText.text("A", font=collectionPath, fontSize=80, fontNumber=1)
+    assert mutatorText.bounds()[2] == pytest.approx(30.079998016357422)
+    assert sourceText.bounds()[2] == pytest.approx(52.23999786376953)
+
+    mutatorBox = BezierPath()
+    mutatorBox.textBox("A A", (0, 0, 200, 100), font=collectionPath, fontSize=80)
+    sourceBox = BezierPath()
+    sourceBox.textBox(
+        "A A",
+        (0, 0, 200, 100),
+        font=collectionPath,
+        fontSize=80,
+        fontNumber=1,
+    )
+    assert mutatorBox.bounds()[2] == pytest.approx(82.08000183105469)
+    assert sourceBox.bounds()[2] == pytest.approx(124.0)
+
+
 def test_bezier_path_textBox_supports_hyphenation():
     unhyphenated = BezierPath()
     plainOverflow = unhyphenated.textBox(

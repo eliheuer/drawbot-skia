@@ -1,6 +1,8 @@
 import os
 import skia
 import uharfbuzz as hb
+from io import BytesIO
+from fontTools.ttLib import TTCollection, TTLibError
 from .errors import DrawbotError
 from .font import makeHBFaceFromSkiaTypeface, makeTTFontFromSkiaTypeface, tagToInt
 from .segmenting import textSegments, reorderedSegments
@@ -689,9 +691,9 @@ class FontObjects:
                 if fontPath is None:
                     typeface = skia.Typeface(fontNameOrPath)
                 else:
-                    typeface = skia.Typeface.MakeFromFile(fontPath, self.fontNumber)
+                    typeface = _makeTypefaceFromPath(fontPath, self.fontNumber)
             else:
-                typeface = skia.Typeface.MakeFromFile(fontNameOrPath, self.fontNumber)
+                typeface = _makeTypefaceFromPath(fontNameOrPath, self.fontNumber)
                 if typeface is None:
                     raise DrawbotError(f"can't load font: {fontNameOrPath}")
         return typeface
@@ -709,6 +711,29 @@ class FontObjects:
         from blackrenderer.font import BlackRendererFont
 
         return BlackRendererFont(ttFont=self.ttFont, hbFont=self.hbFont)
+
+
+def _makeTypefaceFromPath(fontPath, fontNumber):
+    typeface = skia.Typeface.MakeFromFile(fontPath, fontNumber)
+    if typeface is not None or fontNumber == 0:
+        return typeface
+    try:
+        collection = TTCollection(fontPath)
+    except (TTLibError, OSError):
+        return None
+    try:
+        try:
+            ttFont = collection.fonts[fontNumber]
+        except IndexError as exc:
+            raise DrawbotError(
+                f"fontNumber out of range for '{fontPath}': {fontNumber} "
+                f"not in range 0..{len(collection.fonts) - 1}"
+            ) from exc
+        fontData = BytesIO()
+        ttFont.save(fontData)
+        return skia.Typeface.MakeFromData(skia.Data.MakeWithCopy(fontData.getvalue()), 0)
+    finally:
+        collection.close()
 
 
 def _cloneTypeface(typeface, ttFont, variations):

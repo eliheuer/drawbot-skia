@@ -258,10 +258,10 @@ class BezierPath(BasePen):
     def drawToPointPen(self, pen):
         self.drawToPen(SegmentToPointPen(pen))
 
-    def text(self, txt, offset=None, font=None, fontSize=10, align=None):
+    def text(self, txt, offset=None, font=None, fontSize=10, align=None, fontNumber=0):
         if not txt:
             return
-        textStyle = TextStyle(font=font, fontSize=fontSize)
+        textStyle = TextStyle(font=font, fontSize=fontSize, fontNumber=fontNumber)
         glyphsInfo = textStyle.shape(txt)
         alignGlyphPositions(glyphsInfo, align)
         x, y = (0, 0) if offset is None else offset
@@ -275,6 +275,7 @@ class BezierPath(BasePen):
         fontSize=10,
         align=None,
         hyphenation=None,
+        fontNumber=0,
     ):
         if not txt:
             return ""
@@ -284,7 +285,10 @@ class BezierPath(BasePen):
             )
 
         textStyle = TextStyle(
-            font=font, fontSize=fontSize, hyphenation=bool(hyphenation)
+            font=font,
+            fontSize=fontSize,
+            fontNumber=fontNumber,
+            hyphenation=bool(hyphenation),
         )
         x, y, width, height = box
         lineHeight = textStyle.getLineHeight()
