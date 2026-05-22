@@ -2771,8 +2771,8 @@ def _pdf417BarcodeImage(
     import pdf417gen
 
     width, height = _normalizeSize(size)
-    columns = _pdf417Columns(dataColumns, rows, message)
     securityLevel = max(0, min(8, int(round(float(correctionLevel)))))
+    columns = _pdf417Columns(dataColumns, rows, message, securityLevel)
     for candidateColumns in range(columns, 0, -1):
         try:
             codes = pdf417gen.encode(str(message), columns=candidateColumns, security_level=securityLevel)
@@ -2788,7 +2788,7 @@ def _pdf417BarcodeImage(
     return image
 
 
-def _pdf417Columns(dataColumns, rows, message):
+def _pdf417Columns(dataColumns, rows, message, securityLevel=2):
     if dataColumns:
         return max(1, min(30, int(round(float(dataColumns)))))
     if rows:
@@ -2796,7 +2796,6 @@ def _pdf417Columns(dataColumns, rows, message):
         # PDF417 stores one length descriptor plus data and ECC codewords. This
         # estimate lets the DrawBot rows argument influence layout without
         # reimplementing pdf417gen's high-level compaction planner.
-        securityLevel = 2
         estimatedCodewords = len(str(message).encode("utf-8")) + 1 + (2 << securityLevel)
         return max(1, min(30, int(math.ceil(estimatedCodewords / rowCount))))
     return 6
