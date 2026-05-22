@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-400 passed, 3 skipped, 3 warnings
+401 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -23,7 +23,8 @@ The fork has moved past the original upstream README blockers for animated GIF e
 The remaining parity work is concentrated in:
 
 - `ImageObject`, where many methods are cross-platform Pillow-backed approximations instead of Core Image-equivalent implementations;
-- true pixel parity for text layout and shaping where DrawBot delegates to macOS CoreText; tracked in [#12](https://github.com/eliheuer/drawbot-skia/issues/12).
+- true pixel parity for text layout and shaping where DrawBot delegates to macOS CoreText; tracked in [#12](https://github.com/eliheuer/drawbot-skia/issues/12);
+- BezierPath text containers for `textBox()`, `textOverflow()`, `textBoxBaselines()`, and `textBoxCharacterBounds()`; tracked in [#15](https://github.com/eliheuer/drawbot-skia/issues/15).
 
 The macOS/AppKit/PDFKit bridge APIs are intentionally out of scope for drawbot-skia's cross-platform package target. Their method names are present as explicit compatibility stubs that raise `DrawbotError`, so they should not be counted as open implementation gaps.
 
@@ -56,6 +57,7 @@ Notes:
 
 - The low-risk wrappers around existing `FormattedString` or graphics-state capabilities have been added: `tracking`, `baselineShift`, `underline`, `strikethrough`, `url`, `fallbackFont`, font metric/query wrappers, `listOpenTypeFeatures`, `opacity`, `sizes`, `textOverflow`, and `textBoxBaselines`. Path-based font queries and text styles honor `fontNumber` for collection fonts.
 - `textBoxCharacterBounds()` has been added for rectangular text boxes using drawbot-skia's current line wrapping and shaping stack.
+- BezierPath text containers remain unsupported for `textBox()`, `textOverflow()`, `textBoxBaselines()`, and `textBoxCharacterBounds()` because DrawBot flows text inside arbitrary path shapes through the macOS text stack; tracked in [#15](https://github.com/eliheuer/drawbot-skia/issues/15).
 - `colorSpace()` and `listColorSpaces()` have been added as compatibility-level API/state support for DrawBot's standard color-space names. Rendering remains RGB-backed in Skia rather than CoreGraphics color-managed.
 - `listLanguages()` has been added with Python-locale-derived identifiers.
 - `drawing()` has been added as a reset/cleanup context manager.

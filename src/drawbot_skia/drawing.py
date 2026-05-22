@@ -458,6 +458,7 @@ class Drawing:
                 )
 
     def textBox(self, txt, box, align=None):
+        box = _rectTextBox(box)
         if isinstance(txt, FormattedString):
             return self._textBoxFormattedString(txt, box, align=align)
         x, y, width, height = box
@@ -474,6 +475,7 @@ class Drawing:
         return overflow
 
     def textOverflow(self, txt, box, align=None):
+        box = _rectTextBox(box)
         if isinstance(txt, FormattedString):
             x, y, width, height = box
             lineHeight = _formattedStringBaseLineHeight(txt, self._gstate.textStyle)
@@ -491,6 +493,7 @@ class Drawing:
         return overflow
 
     def textBoxBaselines(self, txt, box, align=None):
+        box = _rectTextBox(box)
         x, y, width, height = box
         if isinstance(txt, FormattedString):
             lineHeight = _formattedStringBaseLineHeight(txt, self._gstate.textStyle)
@@ -535,6 +538,7 @@ class Drawing:
         return baselines
 
     def textBoxCharacterBounds(self, txt, box, align=None):
+        box = _rectTextBox(box)
         x, y, width, height = box
         boxAlign = _textBoxAlign(align)
         if isinstance(txt, FormattedString):
@@ -1333,6 +1337,18 @@ def _textBoxAlign(align):
     if align == "justified":
         return None
     return align
+
+
+def _rectTextBox(box):
+    from .path import BezierPath
+
+    if isinstance(box, BezierPath):
+        raise DrawbotError(
+            "BezierPath text boxes require path-shaped text layout and are not "
+            "implemented in drawbot-skia; tracked in "
+            "https://github.com/eliheuer/drawbot-skia/issues/15"
+        )
+    return box
 
 
 def _formattedLineBox(properties, width, isFirstLine):

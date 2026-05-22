@@ -3075,6 +3075,21 @@ def test_textBox_returns_overflow():
     assert bounds[0].bounds[2] > 0
 
 
+def test_textBox_rejects_bezier_path_box():
+    db = Drawing()
+    path = BezierPath()
+    path.rect(0, 0, 80, 48)
+    t = FormattedString("one two three", fontSize=20)
+    for methodName, text in [
+        ("textBox", "one two three"),
+        ("textOverflow", "one two three"),
+        ("textBoxBaselines", "one two three"),
+        ("textBoxCharacterBounds", t),
+    ]:
+        with pytest.raises(DrawbotError, match="BezierPath text boxes"):
+            getattr(db, methodName)(text, path)
+
+
 def test_textBox_hyphenation():
     db = Drawing()
     db.fontSize(20)
