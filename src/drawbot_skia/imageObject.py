@@ -834,17 +834,22 @@ class ImageObject:
         contrast3=0.99,
     ):
         replacements = [
-            (_colorToRGBABytes(centerColor1), _colorToRGBABytes(replacementColor1), float(closeness1)),
-            (_colorToRGBABytes(centerColor2), _colorToRGBABytes(replacementColor2), float(closeness2)),
-            (_colorToRGBABytes(centerColor3), _colorToRGBABytes(replacementColor3), float(closeness3)),
+            (_colorToRGBABytes(centerColor1), _colorToRGBABytes(replacementColor1), float(closeness1), float(contrast1)),
+            (_colorToRGBABytes(centerColor2), _colorToRGBABytes(replacementColor2), float(closeness2), float(contrast2)),
+            (_colorToRGBABytes(centerColor3), _colorToRGBABytes(replacementColor3), float(closeness3), float(contrast3)),
         ]
         data = []
         for pixel in _getImageData(self._pilImage()):
             replacement = pixel
-            for center, color, closeness in replacements:
-                distance = math.sqrt(sum((a - b) ** 2 for a, b in zip(pixel[:3], center[:3]))) / (255 * math.sqrt(3))
-                if distance <= closeness:
-                    replacement = (*color[:3], pixel[3])
+            for center, color, closeness, contrast in replacements:
+                amount = _spotColorAmount(pixel[:3], center[:3], closeness, contrast)
+                if amount:
+                    replacement = (
+                        _clampByte(pixel[0] + (color[0] - pixel[0]) * amount),
+                        _clampByte(pixel[1] + (color[1] - pixel[1]) * amount),
+                        _clampByte(pixel[2] + (color[2] - pixel[2]) * amount),
+                        pixel[3],
+                    )
                     break
             data.append(replacement)
         self._setPILImage(_newRGBAWithData(self.size(), data))
@@ -2071,6 +2076,24 @@ def _nearestPaletteIndex(color, palette, paletteWithLab=None):
 
 def _distanceSquared(color1, color2):
     return sum((a - b) ** 2 for a, b in zip(color1, color2))
+
+
+def _spotColorAmount(pixel, center, closeness, contrast):
+    closeness = max(0, float(closeness))
+    if closeness == 0:
+        return 0
+    contrast = max(0, min(1, float(contrast)))
+    distance = math.sqrt(_distanceSquared(pixel, center)) / (255 * math.sqrt(3))
+    if distance > closeness:
+        return 0
+    transitionWidth = closeness * (1 - contrast)
+    if transitionWidth <= 1e-9:
+        return 1
+    solidRadius = closeness - transitionWidth
+    if distance <= solidRadius:
+        return 1
+    amount = (closeness - distance) / transitionWidth
+    return max(0, min(1, amount))
 
 
 def _xyzToRGBBytes(x, y, z):

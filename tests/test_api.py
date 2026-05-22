@@ -476,6 +476,44 @@ def test_imageObject_palette_filters(tmpdir):
     assert list(_getImageData(centroid._pilImage())) == [(225, 0, 0, 128), (0, 0, 225, 128)]
 
 
+def test_imageObject_spot_color_contrast(tmpdir):
+    from drawbot_skia.imageObject import _getImageData
+
+    sourcePath = pathlib.Path(tmpdir) / "spot-source.png"
+    image = Image.new("RGBA", (3, 1))
+    image.putdata([(255, 0, 0, 255), (230, 0, 0, 255), (0, 0, 255, 128)])
+    image.save(sourcePath)
+
+    hard = ImageObject(sourcePath)
+    assert hard.spotColor(
+        centerColor1=(1, 0, 0, 1),
+        replacementColor1=(0, 1, 0, 1),
+        closeness1=0.06,
+        contrast1=1,
+        closeness2=0,
+        closeness3=0,
+    ) is None
+    assert list(_getImageData(hard._pilImage())) == [
+        (0, 255, 0, 255),
+        (0, 255, 0, 255),
+        (0, 0, 255, 128),
+    ]
+
+    soft = ImageObject(sourcePath)
+    assert soft.spotColor(
+        centerColor1=(1, 0, 0, 1),
+        replacementColor1=(0, 1, 0, 1),
+        closeness1=0.06,
+        contrast1=0,
+        closeness2=0,
+        closeness3=0,
+    ) is None
+    softPixels = list(_getImageData(soft._pilImage()))
+    assert softPixels[0] == (0, 255, 0, 255)
+    assert 0 < softPixels[1][1] < 255
+    assert softPixels[2] == (0, 0, 255, 128)
+
+
 def test_imageObject_lab_conversion_and_delta_e(tmpdir):
     from drawbot_skia.imageObject import _labToBytes
     from drawbot_skia.imageObject import _rgbBytesToLab
