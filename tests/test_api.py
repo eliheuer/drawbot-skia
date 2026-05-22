@@ -1711,6 +1711,30 @@ def test_imageObject_guided_filter_preserves_guide_edges(tmpdir):
     assert [smoothed._pilImage().getpixel((x, 0))[0] for x in range(7)] == [22, 33, 44, 152, 22, 16, 11]
 
 
+def test_imageObject_document_enhancer_uses_amount(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "document-enhancer.png"
+    image = Image.new("RGBA", (5, 5), (120, 120, 120, 255))
+    for y in range(5):
+        for x in range(5):
+            image.putpixel((x, y), (40 + x * 30, 50 + y * 35, 80 + (x + y) * 15, 255))
+    image.putpixel((2, 2), (250, 245, 240, 255))
+    image.save(imagePath)
+
+    unchanged = ImageObject(imagePath)
+    assert unchanged.documentEnhancer(amount=0) is None
+    assert unchanged._pilImage().tobytes() == image.tobytes()
+
+    partial = ImageObject(imagePath)
+    assert partial.documentEnhancer(amount=0.5) is None
+    assert partial._pilImage().getpixel((2, 2)) == (207, 211, 215, 255)
+    assert sum(partial._pilImage().tobytes()) == 15540
+
+    full = ImageObject(imagePath)
+    assert full.documentEnhancer(amount=1) is None
+    assert full._pilImage().getpixel((2, 2)) == (160, 175, 190, 255)
+    assert sum(full._pilImage().tobytes()) == 15244
+
+
 def test_imageObject_person_segmentation_uses_quality_level(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "person-segmentation.png"
     image = Image.new("RGBA", (7, 1), (0, 0, 0, 255))

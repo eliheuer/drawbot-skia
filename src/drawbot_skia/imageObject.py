@@ -1235,11 +1235,12 @@ class ImageObject:
         from PIL import ImageEnhance
         from PIL import ImageFilter
 
-        amount = float(amount)
+        amount = max(0, float(amount))
         image = self._pilImage()
-        image = ImageEnhance.Contrast(image).enhance(1 + amount * 0.25)
-        image = ImageEnhance.Sharpness(image).enhance(1 + amount)
-        self._setPILImage(image.filter(ImageFilter.SMOOTH_MORE))
+        enhanced = ImageEnhance.Contrast(image).enhance(1 + amount * 0.25)
+        enhanced = ImageEnhance.Sharpness(enhanced).enhance(1 + amount)
+        enhanced = enhanced.filter(ImageFilter.SMOOTH_MORE)
+        self._setPILImage(_blendRGBA(image, enhanced, min(1, amount)))
 
     def depthToDisparity(self):
         self.colorInvert()
