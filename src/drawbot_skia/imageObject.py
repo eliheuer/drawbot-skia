@@ -2018,52 +2018,67 @@ class ImageObject:
         self._setPILImage(_blendRGBA(source, upsampled, max(0, min(1, float(lumaSigma) * 2))))
 
     def photoEffectMono(self, extrapolate=False):
-        self._monochrome()
+        image = self._monochromeImage()
+        if extrapolate:
+            from PIL import ImageEnhance
+
+            image = ImageEnhance.Contrast(image).enhance(1.08)
+        self._setPILImage(image)
 
     def photoEffectNoir(self, extrapolate=False):
         from PIL import ImageEnhance
 
         image = self._monochromeImage()
-        image = ImageEnhance.Contrast(image).enhance(1.55)
+        image = ImageEnhance.Contrast(image).enhance(1.55 * _photoEffectAmount(extrapolate))
         self._setPILImage(image)
 
     def photoEffectTonal(self, extrapolate=False):
-        self._monochrome()
+        image = self._monochromeImage()
+        if extrapolate:
+            from PIL import ImageEnhance
+
+            image = ImageEnhance.Contrast(image).enhance(1.05)
+        self._setPILImage(image)
 
     def photoEffectFade(self, extrapolate=False):
         from PIL import ImageEnhance
 
         image = self._pilImage()
-        image = ImageEnhance.Color(image).enhance(0.65)
-        image = ImageEnhance.Contrast(image).enhance(0.85)
+        amount = _photoEffectAmount(extrapolate)
+        image = ImageEnhance.Color(image).enhance(max(0, 1 - (1 - 0.65) * amount))
+        image = ImageEnhance.Contrast(image).enhance(max(0, 1 - (1 - 0.85) * amount))
         self._setPILImage(image)
 
     def photoEffectInstant(self, extrapolate=False):
-        self.sepiaTone(0.45)
         from PIL import ImageEnhance
 
-        self._setPILImage(ImageEnhance.Color(self._pilImage()).enhance(1.15))
+        amount = _photoEffectAmount(extrapolate)
+        self.sepiaTone(0.45 * amount)
+        self._setPILImage(ImageEnhance.Color(self._pilImage()).enhance(1 + (1.15 - 1) * amount))
 
     def photoEffectProcess(self, extrapolate=False):
         from PIL import ImageEnhance
 
         image = self._pilImage()
-        image = ImageEnhance.Color(image).enhance(1.35)
-        image = ImageEnhance.Contrast(image).enhance(1.1)
+        amount = _photoEffectAmount(extrapolate)
+        image = ImageEnhance.Color(image).enhance(1 + (1.35 - 1) * amount)
+        image = ImageEnhance.Contrast(image).enhance(1 + (1.1 - 1) * amount)
         self._setPILImage(image)
 
     def photoEffectTransfer(self, extrapolate=False):
-        self.sepiaTone(0.25)
         from PIL import ImageEnhance
 
-        self._setPILImage(ImageEnhance.Contrast(self._pilImage()).enhance(0.9))
+        amount = _photoEffectAmount(extrapolate)
+        self.sepiaTone(0.25 * amount)
+        self._setPILImage(ImageEnhance.Contrast(self._pilImage()).enhance(max(0, 1 - (1 - 0.9) * amount)))
 
     def photoEffectChrome(self, extrapolate=False):
         from PIL import ImageEnhance
 
         image = self._pilImage()
-        image = ImageEnhance.Color(image).enhance(1.4)
-        image = ImageEnhance.Contrast(image).enhance(1.25)
+        amount = _photoEffectAmount(extrapolate)
+        image = ImageEnhance.Color(image).enhance(1 + (1.4 - 1) * amount)
+        image = ImageEnhance.Contrast(image).enhance(1 + (1.25 - 1) * amount)
         self._setPILImage(image)
 
     def sepiaTone(self, intensity=1.0):
@@ -2193,6 +2208,10 @@ def _blendRGBA(image1, image2, amount):
 
     amount = max(0, min(1, float(amount)))
     return Image.blend(image1.convert("RGBA"), image2.convert("RGBA"), amount)
+
+
+def _photoEffectAmount(extrapolate):
+    return 1.25 if extrapolate else 1.0
 
 
 def _mergeRGBA(r, g, b, a):

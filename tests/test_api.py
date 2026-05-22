@@ -335,6 +335,40 @@ def test_imageObject_pillow_filter_batch(tmpdir):
         assert im.size() == (20, 20)
 
 
+def test_imageObject_photo_effects_use_extrapolate(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "photo-effects.png"
+    image = Image.new("RGBA", (4, 3))
+    for y in range(3):
+        for x in range(4):
+            image.putpixel((x, y), (40 + x * 45, 30 + y * 70, 80 + (x + y) * 25, 255))
+    image.save(imagePath)
+
+    expected = {
+        "photoEffectMono": ((115, 115, 115, 255), (115, 115, 115, 255), 6918, 6903),
+        "photoEffectNoir": ((119, 119, 119, 255), (122, 122, 122, 255), 6903, 6981),
+        "photoEffectTonal": ((115, 115, 115, 255), (115, 115, 115, 255), 6918, 6903),
+        "photoEffectFade": ((121, 105, 135, 255), (120, 106, 131, 255), 7075, 7044),
+        "photoEffectInstant": ((131, 98, 114, 255), (131, 98, 103, 255), 6838, 6725),
+        "photoEffectProcess": ((137, 92, 175, 255), (139, 91, 180, 255), 7392, 7461),
+        "photoEffectTransfer": ((126, 100, 129, 255), (125, 100, 124, 255), 6988, 6929),
+        "photoEffectChrome": ((143, 90, 187, 255), (146, 87, 196, 255), 7541, 7676),
+    }
+    for methodName, (normalPixel, extrapolatedPixel, normalSum, extrapolatedSum) in expected.items():
+        normal = ImageObject(imagePath)
+        assert getattr(normal, methodName)(extrapolate=False) is None
+        normalImage = normal._pilImage()
+
+        extrapolated = ImageObject(imagePath)
+        assert getattr(extrapolated, methodName)(extrapolate=True) is None
+        extrapolatedImage = extrapolated._pilImage()
+
+        assert normalImage.getpixel((2, 1)) == normalPixel
+        assert extrapolatedImage.getpixel((2, 1)) == extrapolatedPixel
+        assert sum(normalImage.tobytes()) == normalSum
+        assert sum(extrapolatedImage.tobytes()) == extrapolatedSum
+        assert normalImage.tobytes() != extrapolatedImage.tobytes()
+
+
 def test_imageObject_zoom_blur_uses_center(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "zoom-blur.png"
     image = Image.new("RGBA", (5, 1), (0, 0, 0, 255))
