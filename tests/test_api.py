@@ -686,6 +686,64 @@ def test_imageObject_sunbeams_generator_uses_striation_parameters():
     assert shifted._pilImage().tobytes() != striated._pilImage().tobytes()
 
 
+def test_imageObject_lenticular_halo_generator_uses_overlap_and_striations():
+    narrow = ImageObject()
+    assert narrow.lenticularHaloGenerator(
+        (7, 7),
+        center=(3, 3),
+        color=(1, 1, 1, 1),
+        haloRadius=2,
+        haloWidth=1,
+        haloOverlap=0,
+        striationStrength=0,
+        striationContrast=1,
+        time=0,
+    ) is None
+    assert [narrow._pilImage().getpixel((x, 3))[0] for x in range(7)] == [0, 255, 0, 0, 0, 255, 0]
+
+    wide = ImageObject()
+    assert wide.lenticularHaloGenerator(
+        (7, 7),
+        center=(3, 3),
+        color=(1, 1, 1, 1),
+        haloRadius=2,
+        haloWidth=1,
+        haloOverlap=1,
+        striationStrength=0,
+        striationContrast=1,
+        time=0,
+    ) is None
+    assert [wide._pilImage().getpixel((x, 3))[0] for x in range(7)] == [128, 255, 128, 0, 128, 255, 128]
+
+    striated = ImageObject()
+    assert striated.lenticularHaloGenerator(
+        (7, 7),
+        center=(3, 3),
+        color=(1, 1, 1, 1),
+        haloRadius=2,
+        haloWidth=1,
+        haloOverlap=0,
+        striationStrength=1,
+        striationContrast=2,
+        time=0,
+    ) is None
+    assert [striated._pilImage().getpixel((x, 3))[0] for x in range(7)] == [0, 64, 0, 0, 0, 64, 0]
+
+    shifted = ImageObject()
+    assert shifted.lenticularHaloGenerator(
+        (7, 7),
+        center=(3, 3),
+        color=(1, 1, 1, 1),
+        haloRadius=2,
+        haloWidth=1,
+        haloOverlap=0,
+        striationStrength=1,
+        striationContrast=2,
+        time=0.25,
+    ) is None
+    assert shifted._pilImage().tobytes() != striated._pilImage().tobytes()
+
+
 def test_imageObject_pdf417_barcode_generator():
     import pdf417gen
 

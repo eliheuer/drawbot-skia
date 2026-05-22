@@ -327,7 +327,21 @@ class ImageObject:
         striationContrast=1.0,
         time=0.0,
     ):
-        self._setPILImage(_radialLightImage(size, center, color, haloRadius, haloWidth, rays=False))
+        haloOverlap = max(0, float(haloOverlap))
+        self._setPILImage(
+            _radialLightImage(
+                size,
+                center,
+                color,
+                haloRadius,
+                float(haloWidth) * (1 + haloOverlap),
+                rays=True,
+                rayRadius=max(1, float(haloRadius) / max(1, float(haloWidth)) * 4),
+                rayStrength=striationStrength,
+                rayContrast=striationContrast,
+                rayTime=time,
+            )
+        )
         self._path = None
         self._offset = (0, 0)
 
