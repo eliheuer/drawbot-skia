@@ -744,6 +744,51 @@ def test_imageObject_lenticular_halo_generator_uses_overlap_and_striations():
     assert shifted._pilImage().tobytes() != striated._pilImage().tobytes()
 
 
+def test_imageObject_star_shine_generator_uses_cross_opacity_and_epsilon():
+    opaque = ImageObject()
+    assert opaque.starShineGenerator(
+        (9, 9),
+        center=(4, 4),
+        color=(1, 1, 1, 1),
+        radius=1,
+        crossScale=4,
+        crossAngle=0,
+        crossOpacity=0,
+        crossWidth=1,
+        epsilon=0,
+    ) is None
+    assert [opaque._pilImage().getpixel((x, 4))[3] for x in range(9)] == [252, 252, 252, 255, 255, 252, 252, 252, 252]
+
+    dim = ImageObject()
+    assert dim.starShineGenerator(
+        (9, 9),
+        center=(4, 4),
+        color=(1, 1, 1, 1),
+        radius=1,
+        crossScale=4,
+        crossAngle=0,
+        crossOpacity=-3,
+        crossWidth=1,
+        epsilon=0,
+    ) is None
+    assert [dim._pilImage().getpixel((x, 4))[3] for x in range(9)] == [32, 32, 32, 32, 32, 32, 32, 32, 32]
+
+    soft = ImageObject()
+    assert soft.starShineGenerator(
+        (9, 9),
+        center=(4, 4),
+        color=(1, 1, 1, 1),
+        radius=1,
+        crossScale=4,
+        crossAngle=0,
+        crossOpacity=0,
+        crossWidth=1,
+        epsilon=-4,
+    ) is None
+    assert soft._pilImage().getpixel((0, 3))[3] > opaque._pilImage().getpixel((0, 3))[3]
+    assert soft._pilImage().tobytes() != opaque._pilImage().tobytes()
+
+
 def test_imageObject_pdf417_barcode_generator():
     import pdf417gen
 

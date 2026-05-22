@@ -357,7 +357,7 @@ class ImageObject:
         crossWidth=2.5,
         epsilon=-2.0,
     ):
-        self._setPILImage(_starImage(size, center, color, radius, crossScale, crossAngle, crossWidth))
+        self._setPILImage(_starImage(size, center, color, radius, crossScale, crossAngle, crossOpacity, crossWidth, epsilon))
         self._path = None
         self._offset = (0, 0)
 
@@ -2971,7 +2971,7 @@ def _radialLightImage(
     return image
 
 
-def _starImage(size, center, color, radius, crossScale, crossAngle, crossWidth):
+def _starImage(size, center, color, radius, crossScale, crossAngle, crossOpacity, crossWidth, epsilon):
     from PIL import Image
     from PIL import ImageDraw
     from PIL import ImageFilter
@@ -2984,11 +2984,13 @@ def _starImage(size, center, color, radius, crossScale, crossAngle, crossWidth):
     radius = float(radius)
     draw.ellipse((cx - radius, cy - radius, cx + radius, cy + radius), fill=color)
     length = radius * max(1, float(crossScale))
+    crossColor = (*color[:3], _clampByte(color[3] * max(0, 2 ** float(crossOpacity))))
     for angle in (float(crossAngle), float(crossAngle) + math.pi / 2):
         dx = math.cos(angle) * length
         dy = math.sin(angle) * length
-        draw.line((cx - dx, cy - dy, cx + dx, cy + dy), fill=color, width=max(1, int(round(float(crossWidth)))))
-    return image.filter(ImageFilter.GaussianBlur(max(0, radius / 12)))
+        draw.line((cx - dx, cy - dy, cx + dx, cy + dy), fill=crossColor, width=max(1, int(round(float(crossWidth)))))
+    blurRadius = max(0, radius / 12 + max(0, -float(epsilon)) * radius / 24)
+    return image.filter(ImageFilter.GaussianBlur(blurRadius))
 
 
 def _meshImage(size, width, color):
