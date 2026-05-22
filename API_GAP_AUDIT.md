@@ -24,7 +24,7 @@ The remaining parity work is concentrated in:
 
 - `ImageObject`, where many methods are cross-platform Pillow-backed approximations instead of Core Image-equivalent implementations;
 - true pixel parity for text layout and shaping where DrawBot delegates to macOS CoreText; tracked in [#12](https://github.com/eliheuer/drawbot-skia/issues/12);
-- BezierPath text containers for `textBox()`, `textOverflow()`, `textBoxBaselines()`, and `textBoxCharacterBounds()`; tracked in [#15](https://github.com/eliheuer/drawbot-skia/issues/15).
+- non-rectangular BezierPath text containers for `textBox()`, `textOverflow()`, `textBoxBaselines()`, and `textBoxCharacterBounds()`; tracked in [#15](https://github.com/eliheuer/drawbot-skia/issues/15).
 
 The macOS/AppKit/PDFKit bridge APIs are intentionally out of scope for drawbot-skia's cross-platform package target. Their method names are present as explicit compatibility stubs that raise `DrawbotError`, so they should not be counted as open implementation gaps; tracked in [#17](https://github.com/eliheuer/drawbot-skia/issues/17).
 
@@ -68,7 +68,7 @@ Notes:
 - Path construction and stroke-style top-level wrappers accept DrawBot's keyword argument names, including `moveTo(xy=...)`, `lineTo(xy=...)`, `curveTo(xy1=..., xy2=..., xy3=...)`, `arcTo(xy1=..., xy2=...)`, `line(point1=..., point2=...)`, `blendMode(operation=...)`, `strokeWidth(value=...)`, `lineCap(value=...)`, `lineJoin(value=...)`, `lineDash(value=..., offset=...)`, and `miterLimit(value=...)`.
 - `translate()` and `scale()` on the drawing state and `BezierPath` accept DrawBot's no-op default arguments.
 - `textBoxCharacterBounds()` has been added for rectangular text boxes using drawbot-skia's current line wrapping and shaping stack.
-- BezierPath text containers remain unsupported for `textBox()`, `textOverflow()`, `textBoxBaselines()`, and `textBoxCharacterBounds()` because DrawBot flows text inside arbitrary path shapes through the macOS text stack; tracked in [#15](https://github.com/eliheuer/drawbot-skia/issues/15).
+- Rectangular BezierPath text containers are accepted by `textBox()`, `textOverflow()`, `textBoxBaselines()`, and `textBoxCharacterBounds()` by converting the path bounds to a rectangular text box. Non-rectangular BezierPath text containers remain unsupported because DrawBot flows text inside arbitrary path shapes through the macOS text stack; tracked in [#15](https://github.com/eliheuer/drawbot-skia/issues/15).
 - `colorSpace()` and `listColorSpaces()` have been added as compatibility-level API/state support for DrawBot's standard color-space names. Rendering remains RGB-backed in Skia rather than CoreGraphics color-managed.
 - `listLanguages()` has been added with Python-locale-derived identifiers.
 - `drawing()` has been added as a reset/cleanup context manager.

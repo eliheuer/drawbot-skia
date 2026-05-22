@@ -1401,12 +1401,35 @@ def _rectTextBox(box):
     from .path import BezierPath
 
     if isinstance(box, BezierPath):
+        rect = _bezierPathRectTextBox(box)
+        if rect is not None:
+            return rect
         raise DrawbotError(
-            "BezierPath text boxes require path-shaped text layout and are not "
-            "implemented in drawbot-skia; tracked in "
+            "Non-rectangular BezierPath text boxes require path-shaped text layout "
+            "and are not implemented in drawbot-skia; tracked in "
             "https://github.com/eliheuer/drawbot-skia/issues/15"
         )
     return box
+
+
+def _bezierPathRectTextBox(path):
+    bounds = path.bounds()
+    if bounds is None or len(path.contours) != 1:
+        return None
+    contour = path.contours[0]
+    if contour.open or len(contour) != 4:
+        return None
+    xMin, yMin, xMax, yMax = bounds
+    corners = {
+        (xMin, yMin),
+        (xMax, yMin),
+        (xMax, yMax),
+        (xMin, yMax),
+    }
+    points = [segment[0] for segment in contour if len(segment) == 1]
+    if len(points) != 4 or set(points) != corners:
+        return None
+    return (xMin, yMin, xMax - xMin, yMax - yMin)
 
 
 def _formattedLineBox(properties, width, isFirstLine):

@@ -3259,19 +3259,31 @@ def test_textSize_accepts_constraints():
     assert constrainedHeight > naturalHeight
 
 
-def test_textBox_rejects_bezier_path_box():
+def test_textBox_supports_rectangular_bezier_path_box():
     db = Drawing()
+    db.fontSize(20)
+    db.lineHeight(24)
     path = BezierPath()
     path.rect(0, 0, 80, 48)
     t = FormattedString("one two three", fontSize=20)
+    assert db.textBox("one two three four five six", path)
+    assert db.textOverflow("one two three four five six", path)
+    assert db.textBoxBaselines("one two three four five six", path) == [
+        (0, 28),
+        (0, 4),
+    ]
+    assert db.textBoxCharacterBounds(t, path)
+
+    triangle = BezierPath()
+    triangle.polygon((0, 0), (80, 0), (40, 48))
     for methodName, text in [
         ("textBox", "one two three"),
         ("textOverflow", "one two three"),
         ("textBoxBaselines", "one two three"),
         ("textBoxCharacterBounds", t),
     ]:
-        with pytest.raises(DrawbotError, match="BezierPath text boxes"):
-            getattr(db, methodName)(text, path)
+        with pytest.raises(DrawbotError, match="Non-rectangular BezierPath text boxes"):
+            getattr(db, methodName)(text, triangle)
 
 
 def test_textBox_hyphenation():
