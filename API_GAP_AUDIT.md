@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-412 passed, 3 skipped, 3 warnings
+413 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -99,7 +99,7 @@ Notes:
 - `moveTo()`, `lineTo()`, `line()`, `appendPath()`, `transform()`, `drawToPointPen()`, and `pointInside()` accept DrawBot's keyword argument names on `BezierPath`.
 - `textBox()` now supports plain-string hyphenation and `FormattedString` input when converting wrapped text into path outlines.
 - `text()` and `textBox()` now accept `fontNumber` for path-based collection-font outlines.
-- transformed arc/oval conic extraction can still lose precision because skia-python exposes an unusable `Path.Iter.conicWeight()` value in this environment; tracked in [#14](https://github.com/eliheuer/drawbot-skia/issues/14).
+- transformed quarter-arc conic extraction now falls back to Skia's conic-to-quadratic approximation instead of the circular cubic shortcut. Transformed partial-arc conic extraction can still lose precision because skia-python exposes an unusable `Path.Iter.conicWeight()` value in this environment; tracked in [#14](https://github.com/eliheuer/drawbot-skia/issues/14).
 
 ## `FormattedString` Gaps
 
@@ -360,4 +360,4 @@ Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-
 
 1. Decide whether the Pillow-backed `ImageObject` approximations are sufficient for this fork or whether specific filters need Core Image-equivalent behavior; umbrella tracked in [#2](https://github.com/eliheuer/drawbot-skia/issues/2), with specific follow-up issues [#8](https://github.com/eliheuer/drawbot-skia/issues/8), [#9](https://github.com/eliheuer/drawbot-skia/issues/9), and [#10](https://github.com/eliheuer/drawbot-skia/issues/10).
 2. Build macOS DrawBot comparison fixtures for CoreText-backed text layout, shaping, hyphenation, and BezierPath text outlines; tracked in [#12](https://github.com/eliheuer/drawbot-skia/issues/12).
-3. Revisit transformed conic extraction when skia-python exposes reliable conic weights; tracked in [#14](https://github.com/eliheuer/drawbot-skia/issues/14).
+3. Revisit transformed partial-arc conic extraction when skia-python exposes reliable conic weights; transformed quarter arcs now use a quadratic approximation fallback. Remaining work is tracked in [#14](https://github.com/eliheuer/drawbot-skia/issues/14).

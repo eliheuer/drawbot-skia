@@ -244,15 +244,16 @@ class BezierPath(BasePen):
                 continue
             assert len(points) == numPoints, (verb, numPoints, len(points))
             if penVerb == "conicTo":
-                # We should only call _convertConicToCubicDirty()
-                # if it.conicWeight() == sqrt(2)/2, but skia-python doesn't
-                # give the correct value.
-                # https://github.com/kyamagu/skia-python/issues/116
-                # if abs(it.conicWeight() - 0.707...) > 1e-10:
-                #     logging.warning("unsupported conic form (weight != sqrt(2)/2): conic to cubic conversion will be bad")
-                # TODO(#14): fall back to skia.Path.ConvertConicToQuads()
-                # once skia-python exposes a reliable conic weight.
-                pen.curveTo(*_convertConicToCubicDirty(*points))
+                quadPoints = _convertTransformedConicToQuads(*points)
+                if quadPoints is not None:
+                    for index in range(1, len(quadPoints), 2):
+                        pen.qCurveTo(quadPoints[index], quadPoints[index + 1])
+                else:
+                    # We should only call _convertConicToCubicDirty()
+                    # if it.conicWeight() == sqrt(2)/2, but skia-python doesn't
+                    # give the correct value.
+                    # https://github.com/kyamagu/skia-python/issues/116
+                    pen.curveTo(*_convertConicToCubicDirty(*points))
             elif penVerb == "closePath":
                 needEndPath = False
                 pen.closePath()
@@ -566,6 +567,33 @@ FLIP_MATRIX = skia.Matrix()
 FLIP_MATRIX.setAffine((1, 0, 0, -1, 0, 0))
 
 
+def _convertTransformedConicToQuads(pt1, pt2, pt3):
+    if _conicLooksSafeForCubicShortcut(pt1, pt2, pt3):
+        return None
+    quadPoints = skia.Path.ConvertConicToQuads(
+        skia.Point(*pt1),
+        skia.Point(*pt2),
+        skia.Point(*pt3),
+        math.sqrt(0.5),
+        5,
+    )
+    return [tuple(point) for point in quadPoints]
+
+
+def _conicLooksSafeForCubicShortcut(pt1, pt2, pt3):
+    (x1, y1), (x2, y2), (x3, y3) = pt1, pt2, pt3
+    angle1 = math.atan2(y2 - y1, x2 - x1)
+    angle2 = math.atan2(y3 - y2, x3 - x2)
+    angleDiff = abs((angle1 - angle2) % (2 * math.pi))
+    if angleDiff > math.pi:
+        angleDiff = 2 * math.pi - angleDiff
+    if abs(angleDiff - math.pi / 2) < 0.0001:
+        return True
+    d1 = math.hypot(x2 - x1, y2 - y1)
+    d2 = math.hypot(x2 - x3, y2 - y3)
+    return abs(d1 - d2) <= 0.00001
+
+
 def _convertConicToCubicDirty(pt1, pt2, pt3):
     #
     # NOTE: we do a crude conversion from a conic segment to a cubic bezier,
@@ -577,10 +605,9 @@ def _convertConicToCubicDirty(pt1, pt2, pt3):
     # - for arc and arcTo the conic segments are circular, never elliptical
     # For all these cases, the conic weight will be (close to) zero.
     #
-    # This no longer holds once a path has been transformed with skew or x/y
-    # scale, in which case we need to fall back to
-    # skia.Path.ConvertConicToQuads(), but that needs a reliable conic weight
-    # from skia-python's path iterator.
+    # This no longer holds for some transformed paths. Those fall back to
+    # skia.Path.ConvertConicToQuads() before reaching this helper, using the
+    # known quarter-arc conic weight where applicable.
     # https://github.com/kyamagu/skia-python/issues/116
     # https://github.com/eliheuer/drawbot-skia/issues/14
     #
@@ -605,8 +632,6 @@ def _convertConicToCubicDirty(pt1, pt2, pt3):
             logging.warning(
                 "unsupported conic form (non-circular, non-90-degrees): conic to cubic conversion will be bad"
             )
-            # TODO(#14): fall back to skia.Path.ConvertConicToQuads()
-            # once skia-python exposes a reliable conic weight.
         angleHalf = angleDiff / 2
         radius = d1 / math.tan(angleHalf)
         D = radius * (1 - math.cos(angleHalf))

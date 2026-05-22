@@ -1,5 +1,5 @@
 from drawbot_skia.path import BezierPath
-from fontTools.pens.recordingPen import RecordingPointPen
+from fontTools.pens.recordingPen import RecordingPen, RecordingPointPen
 import pytest
 
 
@@ -62,6 +62,20 @@ def test_path_drawbot_keyword_point_args():
     pointPen = RecordingPointPen()
     path.drawToPointPen(pointPen=pointPen)
     assert pointPen.value[0][0] == "beginPath"
+
+
+def test_transformed_conic_drawToPen_uses_quadratic_fallback(caplog):
+    path = BezierPath()
+    path.oval(0, 0, 100, 100)
+    path.skew(20)
+
+    pen = RecordingPen()
+    path.drawToPen(pen)
+
+    commands = [command for command, args in pen.value]
+    assert "qCurveTo" in commands
+    assert "curveTo" not in commands
+    assert "unsupported conic form" not in caplog.text
 
 
 def test_path_points():
