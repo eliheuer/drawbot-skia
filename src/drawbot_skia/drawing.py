@@ -13,6 +13,31 @@ from .shaping import alignGlyphPositions
 
 DEFAULT_CANVAS_DIMENSIONS = (1000, 1000)
 
+_paperSizes = {
+    "Letter": (612, 792),
+    "LetterSmall": (612, 792),
+    "Tabloid": (792, 1224),
+    "Ledger": (1224, 792),
+    "Legal": (612, 1008),
+    "Statement": (396, 612),
+    "Executive": (540, 720),
+    "A0": (2384, 3371),
+    "A1": (1685, 2384),
+    "A2": (1190, 1684),
+    "A3": (842, 1190),
+    "A4": (595, 842),
+    "A4Small": (595, 842),
+    "A5": (420, 595),
+    "B4": (729, 1032),
+    "B5": (516, 729),
+    "Folio": (612, 936),
+    "Quarto": (610, 780),
+    "10x14": (720, 1008),
+}
+
+for _name, (_width, _height) in list(_paperSizes.items()):
+    _paperSizes[f"{_name}Landscape"] = (_height, _width)
+
 
 class Drawing:
     def __init__(self, document=None, flipCanvas=True):
@@ -45,14 +70,17 @@ class Drawing:
         self._canvas = None
         self._document.endDrawing()
 
-    def size(self, width, height):
+    def size(self, width, height=None):
         if self._document.isDrawing:
             raise DrawbotError(
                 "size() can't be called if there's already a canvas active"
             )
+        width, height = _pageSize(width, height)
         self.newPage(width, height)
 
     def newPage(self, width=None, height=None):
+        if isinstance(width, str):
+            width, height = _pageSize(width, height)
         if (width is not None and height is None) or (
             height is not None and width is None
         ):
@@ -76,6 +104,14 @@ class Drawing:
 
     def frameDuration(self, duration):
         self._document.setFrameDuration(duration)
+
+    def sizes(self, paperSize=None):
+        if paperSize is None:
+            return dict(_paperSizes)
+        try:
+            return _paperSizes[paperSize]
+        except KeyError:
+            raise DrawbotError(f"unknown paper size: {paperSize}") from None
 
     def width(self):
         return self._document.pageWidth
@@ -194,14 +230,17 @@ class Drawing:
         else:
             lines = txt.split("\n")
             lineWidths = []
+            textStyle = self._gstate.textStyle
             for line in lines:
                 if line:
-                    lineWidth, runs = self._textLineRuns(line, self._gstate.textStyle)
+                    lineWidth, runs = self._textLineRuns(
+                        line, textStyle, textStyle.tracking
+                    )
                     lineWidths.append(lineWidth)
                 else:
                     lineWidths.append(0)
-            lineHeight = self._gstate.textStyle.getLineHeight()
-            textHeight = self._gstate.textStyle.skFont.getSpacing()
+            lineHeight = textStyle.getLineHeight()
+            textHeight = textStyle.skFont.getSpacing()
             if len(lines) > 1:
                 textHeight += lineHeight * (len(lines) - 1)
             return (max(lineWidths), textHeight)
@@ -225,22 +264,45 @@ class Drawing:
             for lineIndex, line in enumerate(txt.split("\n")):
                 if not line:
                     continue
+                tracking, baselineShift, underline, strikethrough = (
+                    _lineTextProperties(textStyle)
+                )
+                baseline = lineIndex * textStyle.getLineHeight() + baselineShift
                 if not textStyle.tabs or "\t" not in line:
                     glyphsInfo = textStyle.shape(line)
+                    if tracking is not None:
+                        _applyTracking(glyphsInfo, tracking)
                     alignGlyphPositions(glyphsInfo, align)
-                    self._drawGlyphs(
-                        glyphsInfo,
-                        lineIndex * textStyle.getLineHeight(),
-                    )
-                    continue
-                lineWidth, runs = self._textLineRuns(line, textStyle)
-                xOffset = _alignmentOffset(lineWidth, align)
-                for runX, glyphsInfo in runs:
-                    self._drawGlyphs(
-                        glyphsInfo,
-                        lineIndex * textStyle.getLineHeight(),
-                        x=runX + xOffset,
-                    )
+                    self._drawGlyphs(glyphsInfo, baseline)
+                    x1 = min((x for x, y in glyphsInfo.positions), default=0)
+                    x2 = x1 + glyphsInfo.endPos[0]
+                else:
+                    lineWidth, runs = self._textLineRuns(line, textStyle, tracking)
+                    xOffset = _alignmentOffset(lineWidth, align)
+                    for runX, glyphsInfo in runs:
+                        self._drawGlyphs(
+                            glyphsInfo,
+                            baseline,
+                            x=runX + xOffset,
+                        )
+                    x1 = xOffset
+                    x2 = xOffset + lineWidth
+                self._drawTextDecoration(
+                    underline,
+                    x1,
+                    x2,
+                    baseline + textStyle.fontSize * 0.1,
+                    textStyle,
+                    self._gstate.fillPaint,
+                )
+                self._drawTextDecoration(
+                    strikethrough,
+                    x1,
+                    x2,
+                    baseline - textStyle.fontSize * 0.3,
+                    textStyle,
+                    self._gstate.fillPaint,
+                )
 
     def textBox(self, txt, box, align=None):
         if isinstance(txt, FormattedString):
@@ -257,6 +319,67 @@ class Drawing:
             lineY = firstBaseline - lineIndex * lineHeight
             self.text(line, (x, lineY), align=_textBoxAlign(align))
         return overflow
+
+    def textOverflow(self, txt, box, align=None):
+        if isinstance(txt, FormattedString):
+            x, y, width, height = box
+            lineHeight = _formattedStringBaseLineHeight(txt, self._gstate.textStyle)
+            maxLines = max(0, int(height // lineHeight))
+            if maxLines == 0:
+                return txt.copy()
+            lines, overflow = self._wrapFormattedString(txt, width, maxLines)
+            return overflow
+        x, y, width, height = box
+        lineHeight = self._gstate.textStyle.getLineHeight()
+        maxLines = max(0, int(height // lineHeight))
+        if maxLines == 0:
+            return txt
+        lines, overflow = self._wrapText(txt, width, maxLines)
+        return overflow
+
+    def textBoxBaselines(self, txt, box, align=None):
+        x, y, width, height = box
+        if isinstance(txt, FormattedString):
+            lineHeight = _formattedStringBaseLineHeight(txt, self._gstate.textStyle)
+            maxLines = max(0, int(height // lineHeight))
+            if maxLines == 0:
+                return []
+            lines, overflow = self._wrapFormattedString(txt, width, maxLines)
+            baseline = y + height - _formattedLineBaselineOffset(
+                lines[0][0], self._gstate.textStyle
+            )
+            baselines = []
+            for line, xOffset, paragraphStart, paragraphEnd, paragraphProperties in lines:
+                if paragraphStart:
+                    baseline -= paragraphProperties.get("paragraphTopSpacing") or 0
+                baselines.append((x + xOffset, baseline))
+                if line:
+                    lineInfo = self._formattedLines(line)[0]
+                    lineHeight = _lineHeight(lineInfo)
+                else:
+                    lineHeight = _formattedStringBaseLineHeight(
+                        line, self._gstate.textStyle
+                    )
+                baseline -= lineHeight
+                if paragraphEnd:
+                    baseline -= paragraphProperties.get("paragraphBottomSpacing") or 0
+            return baselines
+        lineHeight = self._gstate.textStyle.getLineHeight()
+        maxLines = max(0, int(height // lineHeight))
+        if maxLines == 0:
+            return []
+        lines, overflow = self._wrapText(txt, width, maxLines)
+        firstBaseline = y + height - self._gstate.textStyle.fontSize
+        baselines = []
+        for lineIndex, line in enumerate(lines):
+            lineWidth = self.textSize(line)[0] if line else 0
+            baselines.append(
+                (
+                    x + _alignmentOffset(lineWidth, _textBoxAlign(align)),
+                    firstBaseline - lineIndex * lineHeight,
+                )
+            )
+        return baselines
 
     def _wrapText(self, txt, width, maxLines):
         lines = []
@@ -526,7 +649,7 @@ class Drawing:
                     lineHeight = max(lineHeight, runLineHeight)
                     continue
                 runLineWidth, runSegments = self._textLineRuns(
-                    part, textStyle, properties.get("tracking")
+                    part, textStyle, properties.get("tracking", textStyle.tracking)
                 )
                 for runX, glyphsInfo in runSegments:
                     currentRuns.append(
@@ -536,9 +659,9 @@ class Drawing:
                             textStyle,
                             fillPaint,
                             strokePaint,
-                            properties.get("baselineShift", 0),
-                            properties.get("underline"),
-                            properties.get("strikethrough"),
+                            properties.get("baselineShift", textStyle.baselineShift),
+                            properties.get("underline", textStyle.underline),
+                            properties.get("strikethrough", textStyle.strikethrough),
                         )
                     )
                 lineWidth += runLineWidth
@@ -611,7 +734,8 @@ class Drawing:
         if decoration == "thick":
             thickness = max(2, textStyle.fontSize / 8)
         paint = skia.Paint(AntiAlias=True, Style=skia.Paint.kStroke_Style)
-        paint.setARGB(*fillPaint.color)
+        alpha, red, green, blue = fillPaint.color
+        paint.setARGB(round(alpha * fillPaint.opacity), red, green, blue)
         paint.setStrokeWidth(thickness)
         self._canvas.drawLine(x1, y, x2, y, paint)
         if decoration == "double":
@@ -634,8 +758,9 @@ class Drawing:
     def image(self, imagePath, position, alpha=1.0):
         im = self._getImage(imagePath)
         paint = skia.Paint()
-        if alpha != 1.0:
-            paint.setAlpha(round(alpha * 255))
+        opacity = alpha * self._gstate.fillPaint.opacity
+        if opacity != 1.0:
+            paint.setAlpha(round(opacity * 255))
         if self._gstate.fillPaint.blendMode != "normal":
             paint.setBlendMode(self._gstate.fillPaint.skPaint.getBlendMode())
         x, y = position
@@ -751,6 +876,19 @@ def _makeWrapper(name):
     return wrapper
 
 
+def _pageSize(width, height=None):
+    if isinstance(width, str):
+        if height is not None:
+            raise TypeError("named paper sizes take one argument")
+        try:
+            return _paperSizes[width]
+        except KeyError:
+            raise DrawbotError(f"unknown paper size: {width}") from None
+    if height is None:
+        raise TypeError("size() takes either a paper size name or width and height")
+    return width, height
+
+
 def _textStyleWithProperties(textStyle, properties):
     textProperties = {}
     for name in (
@@ -763,6 +901,8 @@ def _textStyleWithProperties(textStyle, properties):
         "direction",
         "tabs",
         "hyphenation",
+        "fallbackFont",
+        "fallbackFontNumber",
     ):
         if name in properties:
             textProperties[name] = properties[name]
@@ -793,6 +933,15 @@ def _strokePaintWithProperties(strokePaint, properties):
     if update:
         return strokePaint.copy(**update)
     return strokePaint
+
+
+def _lineTextProperties(textStyle):
+    return (
+        textStyle.tracking,
+        textStyle.baselineShift or 0,
+        textStyle.underline,
+        textStyle.strikethrough,
+    )
 
 
 def _applyTracking(glyphsInfo, tracking):

@@ -264,6 +264,8 @@ class FormattedString:
                 "direction",
                 "tabs",
                 "hyphenation",
+                "fallbackFont",
+                "fallbackFontNumber",
             )
             if name in properties
         }

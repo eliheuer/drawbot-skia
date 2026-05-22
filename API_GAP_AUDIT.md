@@ -8,12 +8,12 @@ This audit compares the current fork against:
 
 - `justvanrossum/drawbot-skia` upstream README roadmap at `upstream/main` commit `582e2c5067234ee6c8c72bff524e8efb7cab51d4`.
 - `typemytype/drawbot` public drawing API at commit `71cff6df68fff1fafd5a542ab58157b30e377bd1`.
-- Current fork commit `d8bd1fbc4624a1aeabde4883964271348d861402`.
+- Current fork baseline commit `d8bd1fbc4624a1aeabde4883964271348d861402`, with the latest parity wrapper batch reflected below.
 
-The test suite is green at this commit:
+The test suite is green after the latest parity wrapper batch:
 
 ```text
-301 passed, 3 skipped, 3 warnings
+304 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -22,7 +22,7 @@ The fork has moved past the original upstream README blockers for animated GIF e
 
 The remaining parity work is concentrated in:
 
-- top-level DrawBot namespace gaps, including link annotations, font query wrappers, `opacity()`, installed font helpers, and text overflow/measurement helpers;
+- top-level DrawBot namespace gaps, including link annotations, installed font helpers, app/page helpers, color-space helpers, and character-bound measurement;
 - `BezierPath` gaps, especially `intersectionPoints()` and `traceImage()`;
 - `ImageObject`, where only a small cross-platform subset exists compared with DrawBot's Core Image-backed API;
 - macOS/AppKit-only APIs that should be deliberately documented as unsupported instead of silently treated as parity gaps.
@@ -46,52 +46,29 @@ Do not call the larger feature-parity goal complete from this evidence.
 
 Static comparison source: public methods on `typemytype/drawbot` `DrawBotDrawingTool` versus `drawbot_skia.drawbot.__all__`.
 
-Missing in `drawbot_skia.drawbot`:
+Missing in `drawbot_skia.drawbot` after the latest parity wrapper batch:
 
 ```text
 Variable
-baselineShift
 colorSpace
 drawing
-fallbackFont
-fontAscender
-fontCapHeight
-fontContainsCharacters
-fontContainsGlyph
-fontDescender
-fontFileFontNumber
-fontFilePath
-fontLeading
-fontLineHeight
-fontXHeight
 installFont
 installedFonts
 linkDestination
 linkRect
 linkURL
 listColorSpaces
-listFontGlyphNames
 listLanguages
-listOpenTypeFeatures
-opacity
 pages
 pdfImage
 printImage
-sizes
-strikethrough
-textBoxBaselines
 textBoxCharacterBounds
-textOverflow
-textProperties
-tracking
-underline
 uninstallFont
-url
 ```
 
 Notes:
 
-- Several missing names are straightforward wrappers around existing `FormattedString` or graphics-state capabilities (`tracking`, `baselineShift`, `underline`, `strikethrough`, font metric/query wrappers).
+- The low-risk wrappers around existing `FormattedString` or graphics-state capabilities have been added: `tracking`, `baselineShift`, `underline`, `strikethrough`, `url`, `fallbackFont`, font metric/query wrappers, `listOpenTypeFeatures`, `opacity`, `sizes`, `textOverflow`, and `textBoxBaselines`.
 - `linkURL`, `linkDestination`, and `linkRect` require output-context support, at least for PDF.
 - `Variable`, `drawing`, `pages`, `pdfImage`, and `printImage` are app/macOS-oriented and need a deliberate cross-platform support decision.
 - `installFont`/`uninstallFont` are likely macOS-specific in original DrawBot; cross-platform behavior should be scoped before implementation.
@@ -168,9 +145,8 @@ Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-
 
 ## Recommended Next Work
 
-1. Add the low-risk top-level text/font wrappers already backed by current internals: `tracking`, `baselineShift`, `underline`, `strikethrough`, `textProperties`, font metric/query wrappers, `listOpenTypeFeatures`, and `fallbackFont`.
-2. Add `opacity()` as graphics-state alpha if it can compose cleanly with fill, stroke, text, image, and shadow paints.
-3. Implement or explicitly document PDF link annotation support for `linkURL`, `linkDestination`, `linkRect`, and `FormattedString.url()`.
-4. Scope `BezierPath.intersectionPoints()` and `traceImage()` separately; both need targeted tests and may need new dependencies or geometry algorithms.
-5. Decide which app/macOS-only APIs are out of scope and document them: `Variable`, `drawing`, `pages`, `pdfImage`, `printImage`, `installFont`, `uninstallFont`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`.
-6. Decide an `ImageObject` target subset rather than chasing all Core Image filters.
+1. Implement or explicitly document PDF link annotation support for `linkURL`, `linkDestination`, `linkRect`, and richer `FormattedString.url()` behavior.
+2. Add `textBoxCharacterBounds()` for rectangular text boxes, then decide whether BezierPath text boxes are in scope.
+3. Scope `BezierPath.intersectionPoints()` and `traceImage()` separately; both need targeted tests and may need new dependencies or geometry algorithms.
+4. Decide which app/macOS-only APIs are out of scope and document them: `Variable`, `drawing`, `pages`, `pdfImage`, `printImage`, `installFont`, `uninstallFont`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`.
+5. Decide an `ImageObject` target subset rather than chasing all Core Image filters.

@@ -100,6 +100,10 @@ class GraphicsStateMixin:
     def miterLimit(self, miterLimit):
         self.strokePaint = self.strokePaint.copy(miterLimit=miterLimit)
 
+    def opacity(self, value):
+        self.fillPaint = self.fillPaint.copy(opacity=value)
+        self.strokePaint = self.strokePaint.copy(opacity=value)
+
     def linearGradient(self, startPoint, endPoint, colors, locations=None):
         # MakeLinear(
         #   points: List[skia.Point],
@@ -220,6 +224,21 @@ class GraphicsStateMixin:
     def lineHeight(self, value):
         self.textStyle = self.textStyle.copy(lineHeight=value)
 
+    def tracking(self, value):
+        self.textStyle = self.textStyle.copy(tracking=value)
+
+    def baselineShift(self, value):
+        self.textStyle = self.textStyle.copy(baselineShift=value)
+
+    def underline(self, value):
+        self.textStyle = self.textStyle.copy(underline=value)
+
+    def strikethrough(self, value):
+        self.textStyle = self.textStyle.copy(strikethrough=value)
+
+    def url(self, value):
+        self.textStyle = self.textStyle.copy(url=value)
+
     def hyphenation(self, value):
         self.textStyle = self.textStyle.copy(hyphenation=value)
 
@@ -227,6 +246,14 @@ class GraphicsStateMixin:
         if len(tabs) == 1 and tabs[0] is None:
             tabs = None
         self.textStyle = self.textStyle.copy(tabs=tabs)
+
+    def fallbackFont(self, fontNameOrPath, fontNumber=0):
+        self.textStyle = self.textStyle.copy(
+            fallbackFont=fontNameOrPath, fallbackFontNumber=fontNumber
+        )
+
+    def fallbackFontNumber(self, fontNumber):
+        self.textStyle = self.textStyle.copy(fallbackFontNumber=fontNumber)
 
     def openTypeFeatures(self, *, resetFeatures=False, **features):
         if resetFeatures:
@@ -254,23 +281,64 @@ class GraphicsStateMixin:
             direction=_normalizeWritingDirection(direction)
         )
 
-    def listFontVariations(self):
-        ttFont = self.textStyle.ttFont
-        variations = {}
-        if "fvar" in ttFont:
-            nameTable = ttFont["name"]
-            for axis in ttFont["fvar"].axes:
-                axisName = _getName(nameTable, axis.axisNameID)
-                variations[axis.axisTag] = dict(
-                    name=axisName,
-                    minValue=axis.minValue,
-                    defaultValue=axis.defaultValue,
-                    maxValue=axis.maxValue,
-                )
-        return variations
+    def textProperties(self):
+        properties = self.textStyle.textProperties()
+        properties["fill"] = self.fillPaint.color
+        properties["stroke"] = (
+            self.strokePaint.color if self.strokePaint.somethingToDraw else None
+        )
+        properties["strokeWidth"] = self.strokePaint.strokeWidth
+        return properties
 
-    def listNamedInstances(self):
-        return _namedInstances(self.textStyle.ttFont)
+    def _formattedString(self, fontNameOrPath=None):
+        from .formattedString import FormattedString
+
+        properties = self.textStyle.textProperties()
+        if fontNameOrPath is not None:
+            properties["font"] = fontNameOrPath
+        return FormattedString(**properties)
+
+    def fontContainsCharacters(self, characters):
+        return self._formattedString().fontContainsCharacters(characters)
+
+    def fontContainsGlyph(self, glyphName):
+        return self._formattedString().fontContainsGlyph(glyphName)
+
+    def fontFilePath(self):
+        return self._formattedString().fontFilePath()
+
+    def fontFileFontNumber(self):
+        return self._formattedString().fontFileFontNumber()
+
+    def listFontGlyphNames(self):
+        return self._formattedString().listFontGlyphNames()
+
+    def fontAscender(self):
+        return self._formattedString().fontAscender()
+
+    def fontDescender(self):
+        return self._formattedString().fontDescender()
+
+    def fontXHeight(self):
+        return self._formattedString().fontXHeight()
+
+    def fontCapHeight(self):
+        return self._formattedString().fontCapHeight()
+
+    def fontLeading(self):
+        return self._formattedString().fontLeading()
+
+    def fontLineHeight(self):
+        return self._formattedString().fontLineHeight()
+
+    def listOpenTypeFeatures(self, fontNameOrPath=None):
+        return self._formattedString().listOpenTypeFeatures(fontNameOrPath)
+
+    def listFontVariations(self, fontNameOrPath=None):
+        return self._formattedString().listFontVariations(fontNameOrPath)
+
+    def listNamedInstances(self, fontNameOrPath=None):
+        return self._formattedString().listNamedInstances(fontNameOrPath)
 
     def fontNamedInstance(self, name, fontNameOrPath=None):
         textStyle = self.textStyle
@@ -378,6 +446,7 @@ class FillPaint(_ImmutableContainer):
     blendMode = "normal"
     shader = None
     shadow = None
+    opacity = 1
     _skPaintStyle = skia.Paint.kFill_Style
 
     @cached_property
@@ -390,7 +459,8 @@ class FillPaint(_ImmutableContainer):
             AntiAlias=True,
             Style=self._skPaintStyle,
         )
-        paint.setARGB(*self.color)
+        alpha, red, green, blue = self.color
+        paint.setARGB(round(alpha * self.opacity), red, green, blue)
         paint.setBlendMode(_blendModeMapping[self.blendMode])
         if self.shader is not None:
             paint.setShader(self.shader)
@@ -401,7 +471,8 @@ class FillPaint(_ImmutableContainer):
         if self.shadow is None:
             return None, None
         offset, blur, color = self.shadow
-        color = _colorTupleToInt(_colorArgs(color))
+        alpha, red, green, blue = _colorArgs(color)
+        color = _colorTupleToInt((round(alpha * self.opacity), red, green, blue))
         if not blur:
             blur = 1
         # MaskFilter.MakeBlur(
@@ -503,6 +574,13 @@ class TextStyle(_ImmutableContainer):
     direction = None
     tabs = None
     hyphenation = False
+    tracking = None
+    baselineShift = 0
+    underline = None
+    strikethrough = None
+    url = None
+    fallbackFont = None
+    fallbackFontNumber = 0
     font = None
     lineHeight = None
 
@@ -567,6 +645,26 @@ class TextStyle(_ImmutableContainer):
             return self.lineHeight
         else:
             return self.fontSize * 1.2
+
+    def textProperties(self):
+        return {
+            "font": self.font,
+            "fontSize": self.fontSize,
+            "lineHeight": self.lineHeight,
+            "features": dict(self.features),
+            "variations": dict(self.variations),
+            "language": self.language,
+            "direction": self.direction,
+            "tabs": self.tabs,
+            "hyphenation": self.hyphenation,
+            "tracking": self.tracking,
+            "baselineShift": self.baselineShift,
+            "underline": self.underline,
+            "strikethrough": self.strikethrough,
+            "url": self.url,
+            "fallbackFont": self.fallbackFont,
+            "fallbackFontNumber": self.fallbackFontNumber,
+        }
 
 
 _fontObjectsCache = {}

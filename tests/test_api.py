@@ -202,6 +202,13 @@ def test_newPage_dimensions_arguments():
         db.newPage(width=10)
     with pytest.raises(TypeError):
         db.newPage(height=10)
+    assert db.sizes("A4") == (595, 842)
+    assert db.sizes("A4Landscape") == (842, 595)
+    db.newDrawing()
+    db.size("A5")
+    assert (db.width(), db.height()) == (420, 595)
+    db.newPage("LetterLandscape")
+    assert (db.width(), db.height()) == (792, 612)
 
 
 def test_pageCount(tmpdir):
@@ -326,6 +333,11 @@ def test_textBox_returns_overflow():
     overflow = db.textBox("one two three four five six", (0, 0, 80, 48))
     assert overflow
     assert "five" in overflow or "six" in overflow
+    assert db.textOverflow("one two three four five six", (0, 0, 80, 48)) == overflow
+    assert db.textBoxBaselines("one two three four five six", (0, 0, 80, 48)) == [
+        (0, 28),
+        (0, 4),
+    ]
 
 
 def test_textBox_hyphenation():
@@ -380,6 +392,8 @@ def test_textBox_formattedString_returns_overflow():
     assert str(overflow)
     assert "five" in str(overflow) or "six" in str(overflow)
     assert list(overflow._iterRuns())[-1][1]["fill"] == (255, 0, 0, 255)
+    assert str(db.textOverflow(t, (0, 0, 80, 48))) == str(overflow)
+    assert len(db.textBoxBaselines(t, (0, 0, 80, 48))) == 2
 
 
 def test_textBox_formattedString_hyphenation():
@@ -473,6 +487,39 @@ def test_formattedString_font_info():
     assert t.fontFileFontNumber() == 2
 
 
+def test_drawing_text_state_properties_and_font_info():
+    db = Drawing()
+    db.fontSize(20)
+    db.tracking(5)
+    db.baselineShift(3)
+    db.underline("single")
+    db.strikethrough("double")
+    db.url("https://drawbot.com")
+    properties = db.textProperties()
+    assert properties["fontSize"] == 20
+    assert properties["tracking"] == 5
+    assert properties["baselineShift"] == 3
+    assert properties["underline"] == "single"
+    assert properties["strikethrough"] == "double"
+    assert properties["url"] == "https://drawbot.com"
+
+    assert db.fontContainsCharacters("ABC")
+    assert not db.fontContainsCharacters("\u0378")
+    assert db.fontContainsGlyph("A")
+    assert not db.fontContainsGlyph("notAGlyph")
+    glyphNames = db.listFontGlyphNames()
+    assert ".notdef" in glyphNames
+    assert "A" in glyphNames
+    assert db.fontAscender() > 0
+    assert db.fontDescender() < 0
+    assert db.fontXHeight() >= 0
+    assert db.fontCapHeight() >= 0
+    assert db.fontLeading() >= 0
+    assert db.fontLineHeight() == pytest.approx(24)
+    assert db.fontFileFontNumber() == 0
+    assert db.fontFilePath() is None
+
+
 def test_formattedString_fallback_font_state():
     sourceSerif = testDir / "fonts" / "SourceSerifPro-Regular.otf"
     arabic = testDir / "fonts" / "IBMPlexSansArabic-Regular.otf"
@@ -484,6 +531,20 @@ def test_formattedString_fallback_font_state():
     assert t.textProperties()["fallbackFontNumber"] == 3
     t.fallbackFontNumber(4)
     assert t.textProperties()["fallbackFontNumber"] == 4
+
+
+def test_drawing_fallback_font_state():
+    sourceSerif = testDir / "fonts" / "SourceSerifPro-Regular.otf"
+    arabic = testDir / "fonts" / "IBMPlexSansArabic-Regular.otf"
+    db = Drawing()
+    db.font(sourceSerif)
+    assert not db.fontContainsCharacters("سلام")
+    db.fallbackFont(arabic, fontNumber=3)
+    assert db.fontContainsCharacters("سلام")
+    assert db.textProperties()["fallbackFont"] == arabic
+    assert db.textProperties()["fallbackFontNumber"] == 3
+    db.fallbackFontNumber(4)
+    assert db.textProperties()["fallbackFontNumber"] == 4
 
 
 def test_formattedString_appendGlyph():
@@ -517,6 +578,7 @@ def test_formattedString_font_feature_queries():
     db = Drawing()
     db.font(mutatorSans)
     assert db.fontNamedInstance("MutatorMathTest-BoldWide") == namedInstance
+    assert "smcp" in db.listOpenTypeFeatures(sourceSerif)
     with pytest.raises(KeyError):
         t.fontNamedInstance("notAnInstance")
 
@@ -534,6 +596,24 @@ def test_cmyk_color_arguments():
     assert db._gstate.strokePaint.color == (255, 0, 0, 255)
     db.cmykStroke(None)
     assert not db._gstate.strokePaint.somethingToDraw
+
+
+def test_opacity(tmpdir):
+    path = pathlib.Path(tmpdir) / "opacity.png"
+    db = Drawing()
+    db.size(20, 20)
+    db.fill(1)
+    db.rect(0, 0, 20, 20)
+    db.opacity(0.5)
+    db.fill(1, 0, 0)
+    db.rect(0, 0, 20, 20)
+    assert db._gstate.fillPaint.opacity == 0.5
+    db.saveImage(path)
+    with Image.open(path) as image:
+        r, g, b, a = image.convert("RGBA").getpixel((10, 10))
+    assert r > g
+    assert g > 100
+    assert a == 255
 
 
 def test_bezier_path_dashStroke():
