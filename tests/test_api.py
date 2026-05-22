@@ -634,6 +634,37 @@ def test_imageObject_dither_uses_ordered_threshold_and_preserves_alpha(tmpdir):
     ]
 
 
+def test_imageObject_vibrance_boosts_muted_colors_more_than_saturated_colors(tmpdir):
+    from drawbot_skia.imageObject import _getImageData
+
+    sourcePath = pathlib.Path(tmpdir) / "vibrance-source.png"
+    source = Image.new("RGBA", (4, 1))
+    source.putdata(
+        [
+            (128, 140, 152, 255),
+            (255, 0, 0, 255),
+            (128, 128, 128, 255),
+            (128, 140, 152, 64),
+        ]
+    )
+    source.save(sourcePath)
+    loadedPixels = list(_getImageData(ImageObject(sourcePath)._pilImage()))
+
+    noVibrance = ImageObject(sourcePath)
+    noVibrance.vibrance(amount=0)
+    assert list(_getImageData(noVibrance._pilImage())) == loadedPixels
+
+    im = ImageObject(sourcePath)
+    im.vibrance(amount=1)
+    pixels = list(_getImageData(im._pilImage()))
+    assert pixels[:3] == [
+        (119, 142, 165, 255),
+        (255, 0, 0, 255),
+        (128, 128, 128, 255),
+    ]
+    assert [pixel[3] for pixel in pixels] == [255, 255, 255, 64]
+
+
 def test_imageObject_palette_filters(tmpdir):
     import inspect
 

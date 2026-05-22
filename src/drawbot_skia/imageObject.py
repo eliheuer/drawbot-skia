@@ -658,10 +658,7 @@ class ImageObject:
         self._setPILImage(adjusted)
 
     def vibrance(self, amount=0.0):
-        from PIL import ImageEnhance
-
-        image = self._pilImage()
-        self._setPILImage(ImageEnhance.Color(image).enhance(1 + float(amount)))
+        self._setPILImage(_vibranceImage(self._pilImage(), amount))
 
     def temperatureAndTint(self, neutral=(6500.0, 0.0), targetNeutral=(6500.0, 0.0)):
         image = self._pilImage()
@@ -2295,6 +2292,31 @@ def _ditherImage(image, intensity):
                 _clampByte(r + threshold),
                 _clampByte(g + threshold),
                 _clampByte(b + threshold),
+                a,
+            )
+        )
+    return _newRGBAWithData(source.size, data)
+
+
+def _vibranceImage(image, amount):
+    amount = float(amount)
+    source = image.convert("RGBA")
+    if amount == 0:
+        return source
+
+    data = []
+    for r, g, b, a in _getImageData(source):
+        luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        saturation = (max(r, g, b) - min(r, g, b)) / 255
+        if amount > 0:
+            factor = 1 + amount * (1 - saturation)
+        else:
+            factor = max(0, 1 + amount * saturation)
+        data.append(
+            (
+                _clampByte(luminance + (r - luminance) * factor),
+                _clampByte(luminance + (g - luminance) * factor),
+                _clampByte(luminance + (b - luminance) * factor),
                 a,
             )
         )
