@@ -4414,10 +4414,11 @@ def _tileImage(image, rotations=4, reflect=False, angle=0.0, center=None):
     base = image.convert("RGBA")
     rotations = max(1, int(rotations))
     center = None if center is None else tuple(float(value) for value in center)
+    angle = math.degrees(float(angle))
     result = Image.new("RGBA", base.size, (0, 0, 0, 0))
     for index in range(rotations):
         tile = base.rotate(
-            float(angle) + 360 * index / rotations,
+            angle + 360 * index / rotations,
             resample=Image.Resampling.BICUBIC,
             center=center,
         )
@@ -4446,10 +4447,11 @@ def _triangleKaleidoscopeImage(image, point, size, rotation, decay):
         framed.alpha_composite(wedge.resize(base.size, Image.Resampling.BICUBIC))
         wedge = framed
     decay = max(0, min(1, float(decay)))
+    rotation = math.degrees(float(rotation))
     result = Image.new("RGBA", base.size, (0, 0, 0, 0))
     for index in range(3):
         tile = wedge.rotate(
-            float(rotation) + index * 120,
+            rotation + index * 120,
             resample=Image.Resampling.BICUBIC,
             center=(px, py),
         )
@@ -4465,9 +4467,9 @@ def _offsetTileImage(image, width, angle):
     from PIL import ImageChops
 
     width = int(round(float(width))) or 1
-    radians = math.radians(float(angle))
-    dx = int(round(math.cos(radians) * width / 2))
-    dy = int(round(math.sin(radians) * width / 2))
+    angle = float(angle)
+    dx = int(round(math.cos(angle) * width / 2))
+    dy = int(round(math.sin(angle) * width / 2))
     shifted = ImageChops.offset(image.convert("RGBA"), dx, dy)
     return _blendRGBA(image, shifted, 0.5)
 
@@ -4480,7 +4482,7 @@ def _fourfoldTileSource(image, center, width, angle, acuteAngle):
     phaseX, phaseY = center
     phaseX = int(round(float(phaseX) - source.width / 2))
     phaseY = int(round(float(phaseY) - source.height / 2))
-    angle0 = math.radians(float(angle))
+    angle0 = float(angle)
     angle1 = angle0 + float(acuteAngle)
     offsets = (
         (0, 0),
@@ -4508,7 +4510,7 @@ def _skewTileImage(image, angle, acuteAngle, width):
         (1, shear, 0, 0, 1, 0),
         resample=Image.Resampling.BICUBIC,
     )
-    return _offsetTileImage(transformed.rotate(float(angle), resample=Image.Resampling.BICUBIC), width, angle)
+    return _offsetTileImage(transformed.rotate(math.degrees(float(angle)), resample=Image.Resampling.BICUBIC), width, angle)
 
 
 def _cropExtent(image, extent):

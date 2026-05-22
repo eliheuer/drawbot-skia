@@ -1225,6 +1225,36 @@ def test_imageObject_rotated_tile_uses_width(tmpdir):
     assert narrowImage.tobytes() != wideImage.tobytes()
 
 
+def test_imageObject_rotated_tile_uses_radian_angle(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "tile-angle.png"
+    image = Image.new("RGBA", (5, 5))
+    for y in range(5):
+        for x in range(5):
+            image.putpixel((x, y), (x * 40, y * 40, 0, 255))
+    image.save(imagePath)
+
+    zero = ImageObject(imagePath)
+    assert zero.fourfoldRotatedTile(center=(2, 2), angle=0, width=4) is None
+    quarter = ImageObject(imagePath)
+    assert quarter.fourfoldRotatedTile(center=(2, 2), angle=math.pi / 2, width=4) is None
+
+    assert [zero._pilImage().getpixel((x, 2))[:2] for x in range(5)] == [
+        (100, 120),
+        (100, 80),
+        (100, 80),
+        (100, 120),
+        (120, 160),
+    ]
+    assert [quarter._pilImage().getpixel((x, 2))[:2] for x in range(5)] == [
+        (120, 100),
+        (80, 100),
+        (80, 100),
+        (120, 100),
+        (160, 120),
+    ]
+    assert zero._pilImage().tobytes() != quarter._pilImage().tobytes()
+
+
 def test_imageObject_fourfold_and_parallelogram_tiles_use_phase_controls(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "tile-phase.png"
     image = Image.new("RGBA", (6, 4))
