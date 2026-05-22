@@ -884,6 +884,27 @@ def test_imageObject_droste_uses_inset_and_recursion_parameters(tmpdir):
     assert im._pilImage().getpixel((0, 0))[:3] == (0, 0, 0)
 
 
+def test_imageObject_perspective_correction_crop_flag(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "perspective-correction.png"
+    Image.new("RGBA", (4, 3), (100, 0, 0, 255)).save(imagePath)
+    kwargs = {
+        "topLeft": (-1, 0),
+        "topRight": (5, 0),
+        "bottomRight": (4, 3),
+        "bottomLeft": (0, 3),
+    }
+
+    cropped = ImageObject(imagePath)
+    assert cropped.perspectiveCorrection(**kwargs, crop=True) is None
+    assert cropped.size() == (4, 3)
+    assert cropped.offset() == (0, 0)
+
+    expanded = ImageObject(imagePath)
+    assert expanded.perspectiveCorrection(**kwargs, crop=False) is None
+    assert expanded.size() == (6, 3)
+    assert expanded.offset() == (-1, 0)
+
+
 def test_imageObject_analysis_and_stylize_batch(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "analysis.png"
     image = Image.new("RGBA", (24, 16), (40, 80, 160, 255))

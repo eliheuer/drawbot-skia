@@ -420,7 +420,22 @@ class ImageObject:
         bottomLeft=(155.0, 153.0),
         crop=True,
     ):
-        self.perspectiveTransform(topLeft, topRight, bottomRight, bottomLeft)
+        image = self._pilImage()
+        if crop:
+            self._setPILImage(_quadTransformImage(image, topLeft, topRight, bottomRight, bottomLeft))
+            self._offset = (0, 0)
+        else:
+            corrected, offset = _quadTransformImage(
+                image,
+                topLeft,
+                topRight,
+                bottomRight,
+                bottomLeft,
+                resizeToSource=False,
+            )
+            self._setPILImage(corrected)
+            offsetX, offsetY = self._offset
+            self._offset = (offsetX + offset[0], offsetY + offset[1])
 
     def perspectiveTile(
         self,
@@ -3654,7 +3669,7 @@ def _tilePatch(patch, width, height, flipY=False):
     return result
 
 
-def _quadTransformImage(image, topLeft, topRight, bottomRight, bottomLeft):
+def _quadTransformImage(image, topLeft, topRight, bottomRight, bottomLeft, resizeToSource=True):
     from PIL import Image
 
     width, height = image.size
@@ -3676,10 +3691,10 @@ def _quadTransformImage(image, topLeft, topRight, bottomRight, bottomLeft):
         bottomLeft[0] - minX,
         bottomLeft[1] - minY,
     )
-    return image.transform((targetWidth, targetHeight), Image.Transform.QUAD, data, Image.Resampling.BICUBIC).resize(
-        (width, height),
-        Image.Resampling.BICUBIC,
-    )
+    transformed = image.transform((targetWidth, targetHeight), Image.Transform.QUAD, data, Image.Resampling.BICUBIC)
+    if resizeToSource:
+        return transformed.resize((width, height), Image.Resampling.BICUBIC)
+    return transformed, (int(round(minX)), int(round(minY)))
 
 
 def _tileImage(image, rotations=4, reflect=False, angle=0.0):
