@@ -364,6 +364,124 @@ class ImageObject:
         blurred = image.filter(ImageFilter.GaussianBlur(float(radius)))
         self._setPILImage(_blendRGBA(image, blurred, intensity))
 
+    def additionCompositing(self, backgroundImage):
+        from PIL import ImageChops
+
+        self._composite(backgroundImage, ImageChops.add)
+
+    def maximumCompositing(self, backgroundImage):
+        from PIL import ImageChops
+
+        self._composite(backgroundImage, ImageChops.lighter)
+
+    def minimumCompositing(self, backgroundImage):
+        from PIL import ImageChops
+
+        self._composite(backgroundImage, ImageChops.darker)
+
+    def multiplyCompositing(self, backgroundImage):
+        self.multiplyBlendMode(backgroundImage)
+
+    def multiplyBlendMode(self, backgroundImage):
+        from PIL import ImageChops
+
+        self._composite(backgroundImage, ImageChops.multiply)
+
+    def screenBlendMode(self, backgroundImage):
+        from PIL import ImageChops
+
+        self._composite(backgroundImage, ImageChops.screen)
+
+    def overlayBlendMode(self, backgroundImage):
+        self._composite(backgroundImage, _overlayBlend)
+
+    def hardLightBlendMode(self, backgroundImage):
+        self._composite(backgroundImage, lambda source, background: _overlayBlend(background, source))
+
+    def softLightBlendMode(self, backgroundImage):
+        self._composite(backgroundImage, _softLightBlend)
+
+    def darkenBlendMode(self, backgroundImage):
+        from PIL import ImageChops
+
+        self._composite(backgroundImage, ImageChops.darker)
+
+    def lightenBlendMode(self, backgroundImage):
+        from PIL import ImageChops
+
+        self._composite(backgroundImage, ImageChops.lighter)
+
+    def differenceBlendMode(self, backgroundImage):
+        from PIL import ImageChops
+
+        self._composite(backgroundImage, ImageChops.difference)
+
+    def exclusionBlendMode(self, backgroundImage):
+        self._composite(backgroundImage, _exclusionBlend)
+
+    def colorBurnBlendMode(self, backgroundImage):
+        self._composite(backgroundImage, _colorBurnBlend)
+
+    def colorDodgeBlendMode(self, backgroundImage):
+        self._composite(backgroundImage, _colorDodgeBlend)
+
+    def hueBlendMode(self, backgroundImage):
+        self._composite(backgroundImage, lambda source, background: _hslBlend(source, background, "hue"))
+
+    def saturationBlendMode(self, backgroundImage):
+        self._composite(backgroundImage, lambda source, background: _hslBlend(source, background, "saturation"))
+
+    def colorBlendMode(self, backgroundImage):
+        self._composite(backgroundImage, lambda source, background: _hslBlend(source, background, "color"))
+
+    def luminosityBlendMode(self, backgroundImage):
+        self._composite(backgroundImage, lambda source, background: _hslBlend(source, background, "luminosity"))
+
+    def sourceOverCompositing(self, backgroundImage):
+        from PIL import Image
+
+        source = self._pilImage()
+        background = _imageObjectToPIL(backgroundImage).resize(source.size)
+        self._setPILImage(Image.alpha_composite(background, source))
+
+    def sourceInCompositing(self, backgroundImage):
+        source = self._pilImage()
+        background = _imageObjectToPIL(backgroundImage).resize(source.size)
+        source.putalpha(background.getchannel("A"))
+        self._setPILImage(source)
+
+    def sourceOutCompositing(self, backgroundImage):
+        from PIL import ImageChops
+
+        source = self._pilImage()
+        background = _imageObjectToPIL(backgroundImage).resize(source.size)
+        source.putalpha(ImageChops.invert(background.getchannel("A")))
+        self._setPILImage(source)
+
+    def sourceAtopCompositing(self, backgroundImage):
+        from PIL import Image
+
+        source = self._pilImage()
+        background = _imageObjectToPIL(backgroundImage).resize(source.size)
+        source.putalpha(background.getchannel("A"))
+        self._setPILImage(Image.alpha_composite(background, source))
+
+    def blendWithAlphaMask(self, backgroundImage, maskImage):
+        from PIL import Image
+
+        source = self._pilImage()
+        background = _imageObjectToPIL(backgroundImage).resize(source.size)
+        mask = _imageObjectToPIL(maskImage).resize(source.size).getchannel("A")
+        self._setPILImage(Image.composite(source, background, mask))
+
+    def blendWithMask(self, backgroundImage, maskImage):
+        from PIL import Image
+
+        source = self._pilImage()
+        background = _imageObjectToPIL(backgroundImage).resize(source.size)
+        mask = _imageObjectToPIL(maskImage).resize(source.size).convert("L")
+        self._setPILImage(Image.composite(source, background, mask))
+
     def photoEffectMono(self, extrapolate=False):
         self._monochrome()
 
@@ -465,6 +583,15 @@ class ImageObject:
     def _filter(self, imageFilter):
         self._setPILImage(self._pilImage().filter(imageFilter))
 
+    def _composite(self, backgroundImage, blendFunction):
+        from PIL import Image
+
+        source = self._pilImage()
+        background = _imageObjectToPIL(backgroundImage).resize(source.size)
+        blended = blendFunction(source.convert("RGBA"), background.convert("RGBA"))
+        alpha = source.getchannel("A")
+        self._setPILImage(Image.composite(blended, background, alpha))
+
     def _monochrome(self):
         self._setPILImage(self._monochromeImage())
 
@@ -516,3 +643,120 @@ def _screenBlend(image1, image2, amount):
 
     screened = ImageChops.screen(image1.convert("RGBA"), image2.convert("RGBA"))
     return _blendRGBA(image1, screened, amount)
+
+
+def _imageObjectToPIL(image):
+    if isinstance(image, ImageObject):
+        return image._pilImage()
+    return ImageObject(image)._pilImage()
+
+
+def _overlayBlend(source, background):
+    return _channelBlend(source, background, _overlayChannel)
+
+
+def _softLightBlend(source, background):
+    return _channelBlend(source, background, _softLightChannel)
+
+
+def _exclusionBlend(source, background):
+    return _channelBlend(
+        source,
+        background,
+        lambda s, b: _clampByte(s + b - (2 * s * b / 255)),
+    )
+
+
+def _colorBurnBlend(source, background):
+    return _channelBlend(
+        source,
+        background,
+        lambda s, b: 0 if s == 0 else _clampByte(255 - min(255, (255 - b) * 255 / s)),
+    )
+
+
+def _colorDodgeBlend(source, background):
+    return _channelBlend(
+        source,
+        background,
+        lambda s, b: 255 if s == 255 else _clampByte(min(255, b * 255 / (255 - s))),
+    )
+
+
+def _channelBlend(source, background, blend):
+    from PIL import Image
+
+    source = source.convert("RGBA")
+    background = background.convert("RGBA")
+    data = []
+    for sourcePixel, backgroundPixel in zip(_iterRGBAPixels(source), _iterRGBAPixels(background)):
+        data.append(
+            (
+                blend(sourcePixel[0], backgroundPixel[0]),
+                blend(sourcePixel[1], backgroundPixel[1]),
+                blend(sourcePixel[2], backgroundPixel[2]),
+                sourcePixel[3],
+            )
+        )
+    result = Image.new("RGBA", source.size)
+    result.putdata(data)
+    return result
+
+
+def _overlayChannel(source, background):
+    if background < 128:
+        return _clampByte(2 * source * background / 255)
+    return _clampByte(255 - 2 * (255 - source) * (255 - background) / 255)
+
+
+def _softLightChannel(source, background):
+    source /= 255
+    background /= 255
+    if source < 0.5:
+        value = background - (1 - 2 * source) * background * (1 - background)
+    else:
+        value = background + (2 * source - 1) * (_softLightD(background) - background)
+    return _clampByte(value * 255)
+
+
+def _softLightD(value):
+    if value <= 0.25:
+        return ((16 * value - 12) * value + 4) * value
+    return math.sqrt(value)
+
+
+def _hslBlend(source, background, mode):
+    from PIL import Image
+    import colorsys
+
+    source = source.convert("RGBA")
+    background = background.convert("RGBA")
+    result = Image.new("RGBA", source.size)
+    data = []
+    for sourcePixel, backgroundPixel in zip(_iterRGBAPixels(source), _iterRGBAPixels(background)):
+        sh, sl, ss = colorsys.rgb_to_hls(
+            sourcePixel[0] / 255, sourcePixel[1] / 255, sourcePixel[2] / 255
+        )
+        bh, bl, bs = colorsys.rgb_to_hls(
+            backgroundPixel[0] / 255,
+            backgroundPixel[1] / 255,
+            backgroundPixel[2] / 255,
+        )
+        if mode == "hue":
+            h, l, s = sh, bl, bs
+        elif mode == "saturation":
+            h, l, s = bh, bl, ss
+        elif mode == "color":
+            h, l, s = sh, bl, ss
+        else:
+            h, l, s = bh, sl, bs
+        r, g, b = colorsys.hls_to_rgb(h, l, s)
+        data.append((_clampByte(r * 255), _clampByte(g * 255), _clampByte(b * 255), sourcePixel[3]))
+    result.putdata(data)
+    return result
+
+
+def _iterRGBAPixels(image):
+    data = image.tobytes()
+    for index in range(0, len(data), 4):
+        yield data[index], data[index + 1], data[index + 2], data[index + 3]

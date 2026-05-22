@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-316 passed, 3 skipped, 3 warnings
+317 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -102,32 +102,50 @@ Static comparison source: public methods on `typemytype/drawbot` `ImageObject` v
 Current fork supports:
 
 ```text
+additionCompositing
+blendWithAlphaMask
+blendWithMask
 bloom
 boxBlur
 clearFilters
+colorBlendMode
+colorBurnBlendMode
 colorControls
+colorDodgeBlendMode
 colorInvert
 colorMonochrome
 colorPosterize
 copy
 crop
+darkenBlendMode
+differenceBlendMode
 edgeWork
 edges
+exclusionBlendMode
 exposureAdjust
 falseColor
 gammaAdjust
 gaussianBlur
 gloom
+hardLightBlendMode
 hueAdjust
+hueBlendMode
 lanczosScaleTransform
+lightenBlendMode
 lockFocus
+luminosityBlendMode
 maskToAlpha
 maximumComponent
+maximumCompositing
 minimumComponent
+minimumCompositing
 motionBlur
+multiplyBlendMode
+multiplyCompositing
 noiseReduction
 offset
 open
+overlayBlendMode
 photoEffectChrome
 photoEffectFade
 photoEffectInstant
@@ -137,9 +155,16 @@ photoEffectProcess
 photoEffectTonal
 photoEffectTransfer
 pixellate
+saturationBlendMode
+screenBlendMode
 sepiaTone
 sharpenLuminance
 size
+softLightBlendMode
+sourceAtopCompositing
+sourceInCompositing
+sourceOutCompositing
+sourceOverCompositing
 temperatureAndTint
 unlockFocus
 unsharpMask
@@ -150,14 +175,14 @@ whitePointAdjust
 zoomBlur
 ```
 
-DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 46 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters rather than pixel-identical Core Image implementations.
+DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 71 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters and blend/compositing modes rather than pixel-identical Core Image implementations.
 
 Representative missing groups:
 
 - generators and barcodes: `QRCodeGenerator`, `PDF417BarcodeGenerator`, `aztecCodeGenerator`, `code128BarcodeGenerator`, gradient/checkerboard/stripe generators;
 - blur and stylization filters: `bokehBlur`, `comicEffect`, `crystallize`, `pointillize`;
 - color filters: `colorPolynomial`, `colorCrossPolynomial`, `colorThreshold`, `colorThresholdOtsu`;
-- compositing and blend filters: `multiplyCompositing`, `sourceOverCompositing`, `overlayBlendMode`, `screenBlendMode`, `hardLightBlendMode`;
+- compositing and blend filters not yet covered by Pillow-backed approximations: `divideBlendMode`, `linearBurnBlendMode`, `linearDodgeBlendMode`, `pinLightBlendMode`, `vividLightBlendMode`;
 - geometry and distortion filters: `affineTile`, `perspectiveTransform`, `twirlDistortion`, `bumpDistortion`, `kaleidoscope`.
 
 Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-heavy and "huge", this should not be treated as a blocker for the headline text/path parity milestone unless the project explicitly chooses an ImageObject parity target.

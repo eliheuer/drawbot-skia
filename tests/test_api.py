@@ -333,6 +333,54 @@ def test_imageObject_pillow_filter_batch(tmpdir):
         assert im.size() == (20, 20)
 
 
+def test_imageObject_blend_and_compositing_batch(tmpdir):
+    sourcePath = pathlib.Path(tmpdir) / "source.png"
+    backgroundPath = pathlib.Path(tmpdir) / "background.png"
+    maskPath = pathlib.Path(tmpdir) / "mask.png"
+    Image.new("RGBA", (12, 12), (200, 80, 40, 180)).save(sourcePath)
+    Image.new("RGBA", (12, 12), (20, 100, 180, 255)).save(backgroundPath)
+    mask = Image.new("RGBA", (12, 12), (0, 0, 0, 0))
+    mask.putpixel((6, 6), (255, 255, 255, 255))
+    mask.save(maskPath)
+
+    blendCalls = [
+        "additionCompositing",
+        "maximumCompositing",
+        "minimumCompositing",
+        "multiplyCompositing",
+        "multiplyBlendMode",
+        "screenBlendMode",
+        "overlayBlendMode",
+        "hardLightBlendMode",
+        "softLightBlendMode",
+        "darkenBlendMode",
+        "lightenBlendMode",
+        "differenceBlendMode",
+        "exclusionBlendMode",
+        "colorBurnBlendMode",
+        "colorDodgeBlendMode",
+        "hueBlendMode",
+        "saturationBlendMode",
+        "colorBlendMode",
+        "luminosityBlendMode",
+        "sourceOverCompositing",
+        "sourceInCompositing",
+        "sourceOutCompositing",
+        "sourceAtopCompositing",
+    ]
+    for methodName in blendCalls:
+        im = ImageObject(sourcePath)
+        assert getattr(im, methodName)(ImageObject(backgroundPath)) is None
+        assert im.size() == (12, 12)
+
+    im = ImageObject(sourcePath)
+    assert im.blendWithAlphaMask(backgroundPath, maskPath) is None
+    assert im.size() == (12, 12)
+    im = ImageObject(sourcePath)
+    assert im.blendWithMask(backgroundPath, maskPath) is None
+    assert im.size() == (12, 12)
+
+
 def test_numberOfPages_gif(tmpdir):
     source = """
 for i in range(3):
