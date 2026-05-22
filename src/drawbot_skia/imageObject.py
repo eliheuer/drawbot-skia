@@ -852,17 +852,59 @@ class ImageObject:
         quantized = image.convert("RGB").quantize(colors=colors, method=Image.Quantize.MEDIANCUT)
         palette = quantized.getpalette() or []
         colorCounts = quantized.getcolors(image.width * image.height) or []
-        total = image.width * image.height or 1
-        data = []
-        for pixelCount, pixelIndex in sorted(colorCounts, key=lambda item: item[0], reverse=True):
+        centers = []
+        for _pixelCount, pixelIndex in sorted(colorCounts, key=lambda item: item[0], reverse=True):
             offset = pixelIndex * 3
             color = tuple(palette[offset:offset + 3])
-            if len(color) != 3:
-                color = (0, 0, 0)
-            data.append((*color, _clampByte(pixelCount / total * 255)))
-        while len(data) < colors:
-            data.append((0, 0, 0, 0))
-        self._setPILImage(_newRGBAWithData((colors, 1), data[:colors]))
+            if len(color) == 3:
+                centers.append(tuple(float(value) for value in color))
+        pixels = list(_getImageData(image))
+        while len(centers) < colors:
+            centers.append(tuple(float(value) for value in pixels[len(centers) % len(pixels)][:3]) if pixels else (0.0, 0.0, 0.0))
+        centers = centers[:colors]
+        iterations = max(0, int(round(float(passes))))
+        assignments = [0] * len(pixels)
+        if pixels:
+            pixelLabs = [_rgbBytesToLab(*pixel[:3]) for pixel in pixels] if perceptual else None
+
+            def assignPixels():
+                centerLabs = [_rgbBytesToLab(*(_clampByte(c) for c in center)) for center in centers] if perceptual else None
+                groups = [[] for _ in centers]
+                for index, pixel in enumerate(pixels):
+                    if perceptual:
+                        pixelLab = pixelLabs[index]
+                        distances = [
+                            sum((a - b) ** 2 for a, b in zip(pixelLab, centerLab))
+                            for centerLab in centerLabs
+                        ]
+                    else:
+                        distances = [
+                            sum((pixel[channel] - center[channel]) ** 2 for channel in range(3))
+                            for center in centers
+                        ]
+                    cluster = min(range(len(centers)), key=distances.__getitem__)
+                    assignments[index] = cluster
+                    groups[cluster].append(pixel)
+                return groups
+
+            for _ in range(iterations):
+                groups = assignPixels()
+                for index, group in enumerate(groups):
+                    if group:
+                        centers[index] = tuple(sum(pixel[channel] for pixel in group) / len(group) for channel in range(3))
+            assignPixels()
+        else:
+            assignments = []
+        total = image.width * image.height or 1
+        clusterCounts = [assignments.count(index) for index in range(colors)]
+        data = [
+            (
+                *(_clampByte(value) for value in center),
+                _clampByte(clusterCounts[index] / total * 255),
+            )
+            for index, center in sorted(enumerate(centers), key=lambda item: clusterCounts[item[0]], reverse=True)
+        ]
+        self._setPILImage(_newRGBAWithData((colors, 1), data))
         self._offset = (0, 0)
 
     def paletteCentroid(self, paletteImage, perceptual=False):

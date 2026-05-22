@@ -565,6 +565,66 @@ def test_imageObject_lab_conversion_and_delta_e(tmpdir):
     assert different._pilImage().getpixel((0, 0))[0] > 100
 
 
+def test_imageObject_kmeans_uses_passes_and_perceptual_distance():
+    from drawbot_skia.imageObject import _getImageData
+
+    source = Image.new("RGBA", (6, 1))
+    source.putdata(
+        [
+            (20, 20, 20, 255),
+            (40, 40, 40, 255),
+            (200, 30, 30, 255),
+            (220, 50, 50, 255),
+            (30, 200, 30, 255),
+            (50, 220, 50, 255),
+        ]
+    )
+
+    initial = ImageObject()
+    initial._setPILImage(source)
+    assert initial.KMeans(count=2, passes=0) is None
+    assert list(_getImageData(initial._pilImage())) == [
+        (110, 26, 26, 170),
+        (84, 129, 42, 85),
+    ]
+
+    refined = ImageObject()
+    refined._setPILImage(source)
+    assert refined.KMeans(count=2, passes=1) is None
+    assert list(_getImageData(refined._pilImage())) == [
+        (120, 34, 34, 170),
+        (39, 210, 39, 85),
+    ]
+
+    hueRows = Image.new("RGBA", (6, 1))
+    hueRows.putdata(
+        [
+            (255, 0, 0, 255),
+            (255, 80, 0, 255),
+            (255, 160, 0, 255),
+            (0, 0, 255, 255),
+            (0, 80, 255, 255),
+            (0, 160, 255, 255),
+        ]
+    )
+
+    rgbDistance = ImageObject()
+    rgbDistance._setPILImage(hueRows)
+    assert rgbDistance.KMeans(count=2, passes=3, perceptual=False) is None
+    assert list(_getImageData(rgbDistance._pilImage())) == [
+        (128, 120, 128, 170),
+        (129, 0, 129, 85),
+    ]
+
+    perceptualDistance = ImageObject()
+    perceptualDistance._setPILImage(hueRows)
+    assert perceptualDistance.KMeans(count=2, passes=3, perceptual=True) is None
+    assert list(_getImageData(perceptualDistance._pilImage())) == [
+        (255, 80, 0, 128),
+        (0, 80, 255, 128),
+    ]
+
+
 def test_imageObject_generator_batch():
     calls = [
         ("constantColorGenerator", ((16, 12),), {}),
