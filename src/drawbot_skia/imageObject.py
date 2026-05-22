@@ -1459,6 +1459,7 @@ class ImageObject:
         from PIL import Image
 
         image = self._pilImage()
+        cx, cy = center
         amount = max(1, int(round(float(amount))))
         accumulator = Image.new("RGBA", image.size, (0, 0, 0, 0))
         samples = 8
@@ -1471,8 +1472,8 @@ class ImageObject:
                 ),
                 Image.Resampling.BICUBIC,
             )
-            left = (resized.width - image.width) // 2
-            top = (resized.height - image.height) // 2
+            left = int(round(cx * scale - cx))
+            top = int(round(cy * scale - cy))
             accumulator = _blendRGBA(
                 accumulator,
                 resized.crop((left, top, left + image.width, top + image.height)),

@@ -335,6 +335,21 @@ def test_imageObject_pillow_filter_batch(tmpdir):
         assert im.size() == (20, 20)
 
 
+def test_imageObject_zoom_blur_uses_center(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "zoom-blur.png"
+    image = Image.new("RGBA", (5, 1), (0, 0, 0, 255))
+    image.putpixel((1, 0), (255, 255, 255, 255))
+    image.save(imagePath)
+
+    left = ImageObject(imagePath)
+    assert left.zoomBlur(center=(0, 0), amount=200) is None
+    assert [left._pilImage().getpixel((x, 0))[0] for x in range(5)] == [0, 89, 138, 143, 101]
+
+    right = ImageObject(imagePath)
+    assert right.zoomBlur(center=(4, 0), amount=200) is None
+    assert [right._pilImage().getpixel((x, 0))[0] for x in range(5)] == [77, 54, 0, 0, 0]
+
+
 def test_imageObject_blend_and_compositing_batch(tmpdir):
     sourcePath = pathlib.Path(tmpdir) / "source.png"
     backgroundPath = pathlib.Path(tmpdir) / "background.png"
