@@ -1407,20 +1407,30 @@ class ImageObject:
     def pointillize(self, radius=20.0, center=(150.0, 150.0)):
         from PIL import Image
         from PIL import ImageDraw
+        from PIL import ImageStat
 
         image = self._pilImage()
         radius = max(1, int(round(float(radius))))
-        sampled = image.resize(
-            (max(1, image.width // radius), max(1, image.height // radius)),
-            Image.Resampling.BOX,
-        )
         result = Image.new("RGBA", image.size, (0, 0, 0, 0))
         draw = ImageDraw.Draw(result)
-        for y in range(sampled.height):
-            for x in range(sampled.width):
-                color = sampled.getpixel((x, y))
-                cx = x * radius + radius / 2
-                cy = y * radius + radius / 2
+        centerX, centerY = (float(value) for value in center)
+        minBlockX = math.floor((0 - centerX) / radius)
+        maxBlockX = math.floor((image.width - 1 - centerX) / radius)
+        minBlockY = math.floor((0 - centerY) / radius)
+        maxBlockY = math.floor((image.height - 1 - centerY) / radius)
+        for blockY in range(minBlockY, maxBlockY + 1):
+            for blockX in range(minBlockX, maxBlockX + 1):
+                left = max(0, int(math.floor(centerX + blockX * radius)))
+                top = max(0, int(math.floor(centerY + blockY * radius)))
+                right = min(image.width, int(math.floor(centerX + (blockX + 1) * radius)))
+                bottom = min(image.height, int(math.floor(centerY + (blockY + 1) * radius)))
+                if right <= left:
+                    right = min(image.width, left + 1)
+                if bottom <= top:
+                    bottom = min(image.height, top + 1)
+                color = tuple(_clampByte(value) for value in ImageStat.Stat(image.crop((left, top, right, bottom))).mean)
+                cx = centerX + blockX * radius + radius / 2
+                cy = centerY + blockY * radius + radius / 2
                 draw.ellipse((cx - radius / 2, cy - radius / 2, cx + radius / 2, cy + radius / 2), fill=color)
         self._setPILImage(result)
 

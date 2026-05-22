@@ -1542,6 +1542,39 @@ def test_imageObject_pixellate_uses_center(tmpdir):
     ]
 
 
+def test_imageObject_pointillize_uses_center(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "pointillize.png"
+    image = Image.new("RGBA", (6, 3), (0, 0, 0, 0))
+    for y in range(3):
+        for x in range(6):
+            image.putpixel((x, y), (x * 40, y * 70, 0, 255))
+    image.save(imagePath)
+
+    leftAnchored = ImageObject(imagePath)
+    assert leftAnchored.pointillize(radius=2, center=(0, 0)) is None
+    assert [leftAnchored._pilImage().getpixel((x, 1)) for x in range(6)] == [
+        (20, 35, 0, 255),
+        (20, 35, 0, 255),
+        (100, 35, 0, 255),
+        (100, 35, 0, 255),
+        (180, 35, 0, 255),
+        (180, 35, 0, 255),
+    ]
+    assert leftAnchored._pilImage().getpixel((0, 0)) == (0, 0, 0, 0)
+
+    shifted = ImageObject(imagePath)
+    assert shifted.pointillize(radius=2, center=(1, 0)) is None
+    assert [shifted._pilImage().getpixel((x, 1)) for x in range(6)] == [
+        (0, 35, 0, 255),
+        (60, 35, 0, 255),
+        (60, 35, 0, 255),
+        (140, 35, 0, 255),
+        (140, 35, 0, 255),
+        (200, 35, 0, 255),
+    ]
+    assert shifted._pilImage().getpixel((0, 0)) == (0, 35, 0, 255)
+
+
 def test_imageObject_depth_of_field_uses_focus_line(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "depth-of-field.png"
     image = Image.new("RGBA", (7, 5), (0, 0, 0, 255))
