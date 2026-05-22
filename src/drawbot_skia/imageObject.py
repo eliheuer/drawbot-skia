@@ -514,6 +514,95 @@ class ImageObject:
         other = _imageObjectToPIL(image2).resize(image.size)
         self._setPILImage(ImageChops.difference(image, other))
 
+    def areaAverage(self, extent=(0.0, 0.0, 640.0, 80.0)):
+        cropped = _cropExtent(self._pilImage(), extent)
+        self._setPILImage(_solidFromColor(cropped.resize((1, 1)).getpixel((0, 0))))
+        self._offset = (0, 0)
+
+    def areaMaximum(self, extent=(0.0, 0.0, 640.0, 80.0)):
+        cropped = _cropExtent(self._pilImage(), extent)
+        channels = cropped.split()
+        self._setPILImage(_solidFromColor(tuple(channel.getextrema()[1] for channel in channels)))
+        self._offset = (0, 0)
+
+    def areaMinimum(self, extent=(0.0, 0.0, 640.0, 80.0)):
+        cropped = _cropExtent(self._pilImage(), extent)
+        channels = cropped.split()
+        self._setPILImage(_solidFromColor(tuple(channel.getextrema()[0] for channel in channels)))
+        self._offset = (0, 0)
+
+    def areaMaximumAlpha(self, extent=(0.0, 0.0, 640.0, 80.0)):
+        cropped = _cropExtent(self._pilImage(), extent)
+        alpha = cropped.getchannel("A").getextrema()[1]
+        self._setPILImage(_solidFromColor((alpha, alpha, alpha, 255)))
+        self._offset = (0, 0)
+
+    def areaMinimumAlpha(self, extent=(0.0, 0.0, 640.0, 80.0)):
+        cropped = _cropExtent(self._pilImage(), extent)
+        alpha = cropped.getchannel("A").getextrema()[0]
+        self._setPILImage(_solidFromColor((alpha, alpha, alpha, 255)))
+        self._offset = (0, 0)
+
+    def areaMinMax(self, extent=(0.0, 0.0, 640.0, 80.0)):
+        cropped = _cropExtent(self._pilImage(), extent)
+        extrema = cropped.convert("L").getextrema()
+        self._setPILImage(_solidFromColor((extrema[0], extrema[1], 0, 255), size=(2, 1)))
+        self._offset = (0, 0)
+
+    def areaMinMaxRed(self, extent=(0.0, 0.0, 640.0, 80.0)):
+        cropped = _cropExtent(self._pilImage(), extent)
+        extrema = cropped.getchannel("R").getextrema()
+        self._setPILImage(_solidFromColor((extrema[0], extrema[1], 0, 255), size=(2, 1)))
+        self._offset = (0, 0)
+
+    def rowAverage(self, extent=(0.0, 0.0, 640.0, 80.0)):
+        cropped = _cropExtent(self._pilImage(), extent)
+        self._setPILImage(cropped.resize((1, cropped.height)))
+        self._offset = (0, 0)
+
+    def columnAverage(self, extent=(0.0, 0.0, 640.0, 80.0)):
+        cropped = _cropExtent(self._pilImage(), extent)
+        self._setPILImage(cropped.resize((cropped.width, 1)))
+        self._offset = (0, 0)
+
+    def areaHistogram(self, extent=(0.0, 0.0, 640.0, 80.0), scale=1.0, count=64.0):
+        from PIL import Image
+
+        cropped = _cropExtent(self._pilImage(), extent).convert("L")
+        bins = max(1, int(round(float(count))))
+        histogram = cropped.histogram()
+        grouped = []
+        step = 256 / bins
+        for index in range(bins):
+            start = int(round(index * step))
+            end = int(round((index + 1) * step))
+            grouped.append(sum(histogram[start:end]))
+        maximum = max(grouped) or 1
+        data = [_clampByte(value / maximum * 255 * float(scale)) for value in grouped]
+        image = Image.new("RGBA", (bins, 1))
+        image.putdata([(value, value, value, 255) for value in data])
+        self._setPILImage(image)
+        self._offset = (0, 0)
+
+    def histogramDisplayFilter(self, height=100.0, highLimit=1.0, lowLimit=0.0):
+        from PIL import Image
+        from PIL import ImageDraw
+
+        histogram = self._pilImage().convert("L").histogram()
+        width = 256
+        height = max(1, int(round(float(height))))
+        highLimit = max(float(highLimit), 0.0001)
+        lowLimit = float(lowLimit)
+        maximum = max(histogram) or 1
+        image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        for x, value in enumerate(histogram):
+            normalized = (value / maximum - lowLimit) / (highLimit - lowLimit or 1)
+            barHeight = max(0, min(height, int(round(normalized * height))))
+            draw.line((x, height, x, height - barHeight), fill=(255, 255, 255, 255))
+        self._setPILImage(image)
+        self._offset = (0, 0)
+
     def mix(self, backgroundImage, amount=1.0):
         background = _imageObjectToPIL(backgroundImage).resize(self.size())
         self._setPILImage(_blendRGBA(background, self._pilImage(), amount))
@@ -607,6 +696,113 @@ class ImageObject:
 
         image = self._pilImage()
         self._setPILImage(image.resize(image.size, Image.Resampling.NEAREST))
+
+    def SRGBToneCurveToLinear(self):
+        image = self._pilImage()
+        a = image.getchannel("A")
+        converted = image.convert("RGB").point(_srgbToLinearByte).convert("RGBA")
+        converted.putalpha(a)
+        self._setPILImage(converted)
+
+    def linearToSRGBToneCurve(self):
+        image = self._pilImage()
+        a = image.getchannel("A")
+        converted = image.convert("RGB").point(_linearToSRGBByte).convert("RGBA")
+        converted.putalpha(a)
+        self._setPILImage(converted)
+
+    def bokehBlur(self, radius=20.0, ringAmount=0.0, ringSize=0.1, softness=1.0):
+        self.gaussianBlur(radius)
+
+    def discBlur(self, radius=8.0):
+        from PIL import ImageFilter
+
+        self._filter(ImageFilter.BoxBlur(float(radius)))
+
+    def depthOfField(
+        self,
+        point0=(0.0, 300.0),
+        point1=(300.0, 300.0),
+        saturation=1.5,
+        unsharpMaskRadius=2.5,
+        unsharpMaskIntensity=0.5,
+        radius=6.0,
+    ):
+        self.gaussianBlur(radius)
+        self.colorControls(saturation=saturation)
+        self.unsharpMask(radius=unsharpMaskRadius, intensity=unsharpMaskIntensity)
+
+    def documentEnhancer(self, amount=1.0):
+        from PIL import ImageEnhance
+        from PIL import ImageFilter
+
+        amount = float(amount)
+        image = self._pilImage()
+        image = ImageEnhance.Contrast(image).enhance(1 + amount * 0.25)
+        image = ImageEnhance.Sharpness(image).enhance(1 + amount)
+        self._setPILImage(image.filter(ImageFilter.SMOOTH_MORE))
+
+    def highlightShadowAdjust(self, radius=0.0, shadowAmount=0.0, highlightAmount=1.0):
+        image = self._pilImage()
+        shadowAmount = float(shadowAmount)
+        highlightAmount = float(highlightAmount)
+        self._setPILImage(
+            image.point(
+                lambda value: _clampByte(
+                    value * highlightAmount + (255 - value) * shadowAmount * 0.25
+                )
+            )
+        )
+
+    def heightFieldFromMask(self, radius=10.0):
+        from PIL import ImageFilter
+
+        image = self._pilImage()
+        height = image.convert("L").filter(ImageFilter.GaussianBlur(float(radius)))
+        self._setPILImage(_mergeRGBA(height, height, height, image.getchannel("A")))
+
+    def lineOverlay(
+        self,
+        NRNoiseLevel=0.07,
+        NRSharpness=0.71,
+        edgeIntensity=1.0,
+        threshold=0.1,
+        contrast=50.0,
+    ):
+        from PIL import ImageFilter
+
+        image = self._pilImage()
+        edges = image.filter(ImageFilter.FIND_EDGES).convert("L")
+        limit = _clampByte(float(threshold) * 255)
+        edges = edges.point(lambda value: 255 if value > limit else 0)
+        overlay = _mergeRGBA(edges, edges, edges, image.getchannel("A"))
+        self._setPILImage(_blendRGBA(image, overlay, edgeIntensity))
+
+    def crystallize(self, radius=20.0, center=(150.0, 150.0)):
+        self.pixellate(center=center, scale=radius)
+
+    def hexagonalPixellate(self, center=(150.0, 150.0), scale=8.0):
+        self.pixellate(center=center, scale=scale)
+
+    def pointillize(self, radius=20.0, center=(150.0, 150.0)):
+        from PIL import Image
+        from PIL import ImageDraw
+
+        image = self._pilImage()
+        radius = max(1, int(round(float(radius))))
+        sampled = image.resize(
+            (max(1, image.width // radius), max(1, image.height // radius)),
+            Image.Resampling.BOX,
+        )
+        result = Image.new("RGBA", image.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(result)
+        for y in range(sampled.height):
+            for x in range(sampled.width):
+                color = sampled.getpixel((x, y))
+                cx = x * radius + radius / 2
+                cy = y * radius + radius / 2
+                draw.ellipse((cx - radius / 2, cy - radius / 2, cx + radius / 2, cy + radius / 2), fill=color)
+        self._setPILImage(result)
 
     def morphologyMaximum(self, radius=0.0):
         from PIL import ImageFilter
@@ -1123,6 +1319,41 @@ def _gaussianGradientImage(size, center, color0, color1, radius):
             amount = 1 - math.exp(-((distance ** 2) / (2 * radius * radius)))
             pixels[x, y] = _mixColor(color0, color1, amount)
     return image
+
+
+def _cropExtent(image, extent):
+    x, y, width, height = extent
+    left = max(0, int(round(x)))
+    top = max(0, int(round(y)))
+    right = min(image.width, int(round(x + width)))
+    bottom = min(image.height, int(round(y + height)))
+    if right <= left or bottom <= top:
+        return image.crop((0, 0, 1, 1))
+    return image.crop((left, top, right, bottom))
+
+
+def _solidFromColor(color, size=(1, 1)):
+    from PIL import Image
+
+    return Image.new("RGBA", size, tuple(_clampByte(value) for value in color))
+
+
+def _srgbToLinearByte(value):
+    value = value / 255
+    if value <= 0.04045:
+        linear = value / 12.92
+    else:
+        linear = ((value + 0.055) / 1.055) ** 2.4
+    return _clampByte(linear * 255)
+
+
+def _linearToSRGBByte(value):
+    value = value / 255
+    if value <= 0.0031308:
+        srgb = value * 12.92
+    else:
+        srgb = 1.055 * (value ** (1 / 2.4)) - 0.055
+    return _clampByte(srgb * 255)
 
 
 def _lighterOrDarker(image1, image2, darker=False):

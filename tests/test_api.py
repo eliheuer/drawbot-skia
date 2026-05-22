@@ -463,6 +463,60 @@ def test_imageObject_simple_geometry_batch(tmpdir):
         assert height > 0
 
 
+def test_imageObject_analysis_and_stylize_batch(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "analysis.png"
+    image = Image.new("RGBA", (24, 16), (40, 80, 160, 255))
+    for x in range(8):
+        image.putpixel((x, 8), (200, 40, 20, 128))
+    image.save(imagePath)
+
+    onePixelCalls = [
+        "areaAverage",
+        "areaMaximum",
+        "areaMinimum",
+        "areaMaximumAlpha",
+        "areaMinimumAlpha",
+    ]
+    for methodName in onePixelCalls:
+        im = ImageObject(imagePath)
+        assert getattr(im, methodName)((0, 0, 24, 16)) is None
+        assert im.size() == (1, 1)
+
+    sizedCalls = [
+        ("areaMinMax", ((0, 0, 24, 16),), {}, (2, 1)),
+        ("areaMinMaxRed", ((0, 0, 24, 16),), {}, (2, 1)),
+        ("rowAverage", ((0, 0, 24, 16),), {}, (1, 16)),
+        ("columnAverage", ((0, 0, 24, 16),), {}, (24, 1)),
+        ("areaHistogram", (), {"extent": (0, 0, 24, 16), "count": 8}, (8, 1)),
+        ("histogramDisplayFilter", (), {"height": 12}, (256, 12)),
+    ]
+    for methodName, args, kwargs, expectedSize in sizedCalls:
+        im = ImageObject(imagePath)
+        assert getattr(im, methodName)(*args, **kwargs) is None
+        assert im.size() == expectedSize
+
+    calls = [
+        ("SRGBToneCurveToLinear", (), {}),
+        ("linearToSRGBToneCurve", (), {}),
+        ("bokehBlur", (), {"radius": 2}),
+        ("discBlur", (), {"radius": 2}),
+        ("depthOfField", (), {"radius": 2}),
+        ("documentEnhancer", (), {}),
+        ("highlightShadowAdjust", (), {"shadowAmount": 0.2}),
+        ("heightFieldFromMask", (), {"radius": 1}),
+        ("lineOverlay", (), {}),
+        ("crystallize", (), {"radius": 4}),
+        ("hexagonalPixellate", (), {"scale": 4}),
+        ("pointillize", (), {"radius": 4}),
+    ]
+    for methodName, args, kwargs in calls:
+        im = ImageObject(imagePath)
+        assert getattr(im, methodName)(*args, **kwargs) is None
+        width, height = im.size()
+        assert width > 0
+        assert height > 0
+
+
 def test_numberOfPages_gif(tmpdir):
     source = """
 for i in range(3):

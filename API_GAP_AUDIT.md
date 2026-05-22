@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-320 passed, 3 skipped, 3 warnings
+321 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -102,14 +102,24 @@ Static comparison source: public methods on `typemytype/drawbot` `ImageObject` v
 Current fork supports:
 
 ```text
+SRGBToneCurveToLinear
 XRay
 additionCompositing
 affineClamp
 affineTile
+areaAverage
+areaHistogram
+areaMaximum
+areaMaximumAlpha
+areaMinMax
+areaMinMaxRed
+areaMinimum
+areaMinimumAlpha
 blendWithAlphaMask
 blendWithMask
 bloom
 blurredRectangleGenerator
+bokehBlur
 boxBlur
 checkerboardGenerator
 clamp
@@ -128,14 +138,19 @@ colorPolynomial
 colorPosterize
 colorThreshold
 colorThresholdOtsu
+columnAverage
 comicEffect
 constantColorGenerator
 copy
 crop
+crystallize
 darkenBlendMode
+depthOfField
 differenceBlendMode
+discBlur
 dither
 divideBlendMode
+documentEnhancer
 edgeWork
 edges
 exclusionBlendMode
@@ -146,14 +161,20 @@ gaussianBlur
 gaussianGradient
 gloom
 hardLightBlendMode
+heightFieldFromMask
+hexagonalPixellate
+highlightShadowAdjust
+histogramDisplayFilter
 hueAdjust
 hueBlendMode
 lanczosScaleTransform
 lightenBlendMode
+lineOverlay
 linearBurnBlendMode
 linearDodgeBlendMode
 linearGradient
 linearLightBlendMode
+linearToSRGBToneCurve
 lockFocus
 luminosityBlendMode
 maskToAlpha
@@ -184,10 +205,12 @@ photoEffectTonal
 photoEffectTransfer
 pinLightBlendMode
 pixellate
+pointillize
 radialGradient
 randomGenerator
 roundedRectangleGenerator
 roundedRectangleStrokeGenerator
+rowAverage
 sampleNearest
 saturationBlendMode
 screenBlendMode
@@ -216,13 +239,13 @@ whitePointAdjust
 zoomBlur
 ```
 
-DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 112 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, generators, simple geometry filters, and blend/compositing modes rather than pixel-identical Core Image implementations.
+DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 135 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, generators, simple geometry filters, analysis/statistical filters, stylization filters, and blend/compositing modes rather than pixel-identical Core Image implementations.
 
 Representative missing groups:
 
 - generators and barcodes: `QRCodeGenerator`, `PDF417BarcodeGenerator`, `aztecCodeGenerator`, `code128BarcodeGenerator`, advanced Core Image generators;
-- blur and stylization filters: `bokehBlur`, `crystallize`, `pointillize`;
-- color/statistical filters that still need deeper Core Image-equivalent behavior: `KMeans`, `paletteCentroid`, `palettize`, `spotColor`;
+- blur and stylization filters that still need deeper Core Image-equivalent behavior: `cannyEdgeDetector`, `gaborGradients`, `guidedFilter`, `saliencyMapFilter`;
+- color/statistical filters that still need deeper Core Image-equivalent behavior: `KMeans`, `paletteCentroid`, `palettize`, `spotColor`, `labDeltaE`;
 - compositing, transitions, and mask workflows that need deeper Core Image-equivalent semantics: `disintegrateWithMaskTransition`, `pageCurlTransition`, `copyMachineTransition`;
 - geometry and distortion filters: `perspectiveTransform`, `twirlDistortion`, `bumpDistortion`, `kaleidoscope`.
 
