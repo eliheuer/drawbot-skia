@@ -3603,6 +3603,27 @@ def test_line_dash_offset():
     assert db._gstate.strokePaint.lineDashOffset == 0
 
 
+def test_transform_default_arguments():
+    import inspect
+
+    db = Drawing()
+    assert inspect.signature(db.translate).parameters["x"].default == 0
+    assert inspect.signature(db.translate).parameters["y"].default == 0
+    assert inspect.signature(db.scale).parameters["sx"].default == 1
+    db.translate()
+    db.scale()
+
+    path = BezierPath()
+    path.rect(10, 20, 30, 40)
+    bounds = path.bounds()
+    assert inspect.signature(path.translate).parameters["x"].default == 0
+    assert inspect.signature(path.translate).parameters["y"].default == 0
+    assert inspect.signature(path.scale).parameters["x"].default == 1
+    path.translate()
+    path.scale()
+    assert path.bounds() == bounds
+
+
 def test_color_space_and_languages():
     db = Drawing()
     assert db.listColorSpaces() == [

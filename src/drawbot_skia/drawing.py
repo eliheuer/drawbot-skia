@@ -1041,14 +1041,14 @@ class Drawing:
             return _skiaImageFromImagePage(imagePath, pageNumber)
         return skia.Image.open(os.fspath(imagePath))
 
-    def translate(self, x, y):
+    def translate(self, x=0, y=0):
         self._canvas.translate(x, y)
 
     def rotate(self, angle, center=(0, 0)):
         cx, cy = center
         self._canvas.rotate(angle, cx, cy)
 
-    def scale(self, sx, sy=None, center=(0, 0)):
+    def scale(self, sx=1, sy=None, center=(0, 0)):
         if sy is None:
             sy = sx
         cx, cy = center

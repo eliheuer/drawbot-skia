@@ -199,10 +199,10 @@ class BezierPath(BasePen):
         path = skia.Path(self.path)
         return BezierPath(path=path)
 
-    def translate(self, x, y):
+    def translate(self, x=0, y=0):
         self.path.offset(x, y)
 
-    def scale(self, x, y=None, center=(0, 0)):
+    def scale(self, x=1, y=None, center=(0, 0)):
         if y is None:
             y = x
         self.transform((x, 0, 0, y, 0, 0), center=center)
