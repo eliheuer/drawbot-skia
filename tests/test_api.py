@@ -552,6 +552,36 @@ def test_imageObject_pdf417_barcode_generator():
     assert any(image.getpixel((x, image.height // 2))[:3] == (0, 0, 0) for x in range(image.width))
 
 
+def test_imageObject_aztec_code_generator():
+    from aztec_code_generator import AztecCode
+
+    im = ImageObject()
+    assert im.aztecCodeGenerator((120, 120), "drawbot", correctionLevel=23) is None
+    image = im._pilImage()
+    assert image.size == (120, 120)
+
+    expectedMatrix = [
+        "001100011010110",
+        "110111100011101",
+        "101100000110111",
+        "001111111111101",
+        "010100000001011",
+        "011101111101100",
+        "101101000101100",
+        "010101010101111",
+        "100101000101100",
+        "000101111101110",
+        "101100000001010",
+        "110111111111111",
+        "000011110110011",
+        "001001111111011",
+        "001100001000111",
+    ]
+    matrix = AztecCode("drawbot").matrix
+    assert ["".join("1" if value else "0" for value in row) for row in matrix] == expectedMatrix
+    assert any(image.getpixel((x, image.height // 2))[:3] == (0, 0, 0) for x in range(image.width))
+
+
 def test_imageObject_code128_barcode_generator():
     from drawbot_skia.imageObject import _CODE128_PATTERNS
 

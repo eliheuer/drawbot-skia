@@ -30,6 +30,7 @@ setup(
         "unicodedata2",
         "blackrenderer",
         "pillow>=11",
+        "aztec-code-generator>=0.12",
         "pdf417gen>=0.8.1",
     ],
     setup_requires=["setuptools_scm"],

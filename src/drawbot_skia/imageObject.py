@@ -257,7 +257,7 @@ class ImageObject:
         self._offset = (0, 0)
 
     def aztecCodeGenerator(self, size, message, correctionLevel=23.0, layers=0.0, compactStyle=False):
-        self._setPILImage(_pseudoBarcodeImage(size, message, "aztec"))
+        self._setPILImage(_aztecCodeImage(size, message, correctionLevel, layers, compactStyle))
         self._path = None
         self._offset = (0, 0)
 
@@ -2039,6 +2039,27 @@ def _pseudoBarcodeImage(size, message, kind):
             x += max(1, width // barCount) * barWidth
             if x >= width:
                 break
+    return image
+
+
+def _aztecCodeImage(size, message, correctionLevel=23.0, layers=0.0, compactStyle=False):
+    from PIL import Image
+    from aztec_code_generator import AztecCode
+
+    width, height = _normalizeSize(size)
+    ecPercent = max(5, min(95, int(round(float(correctionLevel)))))
+    layerCount = max(0, int(round(float(layers))))
+    compact = bool(compactStyle)
+    if layerCount:
+        matrixSize = (11 if compact else 15) + layerCount * 4
+        code = AztecCode(str(message), size=matrixSize, compact=compact, ec_percent=ecPercent)
+    else:
+        code = AztecCode(str(message), ec_percent=ecPercent)
+    barcode = code.image(module_size=1, border=0).convert("RGBA")
+    targetSize = max(1, min(width, height))
+    barcode = barcode.resize((targetSize, targetSize), Image.Resampling.NEAREST)
+    image = Image.new("RGBA", (width, height), (255, 255, 255, 255))
+    image.alpha_composite(barcode, ((width - targetSize) // 2, (height - targetSize) // 2))
     return image
 
 
