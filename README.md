@@ -56,6 +56,8 @@ The macOS application/PDFKit bridge APIs exist only as explicit unsupported APIs
 
 Link annotations are supported for SVG and PDF output. PDF annotations are added by post-processing Skia's emitted PDF because skia-python does not expose PDF annotation hooks directly.
 
+`BezierPath.traceImage()` follows DrawBot's external-tool model. It requires both `mkbitmap` and `potrace` on `PATH`; if either executable is missing it raises `DrawbotError`. On macOS, install them with `brew install potrace`. On Debian/Ubuntu Linux, install them with `apt install potrace`. They are optional system dependencies, not Python package dependencies.
+
 ## Strategy
 
 So far no existing DrawBot code has been reused. Perhaps that small snippets will be copied, perhaps a part of the test suite will be adapted. Other than that I want this to be an independent project, and would like to use Skia’s powers to maximum effect, keeping efficiency and performance in mind. DrawBot's ties to macOS are so strong that it makes platform-neutral code reuse virtually impossible.

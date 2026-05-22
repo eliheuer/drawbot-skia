@@ -77,7 +77,7 @@ Notes:
 
 - `getNSBezierPath` and `setNSBezierPath` are macOS bridge APIs and now exist as explicit unsupported APIs.
 - `intersectionPoints()` has been added using `fontTools.misc.bezierTools` segment intersections, with support for path-to-path intersections and self-intersections.
-- `traceImage()` has been added using DrawBot's external-tool model: it requires `mkbitmap` and `potrace`, raises `DrawbotError` if they are unavailable, and imports the traced SVG path data into the `BezierPath`.
+- `traceImage()` has been added using DrawBot's external-tool model: it requires `mkbitmap` and `potrace`, raises `DrawbotError` if they are unavailable, imports the traced SVG path data into the `BezierPath`, and documents the optional system dependency in the README.
 - `optimizePath()` has been added for DrawBot's trailing-empty-`moveTo` cleanup behavior.
 
 ## `FormattedString` Gaps
@@ -337,6 +337,5 @@ Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-
 
 ## Recommended Next Work
 
-1. Decide whether `mkbitmap`/`potrace` should be documented as optional traceImage dependencies, bundled, or replaced with a Python tracing dependency; tracked in [#11](https://github.com/eliheuer/drawbot-skia/issues/11).
-2. Decide whether to keep explicit unsupported errors for macOS-only APIs or document them as permanently out of scope: `Variable`, `pdfImage`, `printImage`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`; tracked in [#1](https://github.com/eliheuer/drawbot-skia/issues/1).
-3. Decide whether the Pillow-backed `ImageObject` approximations are sufficient for this fork or whether specific filters need Core Image-equivalent behavior; umbrella tracked in [#2](https://github.com/eliheuer/drawbot-skia/issues/2), with specific follow-up issues [#6](https://github.com/eliheuer/drawbot-skia/issues/6), [#7](https://github.com/eliheuer/drawbot-skia/issues/7), [#8](https://github.com/eliheuer/drawbot-skia/issues/8), [#9](https://github.com/eliheuer/drawbot-skia/issues/9), and [#10](https://github.com/eliheuer/drawbot-skia/issues/10).
+1. Decide whether to keep explicit unsupported errors for macOS-only APIs or document them as permanently out of scope: `Variable`, `pdfImage`, `printImage`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`; tracked in [#1](https://github.com/eliheuer/drawbot-skia/issues/1).
+2. Decide whether the Pillow-backed `ImageObject` approximations are sufficient for this fork or whether specific filters need Core Image-equivalent behavior; umbrella tracked in [#2](https://github.com/eliheuer/drawbot-skia/issues/2), with specific follow-up issues [#6](https://github.com/eliheuer/drawbot-skia/issues/6), [#7](https://github.com/eliheuer/drawbot-skia/issues/7), [#8](https://github.com/eliheuer/drawbot-skia/issues/8), [#9](https://github.com/eliheuer/drawbot-skia/issues/9), and [#10](https://github.com/eliheuer/drawbot-skia/issues/10).
