@@ -166,6 +166,83 @@ rect(0, 0, 100, 100)
     assert im.info["duration"] == 500
 
 
+def test_radialGradient_uses_start_radius_and_end_point(tmpdir):
+    def render(path, *, startRadius=0, endPoint=None, cmyk=False):
+        db = Drawing()
+        db.size(20, 10)
+        if cmyk:
+            db.cmykRadialGradient(
+                (5, 5),
+                endPoint=endPoint,
+                colors=[(0, 1, 1, 0), (1, 0, 0, 0)],
+                locations=[0, 1],
+                startRadius=startRadius,
+                endRadius=8,
+            )
+        else:
+            db.radialGradient(
+                (5, 5),
+                endPoint=endPoint,
+                colors=[(1, 0, 0), (0, 0, 1)],
+                locations=[0, 1],
+                startRadius=startRadius,
+                endRadius=8,
+            )
+        db.rect(0, 0, 20, 10)
+        db.saveImage(path)
+        return Image.open(path).convert("RGBA")
+
+    base = render(pathlib.Path(tmpdir) / "radial-base.png")
+    start = render(pathlib.Path(tmpdir) / "radial-start-radius.png", startRadius=4)
+    endpoint = render(pathlib.Path(tmpdir) / "radial-endpoint.png", endPoint=(15, 5))
+    assert [base.getpixel((x, 5))[:3] for x in (0, 5, 10, 15, 19)] == [
+        (111, 0, 144),
+        (232, 0, 23),
+        (79, 0, 176),
+        (0, 0, 255),
+        (0, 0, 255),
+    ]
+    assert [start.getpixel((x, 5))[:3] for x in (0, 5, 10, 15, 19)] == [
+        (221, 0, 34),
+        (255, 0, 0),
+        (158, 0, 97),
+        (0, 0, 255),
+        (0, 0, 255),
+    ]
+    assert [endpoint.getpixel((x, 5))[:3] for x in (0, 5, 10, 15, 19)] == [
+        (0, 0, 0),
+        (201, 0, 54),
+        (0, 0, 255),
+        (0, 0, 255),
+        (0, 0, 255),
+    ]
+
+    cmykBase = render(pathlib.Path(tmpdir) / "cmyk-radial-base.png", cmyk=True)
+    cmykStart = render(pathlib.Path(tmpdir) / "cmyk-radial-start-radius.png", startRadius=4, cmyk=True)
+    cmykEndpoint = render(pathlib.Path(tmpdir) / "cmyk-radial-endpoint.png", endPoint=(15, 5), cmyk=True)
+    assert [cmykBase.getpixel((x, 5))[:3] for x in (0, 5, 10, 15, 19)] == [
+        (111, 144, 144),
+        (232, 23, 23),
+        (79, 176, 176),
+        (0, 255, 255),
+        (0, 255, 255),
+    ]
+    assert [cmykStart.getpixel((x, 5))[:3] for x in (0, 5, 10, 15, 19)] == [
+        (221, 34, 34),
+        (255, 0, 0),
+        (158, 97, 97),
+        (0, 255, 255),
+        (0, 255, 255),
+    ]
+    assert [cmykEndpoint.getpixel((x, 5))[:3] for x in (0, 5, 10, 15, 19)] == [
+        (0, 0, 0),
+        (201, 54, 54),
+        (0, 255, 255),
+        (0, 255, 255),
+        (0, 255, 255),
+    ]
+
+
 def test_noFont(tmpdir):
     db = Drawing()
     # Ensure we don't get an error when font is not set

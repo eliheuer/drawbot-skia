@@ -57,6 +57,8 @@ The macOS application/PDFKit bridge APIs are intentionally out of scope for draw
 
 Link annotations are supported for SVG and PDF output. PDF annotations are added by post-processing Skia's emitted PDF because skia-python does not expose PDF annotation hooks directly.
 
+`radialGradient()` and `cmykRadialGradient()` support DrawBot's `startRadius`, `endRadius`, `startPoint`, and `endPoint` controls through Skia radial/two-point conical shaders.
+
 `BezierPath.traceImage()` follows DrawBot's external-tool model. It requires both `mkbitmap` and `potrace` on `PATH`; if either executable is missing it raises `DrawbotError`. On macOS, install them with `brew install potrace`. On Debian/Ubuntu Linux, install them with `apt install potrace`. They are optional system dependencies, not Python package dependencies.
 
 ## Strategy

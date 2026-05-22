@@ -1,4 +1,3 @@
-import logging
 import os
 import skia
 import uharfbuzz as hb
@@ -142,29 +141,8 @@ class GraphicsStateMixin:
         startRadius=0,
         endRadius=100,
     ):
-        # MakeRadial(
-        #   center: skia.Point,
-        #   radius: float,
-        #   colors: List[int],
-        #   positions: object = None,
-        #   mode: skia.TileMode = TileMode.kClamp,
-        #   flags: int = 0,
-        #   localMatrix: skia.Matrix = None) → skia.Shader
-        if startRadius != 0:
-            logging.warning(
-                "radialGradient: startRadius != 0 ignored (it's not supported in drawbot-skia)"
-            )
-        if endPoint is not None and endPoint != startPoint:
-            logging.warning(
-                "radialGradient: endPoint argument ignored (it's not supported in drawbot-skia)"
-            )
         colors = [_colorTupleToInt(_colorArgs(c)) for c in colors]
-        shader = skia.GradientShader.MakeRadial(
-            center=startPoint,
-            radius=endRadius,
-            colors=colors,
-            positions=locations,
-        )
+        shader = _makeRadialGradientShader(startPoint, endPoint, startRadius, endRadius, colors, locations)
         self.fillPaint = self.fillPaint.copy(
             shader=shader, fill=None, somethingToDraw=True
         )
@@ -178,21 +156,8 @@ class GraphicsStateMixin:
         startRadius=0,
         endRadius=100,
     ):
-        if startRadius != 0:
-            logging.warning(
-                "cmykRadialGradient: startRadius != 0 ignored (it's not supported in drawbot-skia)"
-            )
-        if endPoint is not None and endPoint != startPoint:
-            logging.warning(
-                "cmykRadialGradient: endPoint argument ignored (it's not supported in drawbot-skia)"
-            )
         colors = [_colorTupleToInt(_cmykArgs(c)) for c in colors]
-        shader = skia.GradientShader.MakeRadial(
-            center=startPoint,
-            radius=endRadius,
-            colors=colors,
-            positions=locations,
-        )
+        shader = _makeRadialGradientShader(startPoint, endPoint, startRadius, endRadius, colors, locations)
         self.fillPaint = self.fillPaint.copy(
             shader=shader, fill=None, somethingToDraw=True
         )
@@ -771,6 +736,28 @@ def _colorTupleToInt(color):
     for channel, shift in zip(color, (24, 16, 8, 0)):
         intColor |= channel << shift
     return intColor
+
+
+def _makeRadialGradientShader(startPoint, endPoint, startRadius, endRadius, colors, locations):
+    if endPoint is None:
+        endPoint = startPoint
+    startRadius = float(startRadius)
+    endRadius = float(endRadius)
+    if startRadius == 0 and endPoint == startPoint:
+        return skia.GradientShader.MakeRadial(
+            center=startPoint,
+            radius=endRadius,
+            colors=colors,
+            positions=locations,
+        )
+    return skia.GradientShader.MakeTwoPointConical(
+        start=startPoint,
+        startRadius=startRadius,
+        end=endPoint,
+        endRadius=endRadius,
+        colors=colors,
+        positions=locations,
+    )
 
 
 def _flattenColorArgs(args):
