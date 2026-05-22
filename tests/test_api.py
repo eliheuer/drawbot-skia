@@ -1951,6 +1951,27 @@ def test_imageObject_analysis_and_stylize_batch(tmpdir):
     assert im.size() == (24, 16)
 
 
+def test_imageObject_depth_disparity_uses_reciprocal_luminance():
+    image = Image.new("RGBA", (4, 1))
+    for x, value in enumerate((32, 64, 128, 255)):
+        image.putpixel((x, 0), (value, value, value, 64 + x))
+
+    depth = ImageObject()
+    depth._setPILImage(image)
+    assert depth.depthToDisparity() is None
+    assert [depth._pilImage().getpixel((x, 0)) for x in range(4)] == [
+        (255, 255, 255, 64),
+        (114, 114, 114, 65),
+        (35, 35, 35, 66),
+        (0, 0, 0, 67),
+    ]
+
+    disparity = ImageObject()
+    disparity._setPILImage(image)
+    assert disparity.disparityToDepth() is None
+    assert disparity._pilImage().tobytes() == depth._pilImage().tobytes()
+
+
 def test_imageObject_cmyk_halftone_uses_gcr_and_ucr(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "cmyk-halftone.png"
     colors = [

@@ -1289,10 +1289,10 @@ class ImageObject:
         self._setPILImage(_blendRGBA(image, enhanced, min(1, amount)))
 
     def depthToDisparity(self):
-        self.colorInvert()
+        self._setPILImage(_reciprocalLuminanceImage(self._pilImage()))
 
     def disparityToDepth(self):
-        self.colorInvert()
+        self._setPILImage(_reciprocalLuminanceImage(self._pilImage()))
 
     def gaborGradients(self):
         self.sobelGradients()
@@ -2283,6 +2283,36 @@ def _blendRGBA(image1, image2, amount):
 
     amount = max(0, min(1, float(amount)))
     return Image.blend(image1.convert("RGBA"), image2.convert("RGBA"), amount)
+
+
+def _reciprocalLuminanceImage(image):
+    from PIL import Image
+
+    luminance = image.convert("L")
+    alpha = image.getchannel("A")
+    values = [pixel for pixel in _getImageData(luminance) if pixel > 0]
+    if not values:
+        result = Image.new("RGBA", image.size, (255, 255, 255, 255))
+        result.putalpha(alpha)
+        return result
+    reciprocals = [1 / pixel for pixel in values]
+    minReciprocal = min(reciprocals)
+    maxReciprocal = max(reciprocals)
+    scale = (
+        255 / (maxReciprocal - minReciprocal)
+        if maxReciprocal != minReciprocal
+        else 0
+    )
+    data = []
+    for value, a in zip(_getImageData(luminance), _getImageData(alpha)):
+        if value <= 0:
+            mapped = 255
+        elif scale:
+            mapped = _clampByte((1 / value - minReciprocal) * scale)
+        else:
+            mapped = value
+        data.append((mapped, mapped, mapped, a))
+    return _newRGBAWithData(image.size, data)
 
 
 def _photoEffectAmount(extrapolate):
