@@ -1479,6 +1479,59 @@ def test_imageObject_analysis_and_stylize_batch(tmpdir):
     assert im.size() == (24, 16)
 
 
+def test_imageObject_cmyk_halftone_uses_gcr_and_ucr(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "cmyk-halftone.png"
+    colors = [
+        (80, 80, 80, 255),
+        (160, 80, 80, 255),
+        (80, 160, 80, 255),
+        (80, 80, 160, 255),
+        (220, 180, 120, 255),
+        (30, 120, 200, 255),
+    ]
+    image = Image.new("RGBA", (6, 4))
+    for y in range(4):
+        for x, color in enumerate(colors):
+            image.putpixel((x, y), color)
+    image.save(imagePath)
+
+    noBlack = ImageObject(imagePath)
+    assert noBlack.CMYKHalftone(center=(0, 0), angle=0, width=3, sharpness=1, GCR=0, UCR=0.5) is None
+    blackReplacement = ImageObject(imagePath)
+    assert blackReplacement.CMYKHalftone(center=(0, 0), angle=0, width=3, sharpness=1, GCR=1, UCR=0.5) is None
+    noRemoval = ImageObject(imagePath)
+    assert noRemoval.CMYKHalftone(center=(0, 0), angle=0, width=3, sharpness=1, GCR=1, UCR=0) is None
+    fullRemoval = ImageObject(imagePath)
+    assert fullRemoval.CMYKHalftone(center=(0, 0), angle=0, width=3, sharpness=1, GCR=1, UCR=1) is None
+
+    assert [noBlack._pilImage().getpixel((x, 0))[:3] for x in range(6)] == [
+        (0, 0, 0),
+        (255, 0, 0),
+        (255, 255, 0),
+        (0, 0, 0),
+        (255, 255, 255),
+        (255, 255, 255),
+    ]
+    assert [blackReplacement._pilImage().getpixel((x, 0))[:3] for x in range(6)] == [
+        (0, 0, 0),
+        (255, 255, 255),
+        (255, 255, 255),
+        (255, 255, 0),
+        (255, 255, 255),
+        (255, 255, 255),
+    ]
+    assert [fullRemoval._pilImage().getpixel((x, 0))[:3] for x in range(6)] == [
+        (0, 0, 0),
+        (255, 255, 255),
+        (255, 255, 255),
+        (255, 255, 255),
+        (255, 255, 255),
+        (255, 255, 255),
+    ]
+    assert noBlack._pilImage().tobytes() != blackReplacement._pilImage().tobytes()
+    assert noRemoval._pilImage().tobytes() != fullRemoval._pilImage().tobytes()
+
+
 def test_imageObject_spot_light_targets_light_points_at(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "spotlight.png"
     Image.new("RGBA", (7, 5), (20, 40, 60, 255)).save(imagePath)

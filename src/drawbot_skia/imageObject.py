@@ -1378,7 +1378,7 @@ class ImageObject:
         GCR=1.0,
         UCR=0.5,
     ):
-        self._setPILImage(_screenImage(self._pilImage(), center, angle, width, sharpness, "dot"))
+        self._setPILImage(_cmykHalftoneImage(self._pilImage(), center, angle, width, sharpness, GCR, UCR))
 
     def kaleidoscope(self, count=6.0, center=(150.0, 150.0), angle=0.0):
         self._setPILImage(
@@ -3217,6 +3217,69 @@ def _screenImage(image, center, angle, width, sharpness, mode):
             value = _clampByte(255 if pattern >= threshold else 255 - min(255, transition))
             pixels[x, y] = (value, value, value, alphaPixels[x, y])
     return result
+
+
+def _cmykHalftoneImage(image, center, angle, width, sharpness, GCR, UCR):
+    from PIL import Image
+
+    source = image.convert("RGBA")
+    width = max(1, float(width))
+    sharpness = max(0, min(1, float(sharpness)))
+    gcr = max(0, min(1, float(GCR)))
+    ucr = max(0, min(1, float(UCR)))
+    centerX, centerY = center
+    alpha = source.getchannel("A")
+    result = Image.new("RGBA", source.size)
+    sourcePixels = source.load()
+    alphaPixels = alpha.load()
+    pixels = result.load()
+    channelAngles = (
+        math.radians(float(angle) + 15),
+        math.radians(float(angle) + 75),
+        math.radians(float(angle)),
+        math.radians(float(angle) + 45),
+    )
+    transition = max(0.001, 0.5 * (1 - sharpness))
+    for y in range(source.height):
+        for x in range(source.width):
+            r, g, b, _a = sourcePixels[x, y]
+            c = 1 - r / 255
+            m = 1 - g / 255
+            yellow = 1 - b / 255
+            gray = min(c, m, yellow)
+            black = gray * gcr
+            removal = gray * gcr * ucr
+            c = max(0, c - removal)
+            m = max(0, m - removal)
+            yellow = max(0, yellow - removal)
+            cInk = _dotScreenInk(x, y, centerX, centerY, width, channelAngles[0], c, transition)
+            mInk = _dotScreenInk(x, y, centerX, centerY, width, channelAngles[1], m, transition)
+            yInk = _dotScreenInk(x, y, centerX, centerY, width, channelAngles[2], yellow, transition)
+            kInk = _dotScreenInk(x, y, centerX, centerY, width, channelAngles[3], black, transition)
+            pixels[x, y] = (
+                _clampByte(255 * (1 - min(1, cInk + kInk))),
+                _clampByte(255 * (1 - min(1, mInk + kInk))),
+                _clampByte(255 * (1 - min(1, yInk + kInk))),
+                alphaPixels[x, y],
+            )
+    return result
+
+
+def _dotScreenInk(x, y, centerX, centerY, width, angle, amount, transition):
+    if amount <= 0:
+        return 0
+    if amount >= 1:
+        return 1
+    tx = x - centerX
+    ty = y - centerY
+    cosAngle = math.cos(angle)
+    sinAngle = math.sin(angle)
+    rx = tx * cosAngle + ty * sinAngle
+    ry = -tx * sinAngle + ty * cosAngle
+    cellX = (rx / width) - round(rx / width)
+    cellY = (ry / width) - round(ry / width)
+    dot = max(0, 1 - math.hypot(cellX, cellY) * 2)
+    return max(0, min(1, (dot - (1 - amount)) / transition + 0.5))
 
 
 def _radialMask(size, center, radius, amount=1.0):
