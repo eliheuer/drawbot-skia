@@ -580,6 +580,15 @@ def _convertTransformedConicToQuads(pt1, pt2, pt3):
     return [tuple(point) for point in quadPoints]
 
 
+def _iterConvertedConicSegments(points):
+    quadPoints = _convertTransformedConicToQuads(*points)
+    if quadPoints is not None:
+        for index in range(1, len(quadPoints), 2):
+            yield "qCurveTo", (quadPoints[index], quadPoints[index + 1])
+        return
+    yield "curveTo", _convertConicToCubicDirty(*points)
+
+
 def _conicLooksSafeForCubicShortcut(pt1, pt2, pt3):
     (x1, y1), (x2, y2), (x3, y3) = pt1, pt2, pt3
     angle1 = math.atan2(y2 - y1, x2 - x1)
@@ -751,8 +760,10 @@ def _iterPathSegments(path):
             continue
         nextVerb = rawSegments[index + 1][0] if index + 1 < len(rawSegments) else None
         if segmentType == "conicTo":
-            segmentPoints = _convertConicToCubicDirty(*points)
-            yield "curveTo", tuple(_normalizePoint(point) for point in segmentPoints)
+            for conicSegmentType, conicPoints in _iterConvertedConicSegments(points):
+                yield conicSegmentType, tuple(
+                    _normalizePoint(point) for point in conicPoints
+                )
         elif segmentType == "closePath":
             contourStart = None
             yield segmentType, ()
@@ -779,9 +790,10 @@ def _iterRawPathSegments(path):
         if segmentType is None:
             continue
         if segmentType == "conicTo":
-            yield "curveTo", tuple(
-                _normalizePoint(point) for point in _convertConicToCubicDirty(*points)
-            )
+            for conicSegmentType, conicPoints in _iterConvertedConicSegments(points):
+                yield conicSegmentType, tuple(
+                    _normalizePoint(point) for point in conicPoints
+                )
         elif segmentType == "closePath":
             yield segmentType, ()
         else:
@@ -812,13 +824,14 @@ def _pathIntersectionSegments(path):
                 contour = []
             continue
         if segmentType == "conicTo":
-            segmentPoints = tuple(
-                _normalizePoint(point) for point in _convertConicToCubicDirty(*points)
-            )
+            for _, conicPoints in _iterConvertedConicSegments(points):
+                segmentPoints = tuple(_normalizePoint(point) for point in conicPoints)
+                if segmentPoints:
+                    contour.append((contourIndex, segmentPoints))
         else:
             segmentPoints = tuple(_normalizePoint(point) for point in points)
-        if segmentPoints:
-            contour.append((contourIndex, segmentPoints))
+            if segmentPoints:
+                contour.append((contourIndex, segmentPoints))
     if contour:
         contours.append((False, contour))
 

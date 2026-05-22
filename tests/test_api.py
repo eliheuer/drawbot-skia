@@ -3986,6 +3986,21 @@ def test_bezier_path_intersectionPoints():
     assert rectangle.intersectionPoints() == []
 
 
+def test_bezier_path_transformed_partial_arc_uses_quadratics(caplog):
+    path = BezierPath()
+    path.arc((0, 0), 100, 0, 45, False)
+    path.scale(2, 1)
+
+    with caplog.at_level("WARNING"):
+        segmentLengths = [
+            len(segment) for contour in path.contours for segment in contour
+        ]
+
+    assert "unsupported conic form" not in caplog.text
+    assert segmentLengths[0] == 1
+    assert set(segmentLengths[1:]) == {2}
+
+
 def test_bezier_path_mac_bridge_apis_raise_clear_errors():
     path = BezierPath()
     with pytest.raises(DrawbotError, match="NSBezierPath"):
