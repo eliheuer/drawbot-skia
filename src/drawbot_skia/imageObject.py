@@ -1489,13 +1489,17 @@ class ImageObject:
     def morphologyMaximum(self, radius=0.0):
         from PIL import ImageFilter
 
-        radius = max(1, int(round(float(radius))))
+        radius = max(0, int(round(float(radius))))
+        if not radius:
+            return
         self._filter(ImageFilter.MaxFilter(radius * 2 + 1))
 
     def morphologyMinimum(self, radius=0.0):
         from PIL import ImageFilter
 
-        radius = max(1, int(round(float(radius))))
+        radius = max(0, int(round(float(radius))))
+        if not radius:
+            return
         self._filter(ImageFilter.MinFilter(radius * 2 + 1))
 
     def morphologyGradient(self, radius=5.0):

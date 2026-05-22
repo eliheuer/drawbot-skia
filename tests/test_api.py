@@ -1982,6 +1982,38 @@ def test_imageObject_line_overlay_uses_noise_sharpness_and_contrast(tmpdir):
     assert [highContrast._pilImage().getpixel((x, 1))[0] for x in range(7)] == [0, 0, 0, 255, 0, 255, 255]
 
 
+def test_imageObject_morphology_zero_radius_is_noop(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "morphology-zero.png"
+    image = Image.new("RGBA", (3, 1))
+    image.putdata([(10, 20, 30, 111), (200, 80, 40, 222), (40, 220, 70, 123)])
+    image.save(imagePath)
+    baseline = ImageObject(imagePath)._pilImage().tobytes()
+
+    maximumZero = ImageObject(imagePath)
+    assert maximumZero.morphologyMaximum() is None
+    assert maximumZero._pilImage().tobytes() == baseline
+
+    minimumZero = ImageObject(imagePath)
+    assert minimumZero.morphologyMinimum() is None
+    assert minimumZero._pilImage().tobytes() == baseline
+
+    maximum = ImageObject(imagePath)
+    assert maximum.morphologyMaximum(radius=1) is None
+    assert [maximum._pilImage().getpixel((x, 0)) for x in range(3)] == [
+        (200, 80, 40, 222),
+        (200, 221, 70, 222),
+        (200, 221, 70, 222),
+    ]
+
+    minimum = ImageObject(imagePath)
+    assert minimum.morphologyMinimum(radius=1) is None
+    assert [minimum._pilImage().getpixel((x, 0)) for x in range(3)] == [
+        (9, 21, 30, 111),
+        (9, 21, 30, 111),
+        (39, 81, 39, 123),
+    ]
+
+
 def test_imageObject_pixellate_uses_center(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "pixellate.png"
     image = Image.new("RGBA", (6, 1))
