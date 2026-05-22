@@ -1089,6 +1089,23 @@ def test_svg_link_annotations(tmpdir):
     assert 'x="50" y="40" width="30" height="40"' in svg
 
 
+def test_pdf_link_annotations(tmpdir):
+    path = pathlib.Path(tmpdir) / "links.pdf"
+    db = Drawing()
+    db.size(100, 100)
+    db.linkDestination("target", (50, 60))
+    db.linkURL("https://drawbot.com", (10, 20, 30, 40))
+    db.linkRect("target", (50, 20, 30, 40))
+    db.saveImage(path)
+    pdf = path.read_bytes()
+    assert b"/Subtype /Link" in pdf
+    assert b"/Annots [" in pdf
+    assert b"/URI (https://drawbot.com)" in pdf
+    assert b"/Dest [" in pdf
+    assert b"/Rect [10 20 40 60]" in pdf
+    assert b"/Rect [50 20 80 60]" in pdf
+
+
 def test_mac_app_only_apis_raise_clear_errors():
     db = Drawing()
     with pytest.raises(DrawbotError, match="macOS application UI"):

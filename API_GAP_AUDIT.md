@@ -13,17 +13,17 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-322 passed, 3 skipped, 3 warnings
+323 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
 
-The fork has moved past the original upstream README blockers for animated GIF export, multiline text, `FormattedString`, multistyle text, and `textBox()`. It has not reached full DrawBot API parity.
+The fork has moved past the original upstream README blockers for animated GIF export, multiline text, `FormattedString`, multistyle text, and `textBox()`. It has also reached static method-name coverage for the audited top-level, `BezierPath`, `FormattedString`, and `ImageObject` APIs. It has not reached pixel/behavior-identical DrawBot parity.
 
 The remaining parity work is concentrated in:
 
-- behavior gaps behind top-level compatibility names, especially PDF link annotations and macOS app/PDFKit helpers;
-- `ImageObject`, where only a small cross-platform subset exists compared with DrawBot's Core Image-backed API;
+- behavior gaps behind compatibility names, especially macOS app/PDFKit helpers;
+- `ImageObject`, where many methods are cross-platform Pillow-backed approximations instead of Core Image-equivalent implementations;
 - macOS/AppKit-only APIs that should be deliberately documented as unsupported instead of silently treated as parity gaps.
 
 Do not call the larger feature-parity goal complete from this evidence.
@@ -37,7 +37,7 @@ Do not call the larger feature-parity goal complete from this evidence.
 | `FormattedString` | Implemented | `src/drawbot_skia/formattedString.py`; macOS `getNSObject()` exists as an explicit unsupported API |
 | Multi-style `text()` | Implemented | `Drawing._textFormattedString()` and FormattedString API tests |
 | Remaining `BezierPath` methods | Implemented | `intersectionPoints()`, `optimizePath()`, and `traceImage()` have been added; macOS bridge methods exist as explicit unsupported APIs |
-| Many-things-I-forgot-to-mention | Incomplete | Top-level namespace is complete; behavior gaps listed below |
+| Many-things-I-forgot-to-mention | Incomplete | Static API coverage is complete; behavior gaps listed below |
 | `textBox()` | Implemented, not CoreText-identical | `Drawing.textBox()`, FormattedString text box layout, overflow return tests |
 | Fill further gaps in DrawBot API | Incomplete | Top-level, path, FormattedString, and ImageObject gaps listed below |
 
@@ -60,7 +60,7 @@ Notes:
 - `drawing()` has been added as a reset/cleanup context manager.
 - `installedFonts()`, `installFont()`, and `uninstallFont()` have been added. Temporary font installation is process-local in drawbot-skia: `installFont(path)` returns the font's PostScript name and registers that name as an alias for the path so it can be passed to `font()`. As in DrawBot, these functions are deprecated in favor of passing font paths directly.
 - `pages()` has been added for recorded drawings, including context-manager support for drawing back into an existing page.
-- `linkURL`, `linkDestination`, and `linkRect` have been added with SVG output annotations. PDF annotations remain unsupported because skia-python's PDF API does not expose URL/destination annotation hooks.
+- `linkURL`, `linkDestination`, and `linkRect` have been added with SVG output annotations and PDF link annotations. PDF support is implemented as a post-processing pass over Skia's emitted PDF because skia-python's PDF API does not expose URL/destination annotation hooks.
 - `Variable`, `pdfImage`, and `printImage` now exist and raise explicit `DrawbotError`s explaining that they are macOS application/PDFKit features and are unavailable in drawbot-skia.
 
 ## `BezierPath` Gaps
@@ -337,7 +337,6 @@ Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-
 
 ## Recommended Next Work
 
-1. Implement PDF link annotations for `linkURL`, `linkDestination`, `linkRect`, and richer `FormattedString.url()` behavior if a cross-platform PDF annotation backend is added.
-2. Decide whether `mkbitmap`/`potrace` should be documented as optional traceImage dependencies, bundled, or replaced with a Python tracing dependency.
-3. Decide whether to keep explicit unsupported errors for macOS-only APIs or document them as permanently out of scope: `Variable`, `pdfImage`, `printImage`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`.
-4. Decide an `ImageObject` target subset rather than chasing all Core Image filters.
+1. Decide whether `mkbitmap`/`potrace` should be documented as optional traceImage dependencies, bundled, or replaced with a Python tracing dependency.
+2. Decide whether to keep explicit unsupported errors for macOS-only APIs or document them as permanently out of scope: `Variable`, `pdfImage`, `printImage`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`.
+3. Decide whether the Pillow-backed `ImageObject` approximations are sufficient for this fork or whether specific filters need Core Image-equivalent behavior.
