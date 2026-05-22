@@ -539,7 +539,9 @@ class ImageObject:
         bottomRight=(0.0, 0.0),
         bottomLeft=(0.0, 0.0),
     ):
-        self.perspectiveTransform(topLeft, topRight, bottomRight, bottomLeft)
+        self._setPILImage(
+            _keystoneCombinedImage(self._pilImage(), focalLength, topLeft, topRight, bottomRight, bottomLeft)
+        )
 
     def keystoneCorrectionHorizontal(self, focalLength=28.0):
         self.perspectiveRotate(focalLength=focalLength, yaw=8)
@@ -4254,6 +4256,29 @@ def _quadTransformImage(image, topLeft, topRight, bottomRight, bottomLeft, resiz
     if resizeToSource:
         return transformed.resize((width, height), Image.Resampling.BICUBIC)
     return transformed, (int(round(minX)), int(round(minY)))
+
+
+def _keystoneCombinedImage(image, focalLength, topLeft, topRight, bottomRight, bottomLeft):
+    width, height = image.size
+    focal = max(1, float(focalLength))
+    amount = max(0.1, min(4, 28 / focal))
+    sourceCorners = (
+        (0.0, 0.0),
+        (float(width), 0.0),
+        (float(width), float(height)),
+        (0.0, float(height)),
+    )
+    targetCorners = (topLeft, topRight, bottomRight, bottomLeft)
+    adjusted = []
+    for source, target in zip(sourceCorners, targetCorners):
+        tx, ty = target
+        adjusted.append(
+            (
+                source[0] + (float(tx) - source[0]) * amount,
+                source[1] + (float(ty) - source[1]) * amount,
+            )
+        )
+    return _quadTransformImage(image, *adjusted)
 
 
 def _tileImage(image, rotations=4, reflect=False, angle=0.0, center=None):

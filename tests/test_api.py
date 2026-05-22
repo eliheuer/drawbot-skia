@@ -959,6 +959,33 @@ def test_imageObject_code128_barcode_generator():
     assert sampled == expectedPattern
 
 
+def test_imageObject_keystone_combined_uses_focal_length(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "keystone.png"
+    image = Image.new("RGBA", (6, 4))
+    for y in range(4):
+        for x in range(6):
+            image.putpixel((x, y), (x * 30, y * 60, (x + y) * 20, 255))
+    image.save(imagePath)
+
+    kwargs = {
+        "topLeft": (0, 0),
+        "topRight": (6, 1),
+        "bottomRight": (5, 4),
+        "bottomLeft": (1, 3),
+    }
+    outputs = {}
+    for focalLength in (14, 28, 56):
+        im = ImageObject(imagePath)
+        assert im.keystoneCorrectionCombined(focalLength=focalLength, **kwargs) is None
+        outputs[focalLength] = im._pilImage()
+
+    assert [outputs[14].getpixel((x, 0))[0] for x in range(6)] == [8, 14, 23, 36, 43, 46]
+    assert [outputs[28].getpixel((x, 0))[0] for x in range(6)] == [7, 9, 12, 16, 20, 26]
+    assert [outputs[56].getpixel((x, 0))[0] for x in range(6)] == [6, 7, 9, 10, 11, 13]
+    assert outputs[14].tobytes() != outputs[28].tobytes()
+    assert outputs[28].tobytes() != outputs[56].tobytes()
+
+
 def test_imageObject_simple_geometry_batch(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "geometry.png"
     texturePath = pathlib.Path(tmpdir) / "texture.png"
