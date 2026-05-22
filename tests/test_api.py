@@ -1849,7 +1849,7 @@ def test_imageObject_analysis_and_stylize_batch(tmpdir):
         ("depthOfField", (), {"radius": 2}),
         ("documentEnhancer", (), {}),
         ("gaborGradients", (), {}),
-        ("guidedFilter", (), {}),
+        ("guidedFilter", (imagePath,), {}),
         ("personSegmentation", (), {}),
         ("saliencyMapFilter", (), {}),
         ("highlightShadowAdjust", (), {"shadowAmount": 0.2}),
@@ -2312,6 +2312,8 @@ def test_imageObject_masked_variable_blur_uses_mask_as_radius(tmpdir):
 
 
 def test_imageObject_guided_filter_preserves_guide_edges(tmpdir):
+    import inspect
+
     imagePath = pathlib.Path(tmpdir) / "guided.png"
     guidePath = pathlib.Path(tmpdir) / "guide.png"
     image = Image.new("RGBA", (7, 1), (0, 0, 0, 255))
@@ -2322,6 +2324,11 @@ def test_imageObject_guided_filter_preserves_guide_edges(tmpdir):
     guide.convert("RGBA").save(guidePath)
 
     preserved = ImageObject(imagePath)
+    assert list(inspect.signature(preserved.guidedFilter).parameters) == [
+        "guideImage",
+        "radius",
+        "epsilon",
+    ]
     assert preserved.guidedFilter(guideImage=guidePath, radius=2, epsilon=0.01) is None
     assert [preserved._pilImage().getpixel((x, 0))[0] for x in range(7)] == [22, 33, 44, 253, 0, 0, 0]
 
@@ -2378,6 +2385,8 @@ def test_imageObject_edges_preserves_alpha(tmpdir):
 
 
 def test_imageObject_person_segmentation_uses_quality_level(tmpdir):
+    import inspect
+
     imagePath = pathlib.Path(tmpdir) / "person-segmentation.png"
     image = Image.new("RGBA", (7, 1), (0, 0, 0, 255))
     for x, value in enumerate([0, 20, 60, 100, 160, 220, 255]):
@@ -2385,6 +2394,7 @@ def test_imageObject_person_segmentation_uses_quality_level(tmpdir):
     image.save(imagePath)
 
     sharp = ImageObject(imagePath)
+    assert inspect.signature(sharp.personSegmentation).parameters["qualityLevel"].default == 0.0
     assert sharp.personSegmentation(qualityLevel=1) is None
     assert [sharp._pilImage().getpixel((x, 0))[0] for x in range(7)] == [0, 0, 255, 255, 255, 255, 255]
 

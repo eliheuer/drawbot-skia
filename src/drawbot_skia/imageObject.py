@@ -1297,11 +1297,11 @@ class ImageObject:
     def gaborGradients(self):
         self.sobelGradients()
 
-    def guidedFilter(self, guideImage=None, radius=1.0, epsilon=0.0001):
-        guide = _imageObjectToPIL(guideImage) if guideImage is not None else None
+    def guidedFilter(self, guideImage, radius=1.0, epsilon=0.0001):
+        guide = _imageObjectToPIL(guideImage)
         self._setPILImage(_guidedFilterImage(self._pilImage(), guide, radius, epsilon))
 
-    def personSegmentation(self, qualityLevel=1.0):
+    def personSegmentation(self, qualityLevel=0.0):
         from PIL import ImageFilter
         from PIL import ImageOps
 
