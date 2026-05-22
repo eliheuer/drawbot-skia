@@ -1395,7 +1395,7 @@ class ImageObject:
         self._setPILImage(_tileImage(self._pilImage(), rotations=3, reflect=True, angle=rotation, center=point))
 
     def fourfoldReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0, acuteAngle=math.pi / 2):
-        image = _offsetTileImage(self._pilImage(), width, angle)
+        image = _fourfoldTileSource(self._pilImage(), center, width, angle, acuteAngle)
         self._setPILImage(_tileImage(image, rotations=4, reflect=True, angle=angle, center=center))
 
     def fourfoldRotatedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
@@ -1403,7 +1403,7 @@ class ImageObject:
         self._setPILImage(_tileImage(image, rotations=4, reflect=False, angle=angle, center=center))
 
     def fourfoldTranslatedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0, acuteAngle=math.pi / 2):
-        self._setPILImage(_offsetTileImage(self._pilImage(), width, angle))
+        self._setPILImage(_fourfoldTileSource(self._pilImage(), center, width, angle, acuteAngle))
 
     def glideReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
         tiled = _offsetTileImage(self._pilImage(), width, angle)
@@ -1430,7 +1430,8 @@ class ImageObject:
         self._setPILImage(_tileImage(image, rotations=3, reflect=False, angle=angle, center=center))
 
     def parallelogramTile(self, center=(150.0, 150.0), angle=0.0, acuteAngle=math.pi / 2, width=100.0):
-        self._setPILImage(_skewTileImage(self._pilImage(), angle, acuteAngle, width))
+        image = _skewTileImage(self._pilImage(), angle, acuteAngle, width)
+        self._setPILImage(_tileImage(image, rotations=2, reflect=True, center=center))
 
     def opTile(self, center=(150.0, 150.0), scale=2.8, angle=0.0, width=65.0):
         image = _offsetTileImage(self._pilImage(), width, angle)
@@ -4284,6 +4285,32 @@ def _offsetTileImage(image, width, angle):
     dy = int(round(math.sin(radians) * width / 2))
     shifted = ImageChops.offset(image.convert("RGBA"), dx, dy)
     return _blendRGBA(image, shifted, 0.5)
+
+
+def _fourfoldTileSource(image, center, width, angle, acuteAngle):
+    from PIL import ImageChops
+
+    source = image.convert("RGBA")
+    width = int(round(float(width))) or 1
+    phaseX, phaseY = center
+    phaseX = int(round(float(phaseX) - source.width / 2))
+    phaseY = int(round(float(phaseY) - source.height / 2))
+    angle0 = math.radians(float(angle))
+    angle1 = angle0 + float(acuteAngle)
+    offsets = (
+        (0, 0),
+        (int(round(math.cos(angle0) * width / 2)), int(round(math.sin(angle0) * width / 2))),
+        (int(round(math.cos(angle1) * width / 2)), int(round(math.sin(angle1) * width / 2))),
+        (
+            int(round((math.cos(angle0) + math.cos(angle1)) * width / 2)),
+            int(round((math.sin(angle0) + math.sin(angle1)) * width / 2)),
+        ),
+    )
+    shifted = [ImageChops.offset(source, dx + phaseX, dy + phaseY) for dx, dy in offsets]
+    result = shifted[0]
+    for tile in shifted[1:]:
+        result = _blendRGBA(result, tile, 0.5)
+    return result
 
 
 def _skewTileImage(image, angle, acuteAngle, width):

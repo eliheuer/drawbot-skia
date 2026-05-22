@@ -1160,6 +1160,34 @@ def test_imageObject_rotated_tile_uses_width(tmpdir):
     assert narrowImage.tobytes() != wideImage.tobytes()
 
 
+def test_imageObject_fourfold_and_parallelogram_tiles_use_phase_controls(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "tile-phase.png"
+    image = Image.new("RGBA", (6, 4))
+    for y in range(4):
+        for x in range(6):
+            image.putpixel((x, y), (x * 30, y * 60, 0, 255))
+    image.save(imagePath)
+
+    rightAngle = ImageObject(imagePath)
+    assert rightAngle.fourfoldTranslatedTile(center=(3, 2), angle=0, width=4, acuteAngle=math.pi / 2) is None
+    acute = ImageObject(imagePath)
+    assert acute.fourfoldTranslatedTile(center=(3, 2), angle=0, width=4, acuteAngle=math.pi / 4) is None
+    offCenter = ImageObject(imagePath)
+    assert offCenter.fourfoldTranslatedTile(center=(0, 0), angle=0, width=4, acuteAngle=math.pi / 2) is None
+    reflected = ImageObject(imagePath)
+    assert reflected.fourfoldReflectedTile(center=(3, 2), angle=0, width=4, acuteAngle=math.pi / 4) is None
+    parallelogram = ImageObject(imagePath)
+    assert parallelogram.parallelogramTile(center=(0, 2), angle=0, acuteAngle=0.8, width=4) is None
+
+    assert [rightAngle._pilImage().getpixel((x, 0))[0] for x in range(6)] == [75, 105, 22, 52, 82, 112]
+    assert [acute._pilImage().getpixel((x, 0))[0] for x in range(6)] == [97, 82, 90, 30, 60, 90]
+    assert [offCenter._pilImage().getpixel((x, 0))[0] for x in range(6)] == [52, 82, 112, 75, 105, 22]
+    assert [reflected._pilImage().getpixel((x, 1))[1] for x in range(6)] == [75, 135, 75, 75, 135, 75]
+    assert [parallelogram._pilImage().getpixel((x, 1))[1] for x in range(6)] == [60, 60, 60, 60, 60, 60]
+    assert rightAngle._pilImage().tobytes() != acute._pilImage().tobytes()
+    assert rightAngle._pilImage().tobytes() != offCenter._pilImage().tobytes()
+
+
 def test_imageObject_displacement_distortion_uses_red_green_channels(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "displacement.png"
     displacementPath = pathlib.Path(tmpdir) / "displacement-map.png"
