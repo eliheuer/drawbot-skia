@@ -67,42 +67,42 @@ class GraphicsStateMixin:
                 color=color, somethingToDraw=True, shader=None
             )
 
-    def blendMode(self, blendMode):
-        if blendMode not in _blendModes:
+    def blendMode(self, operation):
+        if operation not in _blendModes:
             raise DrawbotError(f"blendMode must be one of: {_blendModesList}")
-        self.fillPaint = self.fillPaint.copy(blendMode=blendMode)
-        self.strokePaint = self.strokePaint.copy(blendMode=blendMode)
+        self.fillPaint = self.fillPaint.copy(blendMode=operation)
+        self.strokePaint = self.strokePaint.copy(blendMode=operation)
 
-    def strokeWidth(self, strokeWidth):
-        self.strokePaint = self.strokePaint.copy(strokeWidth=strokeWidth)
+    def strokeWidth(self, value):
+        self.strokePaint = self.strokePaint.copy(strokeWidth=value)
 
-    def lineCap(self, lineCap):
-        if lineCap not in _strokeCapMapping:
+    def lineCap(self, value):
+        if value not in _strokeCapMapping:
             raise DrawbotError(f"lineCap must be one of: {sorted(_strokeCapMapping)}")
-        self.strokePaint = self.strokePaint.copy(lineCap=lineCap)
+        self.strokePaint = self.strokePaint.copy(lineCap=value)
 
-    def lineJoin(self, lineJoin):
-        if lineJoin not in _strokeJoinMapping:
+    def lineJoin(self, value):
+        if value not in _strokeJoinMapping:
             raise DrawbotError(f"lineJoin must be one of: {sorted(_strokeJoinMapping)}")
-        self.strokePaint = self.strokePaint.copy(lineJoin=lineJoin)
+        self.strokePaint = self.strokePaint.copy(lineJoin=value)
 
-    def lineDash(self, firstValue=None, *values, offset=0):
-        if firstValue is None:
+    def lineDash(self, value=None, *values, offset=0):
+        if value is None:
             if values:
                 raise TypeError(
                     "lineDash() argument(s) should be None, or one or more numbers"
                 )
-        if firstValue is None:
+        if value is None:
             assert not values
             self.strokePaint = self.strokePaint.copy(lineDash=None, lineDashOffset=0)
         else:
             self.strokePaint = self.strokePaint.copy(
-                lineDash=(firstValue,) + values,
+                lineDash=(value,) + values,
                 lineDashOffset=offset,
             )
 
-    def miterLimit(self, miterLimit):
-        self.strokePaint = self.strokePaint.copy(miterLimit=miterLimit)
+    def miterLimit(self, value):
+        self.strokePaint = self.strokePaint.copy(miterLimit=value)
 
     def opacity(self, value):
         self.fillPaint = self.fillPaint.copy(opacity=value)

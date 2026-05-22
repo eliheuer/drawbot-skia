@@ -312,9 +312,9 @@ class Drawing:
     def oval(self, x, y, w, h):
         self._drawItem(self._canvas.drawOval, (x, y, w, h))
 
-    def line(self, pt1, pt2):
-        x1, y1 = pt1
-        x2, y2 = pt2
+    def line(self, point1, point2):
+        x1, y1 = point1
+        x2, y2 = point2
         self._drawItem(self._canvas.drawLine, x1, y1, x2, y2)
 
     def polygon(self, *points, **kwargs):
@@ -334,14 +334,14 @@ class Drawing:
             self.newPath()
         return self._path
 
-    def moveTo(self, point):
-        self._currentPath().moveTo(point)
+    def moveTo(self, xy):
+        self._currentPath().moveTo(xy)
 
-    def lineTo(self, point):
-        self._currentPath().lineTo(point)
+    def lineTo(self, xy):
+        self._currentPath().lineTo(xy)
 
-    def curveTo(self, point1, point2, point3):
-        self._currentPath().curveTo(point1, point2, point3)
+    def curveTo(self, xy1, xy2, xy3):
+        self._currentPath().curveTo(xy1, xy2, xy3)
 
     def qCurveTo(self, *points):
         self._currentPath().qCurveTo(*points)
@@ -349,8 +349,8 @@ class Drawing:
     def arc(self, center, radius, startAngle, endAngle, clockwise):
         self._currentPath().arc(center, radius, startAngle, endAngle, clockwise)
 
-    def arcTo(self, point1, point2, radius):
-        self._currentPath().arcTo(point1, point2, radius)
+    def arcTo(self, xy1, xy2, radius):
+        self._currentPath().arcTo(xy1, xy2, radius)
 
     def closePath(self):
         self._currentPath().closePath()

@@ -3627,8 +3627,23 @@ def test_line_dash_offset():
     import inspect
 
     db = Drawing()
-    assert "offset" in inspect.signature(db.lineDash).parameters
+    assert list(inspect.signature(db.blendMode).parameters) == ["operation"]
+    assert list(inspect.signature(db.strokeWidth).parameters) == ["value"]
+    assert list(inspect.signature(db.lineCap).parameters) == ["value"]
+    assert list(inspect.signature(db.lineJoin).parameters) == ["value"]
+    assert list(inspect.signature(db.miterLimit).parameters) == ["value"]
+    assert list(inspect.signature(db.lineDash).parameters) == ["value", "values", "offset"]
 
+    db.blendMode(operation="multiply")
+    assert db._gstate.fillPaint.blendMode == "multiply"
+    db.strokeWidth(value=4)
+    assert db._gstate.strokePaint.strokeWidth == 4
+    db.lineCap(value="round")
+    assert db._gstate.strokePaint.lineCap == "round"
+    db.lineJoin(value="round")
+    assert db._gstate.strokePaint.lineJoin == "round"
+    db.miterLimit(value=7)
+    assert db._gstate.strokePaint.miterLimit == 7
     db.lineDash(5, 10, offset=3)
     assert db._gstate.strokePaint.lineDash == (5, 10)
     assert db._gstate.strokePaint.lineDashOffset == 3
@@ -4011,14 +4026,27 @@ def test_bezier_path_textBox_supports_formatted_string():
 
 
 def test_current_path_api():
+    import inspect
+
     db = Drawing()
     db.newPath()
-    db.moveTo((0, 0))
-    db.lineTo((50, 0))
+    assert list(inspect.signature(db.moveTo).parameters) == ["xy"]
+    assert list(inspect.signature(db.lineTo).parameters) == ["xy"]
+    assert list(inspect.signature(db.curveTo).parameters) == ["xy1", "xy2", "xy3"]
+    assert list(inspect.signature(db.arcTo).parameters) == ["xy1", "xy2", "radius"]
+    assert list(inspect.signature(db.line).parameters) == ["point1", "point2"]
+    db.moveTo(xy=(0, 0))
+    db.lineTo(xy=(50, 0))
     db.qCurveTo((75, 25), (50, 50))
     db.closePath()
     assert len(db._path.contours) == 1
     assert not db._path.contours[0].open
+
+    db.newPath()
+    db.moveTo(xy=(0, 0))
+    db.curveTo(xy1=(10, 10), xy2=(20, 20), xy3=(30, 0))
+    assert db._path.bounds()[2] == 30.0
+    db.line(point1=(0, 0), point2=(0, 10))
 
     path = db._path
     db.newPath()

@@ -64,7 +64,7 @@ Notes:
 - `image()`, `imagePixelColor()`, `scale()`, and `skew()` accept DrawBot's top-level keyword argument names.
 - `numberOfPages(path)` requires a path and returns external PDF/GIF page counts; use `pageCount()` for the current drawing.
 - `polygon()` and `BezierPath.polygon()` now match DrawBot's variadic point API and validation for too few points or unexpected keyword arguments.
-- `lineDash()` accepts DrawBot's `offset` keyword and passes that dash phase through to Skia's path effect.
+- Path construction and stroke-style top-level wrappers accept DrawBot's keyword argument names, including `moveTo(xy=...)`, `lineTo(xy=...)`, `curveTo(xy1=..., xy2=..., xy3=...)`, `arcTo(xy1=..., xy2=...)`, `line(point1=..., point2=...)`, `blendMode(operation=...)`, `strokeWidth(value=...)`, `lineCap(value=...)`, `lineJoin(value=...)`, `lineDash(value=..., offset=...)`, and `miterLimit(value=...)`.
 - `translate()` and `scale()` on the drawing state and `BezierPath` accept DrawBot's no-op default arguments.
 - `textBoxCharacterBounds()` has been added for rectangular text boxes using drawbot-skia's current line wrapping and shaping stack.
 - BezierPath text containers remain unsupported for `textBox()`, `textOverflow()`, `textBoxBaselines()`, and `textBoxCharacterBounds()` because DrawBot flows text inside arbitrary path shapes through the macOS text stack; tracked in [#15](https://github.com/eliheuer/drawbot-skia/issues/15).
