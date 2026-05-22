@@ -2803,6 +2803,17 @@ def test_imageObject_mod_transition_angle_compression(tmpdir):
     assert [horizontal._pilImage().getpixel((x, 2))[2] for x in range(5)] == [45, 191, 89, 191, 45]
     assert [vertical._pilImage().getpixel((x, 2))[2] for x in range(5)] == [45, 67, 89, 67, 45]
 
+    largeRadians = ImageObject(sourcePath)
+    assert largeRadians.modTransition(
+        targetPath,
+        center=(2, 2),
+        time=0.75,
+        angle=90,
+        radius=4,
+        compression=2,
+    ) is None
+    assert [largeRadians._pilImage().getpixel((x, 2))[2] for x in range(5)] == [125, 119, 89, 119, 125]
+
     compressed = ImageObject(sourcePath)
     assert compressed.modTransition(
         targetPath,
