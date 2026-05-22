@@ -1792,6 +1792,35 @@ def test_imageObject_color_monochrome_preserves_alpha(tmpdir):
     ]
 
 
+def test_imageObject_white_point_adjust_preserves_alpha(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "white-point-alpha.png"
+    image = Image.new("RGBA", (4, 1))
+    for x, pixel in enumerate(
+        [
+            (20, 80, 140, 50),
+            (80, 120, 160, 90),
+            (160, 80, 40, 130),
+            (240, 200, 80, 170),
+        ]
+    ):
+        image.putpixel((x, 0), pixel)
+    image.save(imagePath)
+    baseline = ImageObject(imagePath)._pilImage().tobytes()
+
+    unchanged = ImageObject(imagePath)
+    assert unchanged.whitePointAdjust(color=(1, 1, 1, 0.25)) is None
+    assert unchanged._pilImage().tobytes() == baseline
+
+    adjusted = ImageObject(imagePath)
+    assert adjusted.whitePointAdjust(color=(0.5, 0.75, 1, 0.25)) is None
+    assert [adjusted._pilImage().getpixel((x, 0)) for x in range(4)] == [
+        (10, 61, 138, 50),
+        (40, 88, 159, 90),
+        (80, 61, 39, 130),
+        (120, 150, 80, 170),
+    ]
+
+
 def test_imageObject_sharpen_luminance_preserves_chroma_and_alpha(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "sharpen-luminance.png"
     image = Image.new("RGBA", (5, 1))

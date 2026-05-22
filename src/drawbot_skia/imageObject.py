@@ -650,12 +650,11 @@ class ImageObject:
 
     def whitePointAdjust(self, color=(1.0, 1.0, 1.0, 1.0)):
         image = self._pilImage()
-        cr, cg, cb, ca = _colorToRGBABytes(color)
+        cr, cg, cb, _ca = _colorToRGBABytes(color)
         r, g, b, a = image.split()
         r = r.point(lambda value: _clampByte(value * cr / 255))
         g = g.point(lambda value: _clampByte(value * cg / 255))
         b = b.point(lambda value: _clampByte(value * cb / 255))
-        a = a.point(lambda value: _clampByte(value * ca / 255))
         self._setPILImage(_mergeRGBA(r, g, b, a))
 
     def colorMonochrome(self, color=(0.6, 0.45, 0.3, 1.0), intensity=1.0):
