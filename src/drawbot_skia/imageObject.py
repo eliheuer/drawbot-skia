@@ -374,7 +374,7 @@ class ImageObject:
         self._affineTransform(transform)
 
     def affineTile(self, transform=(0.4, 0.0, 0.0, 0.4, 0.0, 0.0)):
-        self._affineTransform(transform)
+        self._setPILImage(_affineTileImage(self._pilImage(), transform))
 
     def straightenFilter(self, angle=0.0):
         from PIL import Image
@@ -3555,6 +3555,23 @@ def _samplePixel(pixels, width, height, x, y):
     x = max(0, min(width - 1, int(round(x))))
     y = max(0, min(height - 1, int(round(y))))
     return pixels[x, y]
+
+
+def _affineTileImage(image, transform):
+    from PIL import Image
+
+    xx, xy, yx, yy, dx, dy = (float(value) for value in transform)
+    source = image.convert("RGBA")
+    sourcePixels = source.load()
+    result = Image.new("RGBA", source.size, (0, 0, 0, 0))
+    resultPixels = result.load()
+    width, height = source.size
+    for y in range(height):
+        for x in range(width):
+            sampleX = (xx * x + yx * y + dx) % width
+            sampleY = (xy * x + yy * y + dy) % height
+            resultPixels[x, y] = _samplePixel(sourcePixels, width, height, sampleX, sampleY)
+    return result
 
 
 def _distortImage(image, mapPoint):

@@ -834,6 +834,22 @@ def test_imageObject_nine_part_geometry_preserves_regions(tmpdir):
     assert tiledImage.getpixel((5, 5)) == rows[3][3]
 
 
+def test_imageObject_affine_tile_wraps_transformed_samples(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "affine-tile.png"
+    image = Image.new("RGBA", (4, 1))
+    for x, color in enumerate([(10, 0, 0, 255), (20, 0, 0, 255), (30, 0, 0, 255), (40, 0, 0, 255)]):
+        image.putpixel((x, 0), color)
+    image.save(imagePath)
+
+    shifted = ImageObject(imagePath)
+    assert shifted.affineTile(transform=(1, 0, 0, 1, 1, 0)) is None
+    assert [shifted._pilImage().getpixel((x, 0))[0] for x in range(4)] == [20, 30, 40, 10]
+
+    reverse = ImageObject(imagePath)
+    assert reverse.affineTile(transform=(1, 0, 0, 1, -1, 0)) is None
+    assert [reverse._pilImage().getpixel((x, 0))[0] for x in range(4)] == [40, 10, 20, 30]
+
+
 def test_imageObject_tile_filters_use_center(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "tile-center.png"
     image = Image.new("RGBA", (5, 5), (0, 0, 0, 255))
