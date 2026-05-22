@@ -1214,10 +1214,7 @@ class ImageObject:
         self._setPILImage(_thermalImage(self._pilImage()))
 
     def dither(self, intensity=0.1):
-        image = self._pilImage()
-        dithered = image.convert("RGB").convert("P", dither=1).convert("RGBA")
-        dithered.putalpha(image.getchannel("A"))
-        self._setPILImage(_blendRGBA(image, dithered, intensity))
+        self._setPILImage(_ditherImage(self._pilImage(), intensity))
 
     def sampleNearest(self):
         from PIL import Image
@@ -2272,6 +2269,36 @@ def _blendRGBA(image1, image2, amount):
 
     amount = max(0, min(1, float(amount)))
     return Image.blend(image1.convert("RGBA"), image2.convert("RGBA"), amount)
+
+
+_BAYER4 = (
+    (0, 8, 2, 10),
+    (12, 4, 14, 6),
+    (3, 11, 1, 9),
+    (15, 7, 13, 5),
+)
+
+
+def _ditherImage(image, intensity):
+    intensity = max(0, min(1, float(intensity)))
+    source = image.convert("RGBA")
+    if intensity == 0:
+        return source
+
+    data = []
+    for index, (r, g, b, a) in enumerate(_getImageData(source)):
+        x = index % source.width
+        y = index // source.width
+        threshold = ((_BAYER4[y % 4][x % 4] + 0.5) / 16 - 0.5) * 255 * intensity
+        data.append(
+            (
+                _clampByte(r + threshold),
+                _clampByte(g + threshold),
+                _clampByte(b + threshold),
+                a,
+            )
+        )
+    return _newRGBAWithData(source.size, data)
 
 
 def _reciprocalLuminanceImage(image):

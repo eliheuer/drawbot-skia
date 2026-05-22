@@ -605,6 +605,35 @@ def test_imageObject_color_and_morphology_batch(tmpdir):
         assert im.size() == (12, 12)
 
 
+def test_imageObject_dither_uses_ordered_threshold_and_preserves_alpha(tmpdir):
+    from drawbot_skia.imageObject import _getImageData
+
+    sourcePath = pathlib.Path(tmpdir) / "dither-source.png"
+    source = Image.new("RGBA", (4, 1))
+    source.putdata(
+        [
+            (128, 128, 128, 255),
+            (128, 128, 128, 128),
+            (128, 128, 128, 64),
+            (128, 128, 128, 32),
+        ]
+    )
+    source.save(sourcePath)
+
+    noDither = ImageObject(sourcePath)
+    noDither.dither(intensity=0)
+    assert list(_getImageData(noDither._pilImage())) == list(_getImageData(source))
+
+    im = ImageObject(sourcePath)
+    im.dither(intensity=1)
+    assert list(_getImageData(im._pilImage())) == [
+        (8, 8, 8, 255),
+        (135, 135, 135, 128),
+        (40, 40, 40, 64),
+        (167, 167, 167, 32),
+    ]
+
+
 def test_imageObject_palette_filters(tmpdir):
     import inspect
 
