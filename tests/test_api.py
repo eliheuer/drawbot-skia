@@ -388,6 +388,37 @@ def test_imageObject_blend_and_compositing_batch(tmpdir):
     assert im.size() == (12, 12)
 
 
+def test_imageObject_color_and_morphology_batch(tmpdir):
+    sourcePath = pathlib.Path(tmpdir) / "source.png"
+    otherPath = pathlib.Path(tmpdir) / "other.png"
+    Image.new("RGBA", (12, 12), (80, 120, 200, 255)).save(sourcePath)
+    Image.new("RGBA", (12, 12), (200, 80, 40, 255)).save(otherPath)
+    calls = [
+        ("colorClamp", (), {"minComponents": (0.1, 0.1, 0.1, 0), "maxComponents": (0.9, 0.9, 0.9, 1)}),
+        ("colorMatrix", (), {"biasVector": (0.05, 0, 0, 0)}),
+        ("colorPolynomial", (), {}),
+        ("colorCrossPolynomial", (), {}),
+        ("colorThreshold", (), {"threshold": 0.4}),
+        ("colorThresholdOtsu", (), {}),
+        ("colorAbsoluteDifference", (otherPath,), {}),
+        ("mix", (otherPath,), {"amount": 0.5}),
+        ("comicEffect", (), {}),
+        ("XRay", (), {}),
+        ("thermal", (), {}),
+        ("dither", (), {"intensity": 0.5}),
+        ("sampleNearest", (), {}),
+        ("morphologyMaximum", (), {"radius": 1}),
+        ("morphologyMinimum", (), {"radius": 1}),
+        ("morphologyGradient", (), {"radius": 1}),
+        ("morphologyRectangleMaximum", (), {"width": 3, "height": 5}),
+        ("morphologyRectangleMinimum", (), {"width": 3, "height": 5}),
+    ]
+    for methodName, args, kwargs in calls:
+        im = ImageObject(sourcePath)
+        assert getattr(im, methodName)(*args, **kwargs) is None
+        assert im.size() == (12, 12)
+
+
 def test_numberOfPages_gif(tmpdir):
     source = """
 for i in range(3):

@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-317 passed, 3 skipped, 3 warnings
+318 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -102,23 +102,34 @@ Static comparison source: public methods on `typemytype/drawbot` `ImageObject` v
 Current fork supports:
 
 ```text
+XRay
 additionCompositing
 blendWithAlphaMask
 blendWithMask
 bloom
 boxBlur
 clearFilters
+colorAbsoluteDifference
 colorBlendMode
 colorBurnBlendMode
+colorClamp
 colorControls
+colorCrossPolynomial
 colorDodgeBlendMode
 colorInvert
+colorMatrix
 colorMonochrome
+colorPolynomial
 colorPosterize
+colorThreshold
+colorThresholdOtsu
+comicEffect
 copy
 crop
 darkenBlendMode
 differenceBlendMode
+dither
+divideBlendMode
 edgeWork
 edges
 exclusionBlendMode
@@ -142,6 +153,12 @@ maximumComponent
 maximumCompositing
 minimumComponent
 minimumCompositing
+mix
+morphologyGradient
+morphologyMaximum
+morphologyMinimum
+morphologyRectangleMaximum
+morphologyRectangleMinimum
 motionBlur
 multiplyBlendMode
 multiplyCompositing
@@ -149,7 +166,6 @@ noiseReduction
 offset
 open
 overlayBlendMode
-pinLightBlendMode
 photoEffectChrome
 photoEffectFade
 photoEffectInstant
@@ -158,7 +174,9 @@ photoEffectNoir
 photoEffectProcess
 photoEffectTonal
 photoEffectTransfer
+pinLightBlendMode
 pixellate
+sampleNearest
 saturationBlendMode
 screenBlendMode
 sepiaTone
@@ -171,6 +189,7 @@ sourceOutCompositing
 sourceOverCompositing
 subtractBlendMode
 temperatureAndTint
+thermal
 unlockFocus
 unsharpMask
 vibrance
@@ -181,13 +200,13 @@ whitePointAdjust
 zoomBlur
 ```
 
-DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 78 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters and blend/compositing modes rather than pixel-identical Core Image implementations.
+DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 96 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, and blend/compositing modes rather than pixel-identical Core Image implementations.
 
 Representative missing groups:
 
 - generators and barcodes: `QRCodeGenerator`, `PDF417BarcodeGenerator`, `aztecCodeGenerator`, `code128BarcodeGenerator`, gradient/checkerboard/stripe generators;
-- blur and stylization filters: `bokehBlur`, `comicEffect`, `crystallize`, `pointillize`;
-- color filters: `colorPolynomial`, `colorCrossPolynomial`, `colorThreshold`, `colorThresholdOtsu`;
+- blur and stylization filters: `bokehBlur`, `crystallize`, `pointillize`;
+- color/statistical filters that still need deeper Core Image-equivalent behavior: `KMeans`, `paletteCentroid`, `palettize`, `spotColor`;
 - compositing, transitions, and mask workflows that need deeper Core Image-equivalent semantics: `disintegrateWithMaskTransition`, `pageCurlTransition`, `copyMachineTransition`;
 - geometry and distortion filters: `affineTile`, `perspectiveTransform`, `twirlDistortion`, `bumpDistortion`, `kaleidoscope`.
 

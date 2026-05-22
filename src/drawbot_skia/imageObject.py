@@ -211,6 +211,101 @@ class ImageObject:
         posterized.putalpha(a)
         self._setPILImage(posterized)
 
+    def colorClamp(
+        self,
+        minComponents=(0.0, 0.0, 0.0, 0.0),
+        maxComponents=(1.0, 1.0, 1.0, 1.0),
+    ):
+        mins = _colorToRGBABytes(minComponents)
+        maxes = _colorToRGBABytes(maxComponents)
+        channels = []
+        for channel, low, high in zip(self._pilImage().split(), mins, maxes):
+            channels.append(channel.point(lambda value, low=low, high=high: max(low, min(high, value))))
+        self._setPILImage(_mergeRGBA(*channels))
+
+    def colorMatrix(
+        self,
+        RVector=(1.0, 0.0, 0.0, 0.0),
+        GVector=(0.0, 1.0, 0.0, 0.0),
+        BVector=(0.0, 0.0, 1.0, 0.0),
+        AVector=(0.0, 0.0, 0.0, 1.0),
+        biasVector=(0.0, 0.0, 0.0, 0.0),
+    ):
+        image = self._pilImage()
+        vectors = (RVector, GVector, BVector, AVector)
+        data = []
+        for pixel in _iterRGBAPixels(image):
+            values = []
+            for vector, bias in zip(vectors, biasVector):
+                values.append(
+                    _clampByte(
+                        sum(component * coefficient for component, coefficient in zip(pixel, vector))
+                        + float(bias) * 255
+                    )
+                )
+            data.append(tuple(values))
+        result = _newRGBAWithData(image.size, data)
+        self._setPILImage(result)
+
+    def colorPolynomial(
+        self,
+        redCoefficients=(0.0, 1.0, 0.0, 0.0),
+        greenCoefficients=(0.0, 1.0, 0.0, 0.0),
+        blueCoefficients=(0.0, 1.0, 0.0, 0.0),
+        alphaCoefficients=(0.0, 1.0, 0.0, 0.0),
+    ):
+        coefficients = (
+            redCoefficients,
+            greenCoefficients,
+            blueCoefficients,
+            alphaCoefficients,
+        )
+        channels = []
+        for channel, channelCoefficients in zip(self._pilImage().split(), coefficients):
+            channels.append(channel.point(lambda value, coeffs=channelCoefficients: _polynomialByte(value, coeffs)))
+        self._setPILImage(_mergeRGBA(*channels))
+
+    def colorCrossPolynomial(
+        self,
+        redCoefficients=(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+        greenCoefficients=(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+        blueCoefficients=(0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    ):
+        image = self._pilImage()
+        data = []
+        for r, g, b, a in _iterRGBAPixels(image):
+            values = []
+            rn, gn, bn = r / 255, g / 255, b / 255
+            terms = (rn, gn, bn, rn * rn, gn * gn, bn * bn, rn * gn, gn * bn, bn * rn, 1)
+            for coefficients in (redCoefficients, greenCoefficients, blueCoefficients):
+                values.append(_clampByte(sum(c * t for c, t in zip(coefficients, terms)) * 255))
+            data.append((*values, a))
+        self._setPILImage(_newRGBAWithData(image.size, data))
+
+    def colorThreshold(self, threshold=0.5):
+        image = self._pilImage()
+        limit = _clampByte(float(threshold) * 255)
+        gray = image.convert("L").point(lambda value: 255 if value >= limit else 0)
+        self._setPILImage(_mergeRGBA(gray, gray, gray, image.getchannel("A")))
+
+    def colorThresholdOtsu(self):
+        image = self._pilImage()
+        graySource = image.convert("L")
+        threshold = _otsuThreshold(graySource.histogram())
+        gray = graySource.point(lambda value: 255 if value >= threshold else 0)
+        self._setPILImage(_mergeRGBA(gray, gray, gray, image.getchannel("A")))
+
+    def colorAbsoluteDifference(self, image2):
+        from PIL import ImageChops
+
+        image = self._pilImage()
+        other = _imageObjectToPIL(image2).resize(image.size)
+        self._setPILImage(ImageChops.difference(image, other))
+
+    def mix(self, backgroundImage, amount=1.0):
+        background = _imageObjectToPIL(backgroundImage).resize(self.size())
+        self._setPILImage(_blendRGBA(background, self._pilImage(), amount))
+
     def minimumComponent(self):
         from PIL import Image
 
@@ -270,6 +365,75 @@ class ImageObject:
         from PIL import ImageFilter
 
         self._setPILImage(self._pilImage().filter(ImageFilter.FIND_EDGES))
+
+    def comicEffect(self):
+        from PIL import ImageFilter
+
+        image = self._pilImage()
+        edges = image.filter(ImageFilter.FIND_EDGES).convert("L")
+        posterized = image.convert("RGB").point(lambda value: _clampByte(round(value / 64) * 64)).convert("RGBA")
+        posterized.putalpha(image.getchannel("A"))
+        posterized = posterized.filter(ImageFilter.SMOOTH_MORE)
+        edgeMask = edges.point(lambda value: 255 if value > 30 else 0)
+        self._setPILImage(_blendRGBA(posterized, _mergeRGBA(edgeMask, edgeMask, edgeMask, image.getchannel("A")), 0.35))
+
+    def XRay(self):
+        self.colorInvert()
+        self.photoEffectMono()
+
+    def thermal(self):
+        self.falseColor((0, 0, 0.3, 1), (1, 0.2, 0, 1))
+
+    def dither(self, intensity=0.1):
+        image = self._pilImage()
+        dithered = image.convert("RGB").convert("P", dither=1).convert("RGBA")
+        dithered.putalpha(image.getchannel("A"))
+        self._setPILImage(_blendRGBA(image, dithered, intensity))
+
+    def sampleNearest(self):
+        from PIL import Image
+
+        image = self._pilImage()
+        self._setPILImage(image.resize(image.size, Image.Resampling.NEAREST))
+
+    def morphologyMaximum(self, radius=0.0):
+        from PIL import ImageFilter
+
+        radius = max(1, int(round(float(radius))))
+        self._filter(ImageFilter.MaxFilter(radius * 2 + 1))
+
+    def morphologyMinimum(self, radius=0.0):
+        from PIL import ImageFilter
+
+        radius = max(1, int(round(float(radius))))
+        self._filter(ImageFilter.MinFilter(radius * 2 + 1))
+
+    def morphologyGradient(self, radius=5.0):
+        from PIL import ImageChops
+        from PIL import ImageFilter
+
+        image = self._pilImage()
+        radius = max(1, int(round(float(radius))))
+        size = radius * 2 + 1
+        maximum = image.filter(ImageFilter.MaxFilter(size))
+        minimum = image.filter(ImageFilter.MinFilter(size))
+        self._setPILImage(ImageChops.difference(maximum, minimum))
+
+    def morphologyRectangleMaximum(self, width=5.0, height=5.0):
+        from PIL import ImageFilter
+
+        size = max(1, int(round(max(float(width), float(height)))))
+        if size % 2 == 0:
+            size += 1
+        self._filter(ImageFilter.MaxFilter(size))
+
+    def morphologyRectangleMinimum(self, width=5.0, height=5.0):
+        from PIL import ImageFilter
+
+        size = max(1, int(round(max(float(width), float(height)))))
+        if size % 2 == 0:
+            size += 1
+        self._filter(ImageFilter.MinFilter(size))
 
     def pixellate(self, center=(150.0, 150.0), scale=8.0):
         from PIL import Image
@@ -685,6 +849,46 @@ def _screenBlend(image1, image2, amount):
 
     screened = ImageChops.screen(image1.convert("RGBA"), image2.convert("RGBA"))
     return _blendRGBA(image1, screened, amount)
+
+
+def _newRGBAWithData(size, data):
+    from PIL import Image
+
+    image = Image.new("RGBA", size)
+    image.putdata(data)
+    return image
+
+
+def _polynomialByte(value, coefficients):
+    value = value / 255
+    result = 0
+    for power, coefficient in enumerate(coefficients):
+        result += coefficient * (value ** power)
+    return _clampByte(result * 255)
+
+
+def _otsuThreshold(histogram):
+    total = sum(histogram)
+    sumTotal = sum(index * count for index, count in enumerate(histogram))
+    sumBackground = 0
+    weightBackground = 0
+    bestThreshold = 0
+    bestVariance = -1
+    for threshold, count in enumerate(histogram):
+        weightBackground += count
+        if weightBackground == 0:
+            continue
+        weightForeground = total - weightBackground
+        if weightForeground == 0:
+            break
+        sumBackground += threshold * count
+        meanBackground = sumBackground / weightBackground
+        meanForeground = (sumTotal - sumBackground) / weightForeground
+        variance = weightBackground * weightForeground * ((meanBackground - meanForeground) ** 2)
+        if variance > bestVariance:
+            bestVariance = variance
+            bestThreshold = threshold
+    return bestThreshold
 
 
 def _imageObjectToPIL(image):
