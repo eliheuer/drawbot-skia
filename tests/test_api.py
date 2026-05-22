@@ -2461,6 +2461,36 @@ def test_imageObject_transitions_zero_time_are_noop(tmpdir):
         assert im._pilImage().tobytes() == baseline, methodName
 
 
+def test_imageObject_transitions_one_time_are_target(tmpdir):
+    sourcePath = pathlib.Path(tmpdir) / "transition-one-source.png"
+    targetPath = pathlib.Path(tmpdir) / "transition-one-target.png"
+    maskPath = pathlib.Path(tmpdir) / "transition-one-mask.png"
+    shadingPath = pathlib.Path(tmpdir) / "transition-one-shading.png"
+    Image.new("RGBA", (5, 5), (255, 0, 0, 111)).save(sourcePath)
+    Image.new("RGBA", (5, 5), (0, 0, 255, 222)).save(targetPath)
+    Image.new("RGBA", (5, 5), (128, 128, 128, 255)).save(maskPath)
+    Image.new("RGBA", (5, 5), (220, 220, 220, 255)).save(shadingPath)
+    baseline = ImageObject(targetPath)._pilImage().tobytes()
+
+    calls = [
+        ("dissolveTransition", (targetPath,), {"time": 1}),
+        ("swipeTransition", (targetPath,), {"time": 1, "width": 2, "opacity": 1}),
+        ("barsSwipeTransition", (targetPath,), {"time": 1, "width": 2}),
+        ("copyMachineTransition", (targetPath,), {"time": 1, "width": 2}),
+        ("flashTransition", (targetPath,), {"time": 1}),
+        ("modTransition", (targetPath,), {"center": (2, 2), "time": 1, "radius": 4, "compression": 2}),
+        ("rippleTransition", (targetPath, shadingPath), {"center": (2, 2), "time": 1, "width": 2, "scale": 20}),
+        ("disintegrateWithMaskTransition", (targetPath, maskPath), {"time": 1}),
+        ("accordionFoldTransition", (targetPath,), {"time": 1, "foldShadowAmount": 1}),
+        ("pageCurlTransition", (targetPath, maskPath, shadingPath), {"time": 1, "extent": (0, 0, 5, 5)}),
+        ("pageCurlWithShadowTransition", (targetPath, maskPath), {"time": 1, "extent": (0, 0, 5, 5)}),
+    ]
+    for methodName, args, kwargs in calls:
+        im = ImageObject(sourcePath)
+        assert getattr(im, methodName)(*args, **kwargs) is None
+        assert im._pilImage().tobytes() == baseline, methodName
+
+
 def test_imageObject_swipe_transition_color_extent(tmpdir):
     sourcePath = pathlib.Path(tmpdir) / "swipe-source.png"
     targetPath = pathlib.Path(tmpdir) / "swipe-target.png"

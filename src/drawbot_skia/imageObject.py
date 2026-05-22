@@ -1757,6 +1757,9 @@ class ImageObject:
     ):
         if float(time) <= 0:
             return
+        if float(time) >= 1:
+            self._setPILImage(_imageObjectToPIL(targetImage).resize(self.size()))
+            return
         target = _imageObjectToPIL(targetImage).resize(self.size())
         mask = _linearTransitionMask(self.size(), time, angle, width, extent)
         result = _blendWithMask(self._pilImage(), target, mask)
@@ -1775,6 +1778,9 @@ class ImageObject:
         time=0.0,
     ):
         if float(time) <= 0:
+            return
+        if float(time) >= 1:
+            self._setPILImage(_imageObjectToPIL(targetImage).resize(self.size()))
             return
         target = _imageObjectToPIL(targetImage).resize(self.size())
         mask = _barsTransitionMask(self.size(), time, angle, width, barOffset)
@@ -1841,6 +1847,9 @@ class ImageObject:
     ):
         if float(time) <= 0:
             return
+        if float(time) >= 1:
+            self._setPILImage(_imageObjectToPIL(targetImage).resize(self.size()))
+            return
         target = _imageObjectToPIL(targetImage).resize(self.size())
         mask = _modTransitionMask(self.size(), center, time, angle, radius, compression)
         self._setPILImage(_blendWithMask(self._pilImage(), target, mask))
@@ -1856,6 +1865,9 @@ class ImageObject:
         scale=50.0,
     ):
         if float(time) <= 0:
+            return
+        if float(time) >= 1:
+            self._setPILImage(_imageObjectToPIL(targetImage).resize(self.size()))
             return
         target = _imageObjectToPIL(targetImage).resize(self.size())
         shading = _imageObjectToPIL(shadingImage).resize(self.size())
@@ -1878,6 +1890,9 @@ class ImageObject:
         shadowOffset=(0.0, -10.0),
     ):
         if float(time) <= 0:
+            return
+        if float(time) >= 1:
+            self._setPILImage(_imageObjectToPIL(targetImage).resize(self.size()))
             return
         target = _imageObjectToPIL(targetImage).resize(self.size())
         maskSource = _imageObjectToPIL(maskImage).resize(self.size()).convert("L")
@@ -1903,6 +1918,9 @@ class ImageObject:
     ):
         if float(time) <= 0:
             return
+        if float(time) >= 1:
+            self._setPILImage(_imageObjectToPIL(targetImage).resize(self.size()))
+            return
         target = _imageObjectToPIL(targetImage).resize(self.size())
         self._setPILImage(
             _accordionFoldTransitionImage(
@@ -1926,6 +1944,9 @@ class ImageObject:
         radius=100.0,
     ):
         if float(time) <= 0:
+            return
+        if float(time) >= 1:
+            self._setPILImage(_imageObjectToPIL(targetImage).resize(self.size()))
             return
         target = _imageObjectToPIL(targetImage).resize(self.size())
         backside = _imageObjectToPIL(backsideImage).resize(self.size())
@@ -1956,6 +1977,9 @@ class ImageObject:
         shadowExtent=(0.0, 0.0, 0.0, 0.0),
     ):
         if float(time) <= 0:
+            return
+        if float(time) >= 1:
+            self._setPILImage(_imageObjectToPIL(targetImage).resize(self.size()))
             return
         target = _imageObjectToPIL(targetImage).resize(self.size())
         backside = _imageObjectToPIL(backsideImage).resize(self.size())
