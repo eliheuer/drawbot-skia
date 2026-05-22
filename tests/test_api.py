@@ -2862,6 +2862,32 @@ def test_imageObject_canny_edge_detector_uses_hysteresis_and_perceptual(tmpdir):
     assert [perceptual._pilImage().getpixel((x, 0))[0] for x in range(6)] == [0, 255, 255, 255, 255, 255]
 
 
+def test_imageObject_height_field_from_mask_uses_alpha_as_mask(tmpdir):
+    from drawbot_skia.imageObject import _getImageData
+
+    imagePath = pathlib.Path(tmpdir) / "height-field-mask-alpha.png"
+    image = Image.new("RGBA", (4, 1))
+    pixels = [
+        (255, 255, 255, 0),
+        (255, 255, 255, 64),
+        (255, 255, 255, 128),
+        (255, 255, 255, 255),
+    ]
+    image.putdata(pixels)
+    image.save(imagePath)
+
+    height = ImageObject(imagePath)
+    assert height.heightFieldFromMask(radius=0) is None
+    result = list(_getImageData(height._pilImage()))
+    assert [pixel[:3] for pixel in result] == [
+        (0, 0, 0),
+        (64, 64, 64),
+        (128, 128, 128),
+        (255, 255, 255),
+    ]
+    assert [pixel[3] for pixel in result] == [pixel[3] for pixel in pixels]
+
+
 def test_imageObject_line_overlay_uses_noise_sharpness_and_contrast(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "line-overlay.png"
     image = Image.new("RGBA", (7, 3), (100, 100, 100, 121))

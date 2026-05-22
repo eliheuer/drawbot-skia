@@ -1370,7 +1370,13 @@ class ImageObject:
         from PIL import ImageFilter
 
         image = self._pilImage()
-        height = image.convert("L").filter(ImageFilter.GaussianBlur(float(radius)))
+        luminance = image.convert("L")
+        alpha = image.getchannel("A")
+        data = [
+            _clampByte(value * mask / 255)
+            for value, mask in zip(_getImageData(luminance), _getImageData(alpha))
+        ]
+        height = _newLWithData(image.size, data).filter(ImageFilter.GaussianBlur(float(radius)))
         self._setPILImage(_mergeRGBA(height, height, height, image.getchannel("A")))
 
     def lineOverlay(
@@ -4945,6 +4951,14 @@ def _newRGBAWithData(size, data):
     from PIL import Image
 
     image = Image.new("RGBA", size)
+    image.putdata(data)
+    return image
+
+
+def _newLWithData(size, data):
+    from PIL import Image
+
+    image = Image.new("L", size)
     image.putdata(data)
     return image
 
