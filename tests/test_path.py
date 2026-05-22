@@ -39,6 +39,16 @@ def test_path_line_args():
     path1.line([0, 0], [0, 100])
 
 
+def test_path_drawbot_keyword_point_args():
+    path = BezierPath()
+    path.line(point1=(0, 0), point2=(0, 100))
+    assert path.bounds() == (0.0, 0.0, 0.0, 100.0)
+
+    path.rect(0, 0, 10, 10)
+    assert path.pointInside(xy=(5, 5))
+    assert not path.pointInside(xy=(15, 15))
+
+
 def test_path_points():
     path = BezierPath()
     path.moveTo((0, 0))

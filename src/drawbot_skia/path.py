@@ -105,8 +105,8 @@ class BezierPath(BasePen):
     def oval(self, x, y, w, h):
         self.path.addOval((x, y, w, h))
 
-    def line(self, pt1, pt2):
-        points = [(x, y) for x, y in [pt1, pt2]]
+    def line(self, point1, point2):
+        points = [(x, y) for x, y in [point1, point2]]
         self.path.addPoly(points, False)
 
     def polygon(self, *points, **kwargs):
@@ -128,8 +128,8 @@ class BezierPath(BasePen):
             "setNSBezierPath() requires a macOS NSBezierPath and is not available in drawbot-skia"
         )
 
-    def pointInside(self, point):
-        x, y = point
+    def pointInside(self, xy):
+        x, y = xy
         return self.path.contains(x, y)
 
     def bounds(self):
