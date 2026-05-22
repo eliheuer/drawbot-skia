@@ -17,6 +17,7 @@ and are rendered by `drawbot-skia` so they can double as visual parity fixtures.
 - [Port showcase](port-showcase.md)
 - [DrawBot source map](source-map.md)
 - [Coverage notes](coverage-notes.md)
+- [Completion audit](completion-audit.md)
 
 Regenerate preview images with the default 2x pixel scale:
 

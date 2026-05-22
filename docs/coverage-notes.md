@@ -1,9 +1,8 @@
 # Coverage notes
 
-This docs/examples corpus is meant to become a visual parity suite for the main
-DrawBot documentation categories. The current milestone establishes the
-directory structure, render workflow, and representative fixtures for every
-requested category.
+This docs/examples corpus is a visual parity suite for the main DrawBot
+documentation categories. It establishes the directory structure, render
+workflow, and representative fixtures for every requested category.
 
 ## Current coverage
 
@@ -26,13 +25,15 @@ requested category.
   generators, path operations, shaping, variable fonts, and animation frame
   output.
 
-## Expansion targets
+## Known limits
 
-- Add one local example for each official DrawBot subpage where the API is
-  implemented here.
-- Expand `showcase/` with examples for text shaping, variable fonts, barcode
-  generators, path operations, and improved `ImageObject` filters.
 - Keep `BezierPath.traceImage()` documented as optional because it requires
   external `mkbitmap` and `potrace` executables.
+- Treat macOS application bridge APIs such as `Variable()` as out of scope for
+  this cross-platform package; local variable examples use ordinary Python
+  values instead.
+- Keep the official DrawBot site as the source of truth for exact macOS
+  DrawBot behavior. These pages are adapted docs tied to executable local
+  examples, not a verbatim copy of the upstream site.
 - Keep examples deterministic and small enough that rendered diffs point to one
   API family.

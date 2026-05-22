@@ -18,7 +18,7 @@ port and use rendered examples from this repository.
 
 ## Subtopic checklist
 
-| Area | Covered locally | Still expanding |
+| Area | Covered locally | Known limits and follow-ups |
 | --- | --- | --- |
 | Shapes | primitives, paths, path properties, clipping, boolean operations, text-to-path | tracing requires optional external tools |
 | Colors | fill, stroke, CMYK, gradients, opacity, shadows, blend modes | color spaces and overprint-specific behavior |
@@ -28,3 +28,10 @@ port and use rendered examples from this repository.
 | Variables | deterministic Python variables and parameter sweeps | macOS `Variable()` UI remains out of scope |
 | Quick Reference | broad visual API overview | full function-by-function local quick reference |
 | Showcase | roadmap features, alpha-aware masks, barcode generators, animation frames, path operations, shaping | more ImageObject parity wins |
+
+## Completion note
+
+The local docs intentionally adapt, rather than copy verbatim, the official
+DrawBot pages. This keeps the repo focused on executable examples that can be
+rendered by `drawbot-skia` and visually inspected in review. The official
+DrawBot documentation remains the reference for macOS DrawBot behavior.

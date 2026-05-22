@@ -63,7 +63,7 @@ def test_example_categories_have_source_and_preview():
 
 def test_docs_example_links_resolve():
     docs_root = ROOT / "docs"
-    local_link_pattern = re.compile(r"\]\((\.\./examples/[^)]+)\)")
+    local_link_pattern = re.compile(r"\]\(((?:\.\./examples/|[A-Za-z0-9_-]+\.md)[^)]+)\)")
 
     links = []
     for markdown_path in sorted(docs_root.glob("*.md")):
