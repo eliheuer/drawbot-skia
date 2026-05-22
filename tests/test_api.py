@@ -917,6 +917,24 @@ def test_imageObject_analysis_and_stylize_batch(tmpdir):
     assert im.size() == (24, 16)
 
 
+def test_imageObject_spot_light_targets_light_points_at(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "spotlight.png"
+    Image.new("RGBA", (7, 5), (20, 40, 60, 255)).save(imagePath)
+
+    im = ImageObject(imagePath)
+    assert im.spotLight(
+        lightPosition=(0, 2, 10),
+        lightPointsAt=(5, 2, 0),
+        brightness=1,
+        concentration=0.3,
+        color=(1, 0, 0, 1),
+    ) is None
+    image = im._pilImage()
+    assert image.getpixel((5, 2)) == (255, 40, 60, 255)
+    assert image.getpixel((0, 2))[3] < image.getpixel((3, 2))[3] < image.getpixel((5, 2))[3]
+    assert image.getpixel((0, 0)) == (0, 0, 0, 0)
+
+
 def test_imageObject_transition_batch(tmpdir):
     sourcePath = pathlib.Path(tmpdir) / "source.png"
     targetPath = pathlib.Path(tmpdir) / "target.png"

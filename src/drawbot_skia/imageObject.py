@@ -1182,11 +1182,7 @@ class ImageObject:
         concentration=0.1,
         color=(1.0, 1.0, 1.0, 1.0),
     ):
-        image = self._pilImage()
-        lx, ly, *_ = lightPosition
-        mask = _radialMask(image.size, (lx, ly), max(image.size) * max(0.1, float(concentration) * 2), float(brightness) / 3)
-        spotlight = _solidFromColor(_colorToRGBABytes(color), image.size)
-        self._setPILImage(_blendWithMask(image, spotlight, mask))
+        self._setPILImage(_spotLightImage(self._pilImage(), lightPosition, lightPointsAt, brightness, concentration, color))
 
     def highlightShadowAdjust(self, radius=0.0, shadowAmount=0.0, highlightAmount=1.0):
         image = self._pilImage()
@@ -2915,6 +2911,57 @@ def _radialMask(size, center, radius, amount=1.0):
             distance = math.hypot(x - cx, y - cy)
             pixels[x, y] = _clampByte(max(0, 1 - distance / radius) * 255 * amount)
     return mask
+
+
+def _spotLightImage(image, lightPosition, lightPointsAt, brightness, concentration, color):
+    from PIL import Image
+
+    source = image.convert("RGBA")
+    lightX, lightY, lightZ = _point3D(lightPosition)
+    targetX, targetY, _targetZ = _point3D(lightPointsAt)
+    maxDimension = max(source.size)
+    concentration = float(concentration)
+    radius = abs(concentration)
+    if radius <= 1:
+        radius = maxDimension * (0.1 + radius * 0.9)
+    radius = max(1, radius)
+    heightScale = 1 + min(2, abs(lightZ) / max(1, maxDimension))
+    directionX = targetX - lightX
+    directionY = targetY - lightY
+    directionLength = math.hypot(directionX, directionY) or 1
+    axisX = directionX / directionLength
+    axisY = directionY / directionLength
+    brightness = max(0, float(brightness))
+    tint = _colorToRGBABytes(color)
+    sourcePixels = source.load()
+    result = Image.new("RGBA", source.size, (0, 0, 0, 0))
+    resultPixels = result.load()
+    for y in range(source.height):
+        for x in range(source.width):
+            dx = x - targetX
+            dy = y - targetY
+            along = dx * axisX + dy * axisY
+            across = -dx * axisY + dy * axisX
+            distance = math.hypot(across / 0.75, along / heightScale)
+            amount = max(0, 1 - distance / radius) ** 2
+            if amount <= 0:
+                continue
+            red, green, blue, alpha = sourcePixels[x, y]
+            lightAmount = min(1, amount * brightness)
+            resultPixels[x, y] = (
+                _clampByte(red + tint[0] * lightAmount),
+                _clampByte(green + tint[1] * lightAmount),
+                _clampByte(blue + tint[2] * lightAmount),
+                _clampByte(alpha * min(1, amount * max(1, brightness))),
+            )
+    return result
+
+
+def _point3D(point):
+    values = tuple(point)
+    if len(values) == 2:
+        return float(values[0]), float(values[1]), 0.0
+    return float(values[0]), float(values[1]), float(values[2])
 
 
 def _radialTransitionMask(size, center, radius, extent=None):
