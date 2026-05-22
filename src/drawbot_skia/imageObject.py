@@ -288,7 +288,7 @@ class ImageObject:
         self._path = None
         self._offset = (0, 0)
 
-    def aztecCodeGenerator(self, size, message, correctionLevel=23.0, layers=0.0, compactStyle=False):
+    def aztecCodeGenerator(self, size, message, layers, compactStyle, correctionLevel=23.0):
         self._setPILImage(_aztecCodeImage(size, message, correctionLevel, layers, compactStyle))
         self._path = None
         self._offset = (0, 0)

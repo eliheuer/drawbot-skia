@@ -817,7 +817,7 @@ def test_imageObject_generator_batch():
         ("roundedRectangleStrokeGenerator", ((16, 12),), {"extent": (2, 2, 10, 8)}),
         ("blurredRectangleGenerator", ((16, 12),), {"extent": (2, 2, 10, 8), "sigma": 1}),
         ("QRCodeGenerator", ((16, 12), "drawbot"), {}),
-        ("aztecCodeGenerator", ((16, 12), "drawbot"), {}),
+        ("aztecCodeGenerator", ((16, 12), "drawbot", 0, False), {}),
         ("PDF417BarcodeGenerator", ((16, 12), "drawbot"), {}),
         ("code128BarcodeGenerator", ((16, 12), "drawbot"), {}),
         ("lenticularHaloGenerator", ((16, 12),), {"center": (8, 6), "haloRadius": 4, "haloWidth": 6}),
@@ -1102,10 +1102,19 @@ def test_imageObject_pdf417_barcode_generator():
 
 
 def test_imageObject_aztec_code_generator():
+    import inspect
+
     from aztec_code_generator import AztecCode
 
     im = ImageObject()
-    assert im.aztecCodeGenerator((120, 120), "drawbot", correctionLevel=23) is None
+    assert list(inspect.signature(im.aztecCodeGenerator).parameters) == [
+        "size",
+        "message",
+        "layers",
+        "compactStyle",
+        "correctionLevel",
+    ]
+    assert im.aztecCodeGenerator((120, 120), "drawbot", 0, False, correctionLevel=23) is None
     image = im._pilImage()
     assert image.size == (120, 120)
 
