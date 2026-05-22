@@ -2900,6 +2900,36 @@ def test_imageObject_line_overlay_uses_noise_sharpness_and_contrast(tmpdir):
     assert [highContrast._pilImage().getpixel((x, 1))[0] for x in range(7)] == [0, 0, 0, 255, 0, 255, 255]
 
 
+def test_imageObject_line_overlay_ignores_alpha_edges(tmpdir):
+    from drawbot_skia.imageObject import _getImageData
+
+    imagePath = pathlib.Path(tmpdir) / "line-overlay-alpha.png"
+    controlPath = pathlib.Path(tmpdir) / "line-overlay-alpha-control.png"
+    image = Image.new("RGBA", (5, 3))
+    control = Image.new("RGBA", (5, 3))
+    pixels = []
+    controlPixels = []
+    for y in range(3):
+        for x in range(5):
+            alpha = 20 + x * 40 + y * 10
+            pixels.append((100, 120, 140, alpha))
+            controlPixels.append((100, 120, 140, 200))
+    image.putdata(pixels)
+    control.putdata(controlPixels)
+    image.save(imagePath)
+    control.save(controlPath)
+
+    controlOverlay = ImageObject(controlPath)
+    assert controlOverlay.lineOverlay(NRNoiseLevel=0, NRSharpness=0, contrast=0, threshold=0.05, edgeIntensity=1) is None
+    controlResult = list(_getImageData(controlOverlay._pilImage()))
+
+    overlay = ImageObject(imagePath)
+    assert overlay.lineOverlay(NRNoiseLevel=0, NRSharpness=0, contrast=0, threshold=0.05, edgeIntensity=1) is None
+    result = list(_getImageData(overlay._pilImage()))
+    assert [pixel[:3] for pixel in result] == [pixel[:3] for pixel in controlResult]
+    assert [pixel[3] for pixel in result] == [pixel[3] for pixel in pixels]
+
+
 def test_imageObject_morphology_zero_radius_is_noop(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "morphology-zero.png"
     image = Image.new("RGBA", (3, 1))

@@ -1385,7 +1385,7 @@ class ImageObject:
         from PIL import ImageFilter
 
         image = self._pilImage()
-        source = image
+        source = image.convert("RGB")
         noiseRadius = max(0, int(round(float(NRNoiseLevel) * 20)))
         if noiseRadius:
             source = source.filter(ImageFilter.MedianFilter(noiseRadius * 2 + 1))
