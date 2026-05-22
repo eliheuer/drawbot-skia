@@ -357,6 +357,21 @@ def test_formattedString_font_info():
     assert t.fontLeading() >= 0
     assert t.fontLineHeight() == pytest.approx(24)
     assert t.fontFileFontNumber() == 0
+    t.fontNumber(2)
+    assert t.fontFileFontNumber() == 2
+
+
+def test_formattedString_fallback_font_state():
+    sourceSerif = testDir / "fonts" / "SourceSerifPro-Regular.otf"
+    arabic = testDir / "fonts" / "IBMPlexSansArabic-Regular.otf"
+    t = FormattedString(font=sourceSerif)
+    assert not t.fontContainsCharacters("سلام")
+    t.fallbackFont(arabic, fontNumber=3)
+    assert t.fontContainsCharacters("سلام")
+    assert t.textProperties()["fallbackFont"] == arabic
+    assert t.textProperties()["fallbackFontNumber"] == 3
+    t.fallbackFontNumber(4)
+    assert t.textProperties()["fallbackFontNumber"] == 4
 
 
 def test_formattedString_appendGlyph():

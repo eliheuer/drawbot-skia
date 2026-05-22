@@ -50,6 +50,16 @@ class FormattedString:
         if fontSize is not None:
             self._properties["fontSize"] = fontSize
 
+    def fontNumber(self, fontNumber):
+        self._properties["fontNumber"] = fontNumber
+
+    def fallbackFont(self, fontNameOrPath, fontNumber=0):
+        self._properties["fallbackFont"] = fontNameOrPath
+        self._properties["fallbackFontNumber"] = fontNumber
+
+    def fallbackFontNumber(self, fontNumber):
+        self._properties["fallbackFontNumber"] = fontNumber
+
     def fontSize(self, size):
         self._properties["fontSize"] = size
 
@@ -107,8 +117,13 @@ class FormattedString:
         return Drawing().textSize(self)
 
     def fontContainsCharacters(self, characters):
-        cmap = self._ttFont().getBestCmap() or {}
-        return all(ord(character) in cmap for character in characters)
+        cmaps = [self._ttFont().getBestCmap() or {}]
+        fallbackFont = self.textProperties().get("fallbackFont")
+        if fallbackFont is not None:
+            cmaps.append(self._textStyleForFont(fallbackFont).ttFont.getBestCmap() or {})
+        return all(
+            any(ord(character) in cmap for cmap in cmaps) for character in characters
+        )
 
     def fontContainsGlyph(self, glyphName):
         return glyphName in self._ttFont().getGlyphOrder()
@@ -120,7 +135,7 @@ class FormattedString:
         return None
 
     def fontFileFontNumber(self):
-        return 0
+        return self.textProperties().get("fontNumber", 0)
 
     def listFontGlyphNames(self):
         return list(self._ttFont().getGlyphOrder())
