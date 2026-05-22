@@ -1102,7 +1102,12 @@ class ImageObject:
     def edgeWork(self, radius=3.0):
         from PIL import ImageFilter
 
-        self._setPILImage(self._pilImage().filter(ImageFilter.FIND_EDGES))
+        image = self._pilImage()
+        edges = image.convert("L").filter(ImageFilter.FIND_EDGES)
+        filterRadius = max(0, int(round(float(radius))))
+        if filterRadius:
+            edges = edges.filter(ImageFilter.MaxFilter(filterRadius * 2 + 1))
+        self._setPILImage(_mergeRGBA(edges, edges, edges, image.getchannel("A")))
 
     def comicEffect(self):
         from PIL import ImageFilter

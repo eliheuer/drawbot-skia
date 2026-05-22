@@ -1460,6 +1460,32 @@ def test_imageObject_highlight_shadow_adjust_uses_radius_and_preserves_alpha(tmp
     ]
 
 
+def test_imageObject_edge_work_uses_radius_and_preserves_alpha(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "edge-work.png"
+    image = Image.new("RGBA", (7, 3), (0, 0, 0, 123))
+    for x in range(2, 5):
+        image.putpixel((x, 1), (255, 255, 255, 123))
+    image.save(imagePath)
+
+    thin = ImageObject(imagePath)
+    assert thin.edgeWork(radius=0) is None
+    assert [[thin._pilImage().getpixel((x, y))[0] for x in range(7)] for y in range(3)] == [
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 255, 255, 255, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0],
+    ]
+
+    thick = ImageObject(imagePath)
+    assert thick.edgeWork(radius=1) is None
+    assert [[thick._pilImage().getpixel((x, y))[0] for x in range(7)] for y in range(3)] == [
+        [0, 255, 255, 255, 255, 255, 0],
+        [0, 255, 255, 255, 255, 255, 0],
+        [0, 255, 255, 255, 255, 255, 0],
+    ]
+    assert thin._pilImage().getpixel((3, 1))[3] == 123
+    assert thick._pilImage().getpixel((3, 1))[3] == 123
+
+
 def test_imageObject_depth_of_field_uses_focus_line(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "depth-of-field.png"
     image = Image.new("RGBA", (7, 5), (0, 0, 0, 255))
