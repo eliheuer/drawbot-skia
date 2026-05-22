@@ -3326,7 +3326,9 @@ def _bokehBlurImage(image, radius, ringAmount, ringSize, softness):
     from PIL import Image
     from PIL import ImageFilter
 
-    radius = max(1, int(round(float(radius))))
+    radius = max(0, int(round(float(radius))))
+    if radius == 0:
+        return image.convert("RGBA")
     size = radius * 2 + 1
     ringAmount = max(0, float(ringAmount))
     ringSize = max(0, min(1, float(ringSize)))

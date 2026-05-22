@@ -1677,6 +1677,22 @@ def test_imageObject_bokeh_blur_uses_ring_parameters(tmpdir):
     assert [ringed._pilImage().getpixel((x, 2))[0] for x in range(7)] == [0, 0, 17, 29, 17, 0, 0]
 
 
+def test_imageObject_bokeh_blur_zero_radius_is_noop(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "bokeh-zero.png"
+    image = Image.new("RGBA", (5, 5), (0, 0, 0, 255))
+    image.putpixel((2, 2), (255, 255, 255, 255))
+    image.save(imagePath)
+
+    unchanged = ImageObject(imagePath)
+    assert unchanged.bokehBlur(radius=0, ringAmount=0, ringSize=0.5, softness=0) is None
+    assert unchanged._pilImage().tobytes() == image.tobytes()
+
+    blurred = ImageObject(imagePath)
+    assert blurred.bokehBlur(radius=1, ringAmount=0, ringSize=0.5, softness=0) is None
+    assert [blurred._pilImage().getpixel((x, 2))[0] for x in range(5)] == [0, 51, 51, 51, 0]
+    assert blurred._pilImage().tobytes() != image.tobytes()
+
+
 def test_imageObject_noise_reduction_controls_noise_and_sharpness(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "noise-reduction.png"
     image = Image.new("RGBA", (5, 5), (80, 90, 100, 255))
