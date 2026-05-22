@@ -1572,6 +1572,49 @@ def test_imageObject_edge_work_uses_radius_and_preserves_alpha(tmpdir):
     assert thick._pilImage().getpixel((3, 1))[3] == 123
 
 
+def test_imageObject_canny_edge_detector_uses_hysteresis_and_perceptual(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "canny.png"
+    image = Image.new("RGBA", (6, 1))
+    for x, value in enumerate([0, 50, 90, 120, 140, 150]):
+        image.putpixel((x, 0), (value, value, value, 77))
+    image.save(imagePath)
+
+    strongOnly = ImageObject(imagePath)
+    assert strongOnly.cannyEdgeDetector(
+        gaussianSigma=0,
+        thresholdLow=0.05,
+        thresholdHigh=0.5,
+        hysteresisPasses=0,
+    ) is None
+    assert [strongOnly._pilImage().getpixel((x, 0)) for x in range(6)] == [
+        (0, 0, 0, 77),
+        (0, 0, 0, 77),
+        (0, 0, 0, 77),
+        (0, 0, 0, 77),
+        (255, 255, 255, 77),
+        (255, 255, 255, 77),
+    ]
+
+    hysteresis = ImageObject(imagePath)
+    assert hysteresis.cannyEdgeDetector(
+        gaussianSigma=0,
+        thresholdLow=0.05,
+        thresholdHigh=0.5,
+        hysteresisPasses=2,
+    ) is None
+    assert [hysteresis._pilImage().getpixel((x, 0))[0] for x in range(6)] == [0, 0, 255, 255, 255, 255]
+
+    perceptual = ImageObject(imagePath)
+    assert perceptual.cannyEdgeDetector(
+        gaussianSigma=0,
+        perceptual=True,
+        thresholdLow=0.05,
+        thresholdHigh=0.5,
+        hysteresisPasses=2,
+    ) is None
+    assert [perceptual._pilImage().getpixel((x, 0))[0] for x in range(6)] == [0, 255, 255, 255, 255, 255]
+
+
 def test_imageObject_pixellate_uses_center(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "pixellate.png"
     image = Image.new("RGBA", (6, 1))

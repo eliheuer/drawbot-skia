@@ -1142,15 +1142,15 @@ class ImageObject:
         thresholdLow=0.02,
         hysteresisPasses=1.0,
     ):
-        from PIL import ImageFilter
-
         image = self._pilImage()
-        gray = image.convert("L").filter(ImageFilter.GaussianBlur(float(gaussianSigma)))
-        edge = gray.filter(ImageFilter.FIND_EDGES)
-        high = _clampByte(float(thresholdHigh) * 255)
-        low = _clampByte(float(thresholdLow) * 255)
-        threshold = max(0, min(255, (high + low) // 2))
-        edge = edge.point(lambda value: 255 if value >= threshold else 0)
+        edge = _cannyEdgeImage(
+            image,
+            gaussianSigma,
+            perceptual,
+            thresholdHigh,
+            thresholdLow,
+            hysteresisPasses,
+        )
         self._setPILImage(_mergeRGBA(edge, edge, edge, image.getchannel("A")))
 
     def sobelGradients(self):
@@ -3834,6 +3834,53 @@ def _pixellateImage(image, center, scale):
                 color = tuple(_clampByte(value) for value in ImageStat.Stat(source.crop((left, top, right, bottom))).mean)
                 blockCache[key] = color
             pixels[x, y] = color
+    return result
+
+
+def _cannyEdgeImage(image, gaussianSigma, perceptual, thresholdHigh, thresholdLow, hysteresisPasses):
+    from PIL import Image
+    from PIL import ImageFilter
+
+    if perceptual:
+        gray = Image.new("L", image.size)
+        gray.putdata([_clampByte(_rgbBytesToLab(*pixel[:3])[0] / 100 * 255) for pixel in _getImageData(image)])
+    else:
+        gray = image.convert("L")
+    sigma = max(0, float(gaussianSigma))
+    if sigma:
+        gray = gray.filter(ImageFilter.GaussianBlur(sigma))
+    edge = gray.filter(ImageFilter.FIND_EDGES)
+    high = _clampByte(float(thresholdHigh) * 255)
+    low = min(high, _clampByte(float(thresholdLow) * 255))
+    width, height = image.size
+    edgePixels = edge.load()
+    strong = set()
+    weak = set()
+    for y in range(height):
+        for x in range(width):
+            value = edgePixels[x, y]
+            if value >= high:
+                strong.add((x, y))
+            elif value >= low:
+                weak.add((x, y))
+    connected = set(strong)
+    frontier = set(strong)
+    for _ in range(max(0, int(round(float(hysteresisPasses))))):
+        nextFrontier = set()
+        for x, y in frontier:
+            for neighborY in range(max(0, y - 1), min(height, y + 2)):
+                for neighborX in range(max(0, x - 1), min(width, x + 2)):
+                    point = (neighborX, neighborY)
+                    if point in weak and point not in connected:
+                        connected.add(point)
+                        nextFrontier.add(point)
+        frontier = nextFrontier
+        if not frontier:
+            break
+    result = Image.new("L", image.size, 0)
+    resultPixels = result.load()
+    for x, y in connected:
+        resultPixels[x, y] = 255
     return result
 
 
