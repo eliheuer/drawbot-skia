@@ -1612,8 +1612,13 @@ class ImageObject:
         opacity=0.0,
     ):
         target = _imageObjectToPIL(targetImage).resize(self.size())
-        mask = _linearTransitionMask(self.size(), time, angle, width)
-        self._setPILImage(_blendWithMask(self._pilImage(), target, mask))
+        mask = _linearTransitionMask(self.size(), time, angle, width, extent)
+        result = _blendWithMask(self._pilImage(), target, mask)
+        if opacity:
+            band = _linearTransitionBandMask(self.size(), time, angle, width, extent)
+            colorImage = _solidFromColor(_colorToRGBABytes(color), self.size())
+            result = _blendWithMask(result, colorImage, band.point(lambda value: _clampByte(value * float(opacity))))
+        self._setPILImage(result)
 
     def barsSwipeTransition(
         self,
@@ -2862,7 +2867,7 @@ def _radialMask(size, center, radius, amount=1.0):
     return mask
 
 
-def _linearTransitionMask(size, time, angle, width):
+def _linearTransitionMask(size, time, angle, width, extent=None):
     from PIL import Image
 
     imageWidth, imageHeight = size
@@ -2871,8 +2876,8 @@ def _linearTransitionMask(size, time, angle, width):
     angle = math.radians(float(angle)) if abs(float(angle)) > math.tau else float(angle)
     dx = math.cos(angle)
     dy = math.sin(angle)
-    extent = abs(dx) * imageWidth + abs(dy) * imageHeight
-    edge = -extent / 2 + extent * time
+    fullExtent = abs(dx) * imageWidth + abs(dy) * imageHeight
+    edge = -fullExtent / 2 + fullExtent * time
     mask = Image.new("L", size)
     pixels = mask.load()
     cx = imageWidth / 2
@@ -2880,8 +2885,51 @@ def _linearTransitionMask(size, time, angle, width):
     for y in range(imageHeight):
         for x in range(imageWidth):
             projection = (x - cx) * dx + (y - cy) * dy
-            pixels[x, y] = _clampByte((edge - projection + width / 2) / width * 255)
+            value = _clampByte((edge - projection + width / 2) / width * 255)
+            pixels[x, y] = value if _pointInExtent(x, y, extent, size) else 0
     return mask
+
+
+def _linearTransitionBandMask(size, time, angle, width, extent=None):
+    from PIL import Image
+
+    imageWidth, imageHeight = size
+    time = max(0, min(1, float(time)))
+    width = max(1, float(width))
+    angle = math.radians(float(angle)) if abs(float(angle)) > math.tau else float(angle)
+    dx = math.cos(angle)
+    dy = math.sin(angle)
+    fullExtent = abs(dx) * imageWidth + abs(dy) * imageHeight
+    edge = -fullExtent / 2 + fullExtent * time
+    mask = Image.new("L", size)
+    pixels = mask.load()
+    cx = imageWidth / 2
+    cy = imageHeight / 2
+    halfWidth = width / 2
+    for y in range(imageHeight):
+        for x in range(imageWidth):
+            if not _pointInExtent(x, y, extent, size):
+                pixels[x, y] = 0
+                continue
+            projection = (x - cx) * dx + (y - cy) * dy
+            pixels[x, y] = _clampByte(max(0, 1 - abs(projection - edge) / halfWidth) * 255)
+    return mask
+
+
+def _pointInExtent(x, y, extent, size):
+    if extent is None:
+        return True
+    ex, ey, ew, eh = extent
+    if ew <= 0 or eh <= 0:
+        return True
+    imageWidth, imageHeight = size
+    # Core Image extents are image-space rectangles. Clamp generously so the
+    # default DrawBot/Core Image extent still covers small test images.
+    left = max(0, float(ex))
+    top = max(0, float(ey))
+    right = min(imageWidth, left + float(ew))
+    bottom = min(imageHeight, top + float(eh))
+    return left <= x < right and top <= y < bottom
 
 
 def _barsTransitionMask(size, time, angle, width, barOffset):

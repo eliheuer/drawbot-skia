@@ -897,6 +897,34 @@ def test_imageObject_transition_batch(tmpdir):
         assert im.size() == (18, 14)
 
 
+def test_imageObject_swipe_transition_color_extent(tmpdir):
+    sourcePath = pathlib.Path(tmpdir) / "swipe-source.png"
+    targetPath = pathlib.Path(tmpdir) / "swipe-target.png"
+    Image.new("RGBA", (6, 3), (255, 0, 0, 255)).save(sourcePath)
+    Image.new("RGBA", (6, 3), (0, 0, 255, 255)).save(targetPath)
+
+    im = ImageObject(sourcePath)
+    assert im.swipeTransition(
+        targetPath,
+        extent=(0, 0, 6, 1),
+        color=(0, 1, 0, 1),
+        time=0.5,
+        angle=0,
+        width=2,
+        opacity=1,
+    ) is None
+    image = im._pilImage()
+    assert [image.getpixel((x, 0)) for x in range(6)] == [
+        (0, 0, 255, 255),
+        (0, 0, 255, 255),
+        (0, 0, 255, 255),
+        (0, 255, 0, 255),
+        (255, 0, 0, 255),
+        (255, 0, 0, 255),
+    ]
+    assert [image.getpixel((x, 1)) for x in range(6)] == [(255, 0, 0, 255)] * 6
+
+
 def test_numberOfPages_gif(tmpdir):
     source = """
 for i in range(3):
