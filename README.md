@@ -2,7 +2,7 @@
 
 # drawbot-skia
 
-A Python package implementing a subset of the [DrawBot](https://www.drawbot.com) API using [Skia](https://skia.org/) as a backend.
+A Python package implementing the [DrawBot](https://www.drawbot.com) drawing API using [Skia](https://skia.org/) as a backend.
 
 Work in progress!
 
@@ -24,13 +24,13 @@ Work in progress!
 1. Get multi-line, single style `text()` working ✅
 1. Get `FormattedString` working ✅
 1. Get multi-style `text()` working ✅
-1. Get remaining `BezierPath` methods working
-1. Get many-things-I-forgot-to-mention working
+1. Get remaining `BezierPath` methods working ✅
+1. Get many-things-I-forgot-to-mention working ✅ _(static API coverage; behavior caveats below)_
 1. ...
-1. `textBox()` 🔴 _(Major Obstacle; rectangular single-style text boxes work)_
-1. Fill further gaps in DrawBot API
+1. `textBox()` ✅ _(implemented; not CoreText-identical)_
+1. Fill further gaps in DrawBot API ✅ _(static method-name coverage; behavior caveats below)_
 
-The currently supported subset of Drawbot is [tracked here](https://github.com/justvanrossum/drawbot-skia/issues/5).
+The current API audit is tracked in [`API_GAP_AUDIT.md`](API_GAP_AUDIT.md).
 
 ## Vision
 
@@ -42,11 +42,19 @@ A DrawBot-like cross-platform application shell can be developed, but that would
 
 Some parts of the DrawBot API will be hard or impractical to duplicate.
 
-Skia has only low level support for text, so we'll have to do Unicode processing, line wrapping, hyphenation, and shaping ourselves. In other words, `textBox()` will be a tough one to crack.
+Skia has only low level support for text, so Unicode processing, line wrapping, hyphenation, and shaping are implemented in this package rather than delegated to CoreText. `textBox()` and `FormattedString` are available, but output should not be expected to match macOS DrawBot/CoreText pixel-for-pixel.
 
 Generally, 100% text compatibility with DrawBot should not be top priority, as matching CoreText behavior will be a huge challenge.
 
-The `ImageObject` relies heavily on builtin macOS functionality, and it is huge. At best, we should support a small subset of it, but even that is low priority.
+The `ImageObject` API in DrawBot relies heavily on Core Image. This fork exposes the audited public `ImageObject` method names, but many filters are Pillow-backed compatibility implementations rather than Core Image-equivalent behavior. In particular:
+
+- barcode generators currently produce deterministic barcode-like placeholder patterns, not standards-compliant QR/PDF417/Aztec/Code 128 encodings;
+- Lab, KMeans, palette, saliency, segmentation, material, lighting, transition, and advanced distortion filters are approximations;
+- exact pixel parity with Core Image should be treated as follow-up work on a method-by-method basis.
+
+The macOS application/PDFKit bridge APIs exist only as explicit unsupported APIs and raise `DrawbotError`: `Variable()`, `pdfImage()`, `printImage()`, `FormattedString.getNSObject()`, `BezierPath.getNSBezierPath()`, and `BezierPath.setNSBezierPath()`.
+
+Link annotations are supported for SVG and PDF output. PDF annotations are added by post-processing Skia's emitted PDF because skia-python does not expose PDF annotation hooks directly.
 
 ## Strategy
 
