@@ -1972,6 +1972,38 @@ def test_imageObject_depth_disparity_uses_reciprocal_luminance():
     assert disparity._pilImage().tobytes() == depth._pilImage().tobytes()
 
 
+def test_imageObject_gabor_gradients_use_oriented_kernel():
+    image = Image.new("RGBA", (12, 12), (0, 0, 0, 255))
+    for x in range(12):
+        color = (255, 255, 255, 200) if x % 4 < 2 else (0, 0, 0, 200)
+        for y in range(12):
+            image.putpixel((x, y), color)
+
+    gabor = ImageObject()
+    gabor._setPILImage(image)
+    assert gabor.gaborGradients() is None
+    gaborPixels = [gabor._pilImage().getpixel((x, 6)) for x in range(12)]
+    assert gaborPixels == [
+        (128, 128, 128, 200),
+        (128, 128, 128, 200),
+        (249, 249, 249, 200),
+        (255, 255, 255, 200),
+        (255, 255, 255, 200),
+        (255, 255, 255, 200),
+        (255, 255, 255, 200),
+        (255, 255, 255, 200),
+        (255, 255, 255, 200),
+        (249, 249, 249, 200),
+        (128, 128, 128, 200),
+        (128, 128, 128, 200),
+    ]
+
+    sobel = ImageObject()
+    sobel._setPILImage(image)
+    assert sobel.sobelGradients() is None
+    assert gabor._pilImage().tobytes() != sobel._pilImage().tobytes()
+
+
 def test_imageObject_cmyk_halftone_uses_gcr_and_ucr(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "cmyk-halftone.png"
     colors = [

@@ -1295,7 +1295,7 @@ class ImageObject:
         self._setPILImage(_reciprocalLuminanceImage(self._pilImage()))
 
     def gaborGradients(self):
-        self.sobelGradients()
+        self._setPILImage(_gaborGradientsImage(self._pilImage()))
 
     def guidedFilter(self, guideImage, radius=1.0, epsilon=0.0001):
         guide = _imageObjectToPIL(guideImage)
@@ -2313,6 +2313,77 @@ def _reciprocalLuminanceImage(image):
             mapped = value
         data.append((mapped, mapped, mapped, a))
     return _newRGBAWithData(image.size, data)
+
+
+def _gaborGradientsImage(image):
+    gray = image.convert("L")
+    alpha = image.getchannel("A")
+    width, height = image.size
+    source = list(_getImageData(gray))
+    kernels = _gaborKernels(size=7, sigma=2.0, wavelength=4.0)
+    responses = []
+    for y in range(height):
+        for x in range(width):
+            energy = 0
+            for kernel, kernelRadius in kernels:
+                response = 0
+                for ky, kernelRow in enumerate(kernel):
+                    sampleY = max(0, min(height - 1, y + ky - kernelRadius))
+                    rowOffset = sampleY * width
+                    for kx, weight in enumerate(kernelRow):
+                        sampleX = max(
+                            0,
+                            min(width - 1, x + kx - kernelRadius),
+                        )
+                        response += source[rowOffset + sampleX] * weight
+                energy += response * response
+            responses.append(math.sqrt(energy))
+    maxResponse = max(responses) if responses else 0
+    if not maxResponse:
+        result = Image.new("RGBA", image.size, (0, 0, 0, 255))
+        result.putalpha(alpha)
+        return result
+    data = []
+    for response, a in zip(responses, _getImageData(alpha)):
+        value = _clampByte(response / maxResponse * 255)
+        data.append((value, value, value, a))
+    return _newRGBAWithData(image.size, data)
+
+
+def _gaborKernels(size=7, sigma=2.0, wavelength=4.0):
+    radius = size // 2
+    kernels = []
+    for theta in (0, math.pi / 4, math.pi / 2, 3 * math.pi / 4):
+        cosTheta = math.cos(theta)
+        sinTheta = math.sin(theta)
+        kernel = []
+        total = 0
+        for y in range(-radius, radius + 1):
+            row = []
+            for x in range(-radius, radius + 1):
+                rotatedX = x * cosTheta + y * sinTheta
+                rotatedY = -x * sinTheta + y * cosTheta
+                gaussian = math.exp(
+                    -(rotatedX * rotatedX + rotatedY * rotatedY) / (2 * sigma * sigma)
+                )
+                value = gaussian * math.cos(2 * math.pi * rotatedX / wavelength)
+                row.append(value)
+                total += value
+            kernel.append(row)
+        mean = total / (size * size)
+        normalized = []
+        weightSum = 0
+        for row in kernel:
+            normalizedRow = []
+            for value in row:
+                centered = value - mean
+                normalizedRow.append(centered)
+                weightSum += abs(centered)
+            normalized.append(normalizedRow)
+        if weightSum:
+            normalized = [[value / weightSum for value in row] for row in normalized]
+        kernels.append((normalized, radius))
+    return kernels
 
 
 def _photoEffectAmount(extrapolate):
