@@ -52,7 +52,7 @@ The `ImageObject` API in DrawBot relies heavily on Core Image. This fork exposes
 - Lab, KMeans, palette, saliency, segmentation, material, lighting, transition, and advanced distortion filters are approximations;
 - exact pixel parity with Core Image should be treated as follow-up work on a method-by-method basis.
 
-The macOS application/PDFKit bridge APIs exist only as explicit unsupported APIs and raise `DrawbotError`: `Variable()`, `pdfImage()`, `printImage()`, `FormattedString.getNSObject()`, `BezierPath.getNSBezierPath()`, and `BezierPath.setNSBezierPath()`.
+The macOS application/PDFKit bridge APIs are intentionally out of scope for drawbot-skia's cross-platform package target. Their method names exist only as explicit compatibility stubs and raise `DrawbotError`: `Variable()`, `pdfImage()`, `printImage()`, `FormattedString.getNSObject()`, `BezierPath.getNSBezierPath()`, and `BezierPath.setNSBezierPath()`.
 
 Link annotations are supported for SVG and PDF output. PDF annotations are added by post-processing Skia's emitted PDF because skia-python does not expose PDF annotation hooks directly.
 
