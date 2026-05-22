@@ -2863,6 +2863,42 @@ def test_bezier_path_textBox_returns_overflow():
     assert yMax <= 48
 
 
+def test_bezier_path_textBox_supports_hyphenation():
+    unhyphenated = BezierPath()
+    plainOverflow = unhyphenated.textBox(
+        "supercalifragilistic",
+        (0, 0, 60, 24),
+        fontSize=20,
+    )
+
+    hyphenated = BezierPath()
+    hyphenatedOverflow = hyphenated.textBox(
+        "supercalifragilistic",
+        (0, 0, 60, 24),
+        fontSize=20,
+        hyphenation=True,
+    )
+
+    assert plainOverflow == hyphenatedOverflow == "califragilistic"
+    assert unhyphenated.bounds()[2] == pytest.approx(49.794921875)
+    assert hyphenated.bounds()[2] == pytest.approx(55.76171875)
+
+
+def test_bezier_path_textBox_supports_formatted_string():
+    text = FormattedString(fontSize=20)
+    text.append("one two ", fontSize=20)
+    text.append("three four five six", fontSize=12, baselineShift=2)
+
+    path = BezierPath()
+    overflow = path.textBox(text, (0, 0, 90, 48))
+
+    assert isinstance(overflow, FormattedString)
+    assert str(overflow) == "six"
+    assert path.bounds() == pytest.approx(
+        (0.134765625, 5.771484375, 72.849609375, 41.37890625)
+    )
+
+
 def test_current_path_api():
     db = Drawing()
     db.newPath()

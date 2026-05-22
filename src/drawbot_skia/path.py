@@ -13,6 +13,7 @@ from fontTools.pens.basePen import BasePen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.pens.pointPen import PointToSegmentPen, SegmentToPointPen
 from .errors import DrawbotError
+from .formattedString import FormattedString
 from .gstate import TextStyle, _strokeCapMapping, _strokeJoinMapping
 from .shaping import alignGlyphPositions
 
@@ -277,16 +278,14 @@ class BezierPath(BasePen):
     ):
         if not txt:
             return ""
-        if not isinstance(txt, str):
-            raise NotImplementedError(
-                "BezierPath.textBox() does not support FormattedString yet"
-            )
-        if hyphenation is not None:
-            raise NotImplementedError(
-                "BezierPath.textBox() does not support hyphenation yet"
+        if isinstance(txt, FormattedString):
+            return self._textBoxFormattedString(
+                txt, box, align=align, hyphenation=hyphenation
             )
 
-        textStyle = TextStyle(font=font, fontSize=fontSize)
+        textStyle = TextStyle(
+            font=font, fontSize=fontSize, hyphenation=bool(hyphenation)
+        )
         x, y, width, height = box
         lineHeight = textStyle.getLineHeight()
         maxLines = max(0, int(height // lineHeight))
@@ -308,6 +307,64 @@ class BezierPath(BasePen):
             alignGlyphPositions(glyphsInfo, lineAlign)
             lineY = firstBaseline - lineIndex * lineHeight
             self._addGlyphPaths(glyphsInfo, textStyle, lineX, lineY)
+        return overflow
+
+    def _textBoxFormattedString(self, txt, box, align=None, hyphenation=None):
+        from .drawing import (
+            Drawing,
+            _alignmentOffset,
+            _formattedLineBaselineOffset,
+            _formattedStringBaseLineHeight,
+            _lineHeight,
+            _textBoxAlign,
+        )
+
+        if hyphenation is not None:
+            txt = txt.copy()
+            txt._properties["hyphenation"] = hyphenation
+            txt._runs = [
+                (runText, {**properties, "hyphenation": hyphenation})
+                for runText, properties in txt._runs
+            ]
+
+        drawing = Drawing()
+        x, y, width, height = box
+        lineHeight = _formattedStringBaseLineHeight(txt, drawing._gstate.textStyle)
+        maxLines = max(0, int(height // lineHeight))
+        if maxLines == 0:
+            return txt.copy()
+
+        lines, overflow = drawing._wrapFormattedString(txt, width, maxLines)
+        firstLine = lines[0][0]
+        baseline = y + height - _formattedLineBaselineOffset(
+            firstLine, drawing._gstate.textStyle
+        )
+        boxAlign = _textBoxAlign(align)
+        for line, xOffset, paragraphStart, paragraphEnd, paragraphProperties in lines:
+            if paragraphStart:
+                baseline -= paragraphProperties.get("paragraphTopSpacing") or 0
+            lineInfo = drawing._formattedLines(line)[0]
+            lineWidth, currentLineHeight, runs = lineInfo
+            alignOffset = _alignmentOffset(lineWidth, boxAlign)
+            for (
+                runX,
+                glyphsInfo,
+                textStyle,
+                fillPaint,
+                strokePaint,
+                baselineShift,
+                underline,
+                strikethrough,
+            ) in runs:
+                self._addGlyphPaths(
+                    glyphsInfo,
+                    textStyle,
+                    x + xOffset + alignOffset + runX,
+                    baseline + baselineShift,
+                )
+            baseline -= _lineHeight(lineInfo) if line else currentLineHeight
+            if paragraphEnd:
+                baseline -= paragraphProperties.get("paragraphBottomSpacing") or 0
         return overflow
 
     def traceImage(
@@ -602,6 +659,11 @@ def _wrapText(txt, width, maxLines, textStyle):
 
 
 def _breakLongWord(word, width, textStyle):
+    if textStyle.hyphenation:
+        for index in range(len(word) - 1, 0, -1):
+            candidate = word[:index] + "-"
+            if _textWidth(candidate, textStyle) <= width:
+                return candidate, word[index:]
     for index in range(1, len(word) + 1):
         if _textWidth(word[:index], textStyle) > width:
             if index == 1:

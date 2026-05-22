@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-376 passed, 3 skipped, 3 warnings
+378 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -81,6 +81,7 @@ Notes:
 - `intersectionPoints()` has been added using `fontTools.misc.bezierTools` segment intersections, with support for path-to-path intersections and self-intersections.
 - `traceImage()` has been added using DrawBot's external-tool model: it requires `mkbitmap` and `potrace`, raises `DrawbotError` if they are unavailable, imports the traced SVG path data into the `BezierPath`, and documents the optional system dependency in the README.
 - `optimizePath()` has been added for DrawBot's trailing-empty-`moveTo` cleanup behavior.
+- `textBox()` now supports plain-string hyphenation and `FormattedString` input when converting wrapped text into path outlines.
 
 ## `FormattedString` Gaps
 

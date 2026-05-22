@@ -42,7 +42,7 @@ A DrawBot-like cross-platform application shell can be developed, but that would
 
 Some parts of the DrawBot API will be hard or impractical to duplicate.
 
-Skia has only low level support for text, so Unicode processing, line wrapping, hyphenation, and shaping are implemented in this package rather than delegated to CoreText. `textBox()` and `FormattedString` are available, but output should not be expected to match macOS DrawBot/CoreText pixel-for-pixel.
+Skia has only low level support for text, so Unicode processing, line wrapping, hyphenation, and shaping are implemented in this package rather than delegated to CoreText. `textBox()` and `FormattedString` are available, and `BezierPath.textBox()` can convert wrapped plain or formatted text into path outlines, but output should not be expected to match macOS DrawBot/CoreText pixel-for-pixel.
 
 Generally, 100% text compatibility with DrawBot should not be top priority, as matching CoreText behavior will be a huge challenge.
 
