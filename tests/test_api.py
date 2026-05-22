@@ -2074,6 +2074,55 @@ def test_imageObject_comic_effect_outlines_and_halftones():
     assert blackPixels == 34
 
 
+def test_imageObject_edge_preserve_upsample_uses_small_image_and_guide():
+    source = Image.new("RGBA", (8, 4), (20, 20, 20, 255))
+    for y in range(4):
+        for x in range(4, 8):
+            source.putpixel((x, y), (240, 240, 240, 255))
+    small = Image.new("RGBA", (2, 1))
+    small.putpixel((0, 0), (20, 80, 180, 200))
+    small.putpixel((1, 0), (220, 160, 40, 201))
+
+    smoothed = ImageObject()
+    smoothed._setPILImage(source)
+    smallImage = ImageObject()
+    smallImage._setPILImage(small)
+    assert (
+        smoothed.edgePreserveUpsampleFilter(
+            smallImage,
+            spatialSigma=3,
+            lumaSigma=0.15,
+        )
+        is None
+    )
+    smoothedImage = smoothed._pilImage()
+    assert smoothedImage.size == source.size
+    assert smoothedImage.getpixel((0, 1)) == (23, 80, 178, 200)
+    assert smoothedImage.getpixel((3, 1)) == (107, 113, 119, 200)
+    assert smoothedImage.getpixel((4, 1)) == (148, 131, 88, 201)
+    assert smoothedImage.getpixel((7, 1)) == (242, 167, 25, 201)
+    assert all(
+        smoothedImage.getpixel((x, y))[:3] not in {(20, 20, 20), (240, 240, 240)}
+        for y in range(smoothedImage.height)
+        for x in range(smoothedImage.width)
+    )
+
+    unsmoothed = ImageObject()
+    unsmoothed._setPILImage(source)
+    smallImage = ImageObject()
+    smallImage._setPILImage(small)
+    assert (
+        unsmoothed.edgePreserveUpsampleFilter(
+            smallImage,
+            spatialSigma=0,
+            lumaSigma=0.15,
+        )
+        is None
+    )
+    assert unsmoothed._pilImage().getpixel((0, 1)) == (0, 71, 195, 200)
+    assert smoothedImage.tobytes() != unsmoothed._pilImage().tobytes()
+
+
 def test_imageObject_cmyk_halftone_uses_gcr_and_ucr(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "cmyk-halftone.png"
     colors = [

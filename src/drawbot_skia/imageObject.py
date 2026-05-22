@@ -2068,16 +2068,14 @@ class ImageObject:
         self._setPILImage(_maskedVariableBlurImage(self._pilImage(), _imageObjectToPIL(mask), radius))
 
     def edgePreserveUpsampleFilter(self, smallImage, spatialSigma=3.0, lumaSigma=0.15):
-        from PIL import Image
-        from PIL import ImageFilter
-
-        source = self._pilImage()
-        small = _imageObjectToPIL(smallImage)
-        upsampled = small.resize(source.size, Image.Resampling.BICUBIC)
-        radius = max(0, float(spatialSigma) / 2)
-        if radius:
-            upsampled = upsampled.filter(ImageFilter.SMOOTH_MORE)
-        self._setPILImage(_blendRGBA(source, upsampled, max(0, min(1, float(lumaSigma) * 2))))
+        self._setPILImage(
+            _edgePreserveUpsampleImage(
+                self._pilImage(),
+                _imageObjectToPIL(smallImage),
+                spatialSigma,
+                lumaSigma,
+            )
+        )
 
     def photoEffectMono(self, extrapolate=False):
         image = self._monochromeImage()
@@ -3761,6 +3759,29 @@ def _maskedVariableBlurImage(image, mask, radius):
                 b = levelPixels[upper][x, y]
                 resultPixels[x, y] = tuple(_clampByte(a[index] * (1 - amount) + b[index] * amount) for index in range(4))
     return result
+
+
+def _edgePreserveUpsampleImage(image, smallImage, spatialSigma=3.0, lumaSigma=0.15):
+    from PIL import Image
+    from PIL import ImageFilter
+    from PIL import ImageOps
+
+    source = image.convert("RGBA")
+    upsampled = smallImage.convert("RGBA").resize(source.size, Image.Resampling.BICUBIC)
+    radius = max(0, float(spatialSigma))
+    if not radius:
+        return upsampled
+    smoothed = upsampled.filter(ImageFilter.GaussianBlur(radius))
+    guide = ImageOps.autocontrast(source.convert("L").filter(ImageFilter.FIND_EDGES))
+    guidePixels = list(_getImageData(guide))
+    upsampledPixels = list(_getImageData(upsampled))
+    smoothedPixels = list(_getImageData(smoothed))
+    threshold = max(1, min(255, int(round(float(lumaSigma) * 255))))
+    data = []
+    for edge, detail, smooth in zip(guidePixels, upsampledPixels, smoothedPixels):
+        detailAmount = max(0, min(1, edge / threshold))
+        data.append(_mixRGBABytes(smooth, detail, detailAmount))
+    return _newRGBAWithData(source.size, data)
 
 
 def _guidedFilterImage(image, guide, radius, epsilon):
