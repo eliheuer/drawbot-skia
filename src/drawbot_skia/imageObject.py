@@ -1261,45 +1261,61 @@ class ImageObject:
         self._setPILImage(_screenImage(self._pilImage(), center, angle, width, sharpness, "dot"))
 
     def kaleidoscope(self, count=6.0, center=(150.0, 150.0), angle=0.0):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=max(1, int(round(float(count)))), reflect=True, angle=angle))
+        self._setPILImage(
+            _tileImage(
+                self._pilImage(),
+                rotations=max(1, int(round(float(count)))),
+                reflect=True,
+                angle=angle,
+                center=center,
+            )
+        )
 
     def triangleKaleidoscope(self, point=(150.0, 150.0), size=700.0, rotation=5.924285296593801, decay=0.85):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=3, reflect=True, angle=rotation))
+        self._setPILImage(_tileImage(self._pilImage(), rotations=3, reflect=True, angle=rotation, center=point))
 
     def fourfoldReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0, acuteAngle=math.pi / 2):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=4, reflect=True, angle=angle))
+        self._setPILImage(_tileImage(self._pilImage(), rotations=4, reflect=True, angle=angle, center=center))
 
     def fourfoldRotatedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=4, reflect=False, angle=angle))
+        self._setPILImage(_tileImage(self._pilImage(), rotations=4, reflect=False, angle=angle, center=center))
 
     def fourfoldTranslatedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0, acuteAngle=math.pi / 2):
         self._setPILImage(_offsetTileImage(self._pilImage(), width, angle))
 
     def glideReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
         tiled = _offsetTileImage(self._pilImage(), width, angle)
-        self._setPILImage(_blendRGBA(tiled, _tileImage(tiled, rotations=2, reflect=True), 0.5))
+        self._setPILImage(_blendRGBA(tiled, _tileImage(tiled, rotations=2, reflect=True, center=center), 0.5))
 
     def eightfoldReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=8, reflect=True, angle=angle))
+        self._setPILImage(_tileImage(self._pilImage(), rotations=8, reflect=True, angle=angle, center=center))
 
     def sixfoldReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=6, reflect=True, angle=angle))
+        self._setPILImage(_tileImage(self._pilImage(), rotations=6, reflect=True, angle=angle, center=center))
 
     def sixfoldRotatedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=6, reflect=False, angle=angle))
+        self._setPILImage(_tileImage(self._pilImage(), rotations=6, reflect=False, angle=angle, center=center))
 
     def twelvefoldReflectedTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=12, reflect=True, angle=angle))
+        self._setPILImage(_tileImage(self._pilImage(), rotations=12, reflect=True, angle=angle, center=center))
 
     def triangleTile(self, center=(150.0, 150.0), angle=0.0, width=100.0):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=3, reflect=False, angle=angle))
+        self._setPILImage(_tileImage(self._pilImage(), rotations=3, reflect=False, angle=angle, center=center))
 
     def parallelogramTile(self, center=(150.0, 150.0), angle=0.0, acuteAngle=math.pi / 2, width=100.0):
         self._setPILImage(_skewTileImage(self._pilImage(), angle, acuteAngle, width))
 
     def opTile(self, center=(150.0, 150.0), scale=2.8, angle=0.0, width=65.0):
         image = _offsetTileImage(self._pilImage(), width, angle)
-        self._setPILImage(_tileImage(image, rotations=max(1, int(round(float(scale)))), reflect=True, angle=angle))
+        self._setPILImage(
+            _tileImage(
+                image,
+                rotations=max(1, int(round(float(scale)))),
+                reflect=True,
+                angle=angle,
+                center=center,
+            )
+        )
 
     def crystallize(self, radius=20.0, center=(150.0, 150.0)):
         self.pixellate(center=center, scale=radius)
@@ -3799,15 +3815,20 @@ def _quadTransformImage(image, topLeft, topRight, bottomRight, bottomLeft, resiz
     return transformed, (int(round(minX)), int(round(minY)))
 
 
-def _tileImage(image, rotations=4, reflect=False, angle=0.0):
+def _tileImage(image, rotations=4, reflect=False, angle=0.0, center=None):
     from PIL import Image
     from PIL import ImageChops
 
     base = image.convert("RGBA")
     rotations = max(1, int(rotations))
+    center = None if center is None else tuple(float(value) for value in center)
     result = Image.new("RGBA", base.size, (0, 0, 0, 0))
     for index in range(rotations):
-        tile = base.rotate(float(angle) + 360 * index / rotations, resample=Image.Resampling.BICUBIC)
+        tile = base.rotate(
+            float(angle) + 360 * index / rotations,
+            resample=Image.Resampling.BICUBIC,
+            center=center,
+        )
         if reflect and index % 2:
             tile = tile.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
         result = ImageChops.lighter(result, tile)

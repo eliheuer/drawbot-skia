@@ -834,6 +834,26 @@ def test_imageObject_nine_part_geometry_preserves_regions(tmpdir):
     assert tiledImage.getpixel((5, 5)) == rows[3][3]
 
 
+def test_imageObject_tile_filters_use_center(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "tile-center.png"
+    image = Image.new("RGBA", (5, 5), (0, 0, 0, 255))
+    image.putpixel((0, 2), (255, 0, 0, 255))
+    image.save(imagePath)
+
+    centered = ImageObject(imagePath)
+    assert centered.fourfoldRotatedTile(center=(2, 2)) is None
+    offCenter = ImageObject(imagePath)
+    assert offCenter.fourfoldRotatedTile(center=(0, 2)) is None
+
+    centeredImage = centered._pilImage()
+    offCenterImage = offCenter._pilImage()
+    assert centeredImage.getpixel((1, 0)) == (255, 0, 0, 255)
+    assert centeredImage.getpixel((3, 1)) == (255, 0, 0, 255)
+    assert offCenterImage.getpixel((0, 1)) == (255, 0, 0, 255)
+    assert offCenterImage.getpixel((1, 0)) == (0, 0, 0, 255)
+    assert centeredImage.tobytes() != offCenterImage.tobytes()
+
+
 def test_imageObject_displacement_distortion_uses_red_green_channels(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "displacement.png"
     displacementPath = pathlib.Path(tmpdir) / "displacement-map.png"
