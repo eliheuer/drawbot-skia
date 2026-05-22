@@ -1514,20 +1514,10 @@ class ImageObject:
         self._setPILImage(ImageChops.difference(maximum, minimum))
 
     def morphologyRectangleMaximum(self, width=5.0, height=5.0):
-        from PIL import ImageFilter
-
-        size = max(1, int(round(max(float(width), float(height)))))
-        if size % 2 == 0:
-            size += 1
-        self._filter(ImageFilter.MaxFilter(size))
+        self._setPILImage(_morphologyRectangleImage(self._pilImage(), width, height, darker=False))
 
     def morphologyRectangleMinimum(self, width=5.0, height=5.0):
-        from PIL import ImageFilter
-
-        size = max(1, int(round(max(float(width), float(height)))))
-        if size % 2 == 0:
-            size += 1
-        self._filter(ImageFilter.MinFilter(size))
+        self._setPILImage(_morphologyRectangleImage(self._pilImage(), width, height, darker=True))
 
     def pixellate(self, center=(150.0, 150.0), scale=8.0):
         self._setPILImage(_pixellateImage(self._pilImage(), center, scale))
@@ -2207,6 +2197,42 @@ def _mergeRGBA(r, g, b, a):
     from PIL import Image
 
     return Image.merge("RGBA", (r, g, b, a))
+
+
+def _morphologyRectangleImage(image, width, height, darker):
+    from PIL import Image
+
+    source = image.convert("RGBA")
+    kernelWidth = max(1, int(round(float(width))))
+    kernelHeight = max(1, int(round(float(height))))
+    if kernelWidth % 2 == 0:
+        kernelWidth += 1
+    if kernelHeight % 2 == 0:
+        kernelHeight += 1
+    if kernelWidth == 1 and kernelHeight == 1:
+        return source
+
+    result = Image.new("RGBA", source.size)
+    sourcePixels = source.load()
+    resultPixels = result.load()
+    radiusX = kernelWidth // 2
+    radiusY = kernelHeight // 2
+    for y in range(source.height):
+        top = max(0, y - radiusY)
+        bottom = min(source.height, y + radiusY + 1)
+        for x in range(source.width):
+            left = max(0, x - radiusX)
+            right = min(source.width, x + radiusX + 1)
+            values = [255, 255, 255, 255] if darker else [0, 0, 0, 0]
+            for sampleY in range(top, bottom):
+                for sampleX in range(left, right):
+                    pixel = sourcePixels[sampleX, sampleY]
+                    if darker:
+                        values = [min(values[i], pixel[i]) for i in range(4)]
+                    else:
+                        values = [max(values[i], pixel[i]) for i in range(4)]
+            resultPixels[x, y] = tuple(values)
+    return result
 
 
 def _clampByte(value):

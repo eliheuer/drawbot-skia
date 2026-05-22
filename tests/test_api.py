@@ -2014,6 +2014,47 @@ def test_imageObject_morphology_zero_radius_is_noop(tmpdir):
     ]
 
 
+def test_imageObject_morphology_rectangle_uses_width_and_height(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "morphology-rectangle.png"
+    image = Image.new("RGBA", (3, 3))
+    for y, row in enumerate(([10, 20, 30], [40, 50, 60], [70, 80, 90])):
+        for x, value in enumerate(row):
+            image.putpixel((x, y), (value, 0, 0, 100 + value))
+    image.save(imagePath)
+
+    horizontalMax = ImageObject(imagePath)
+    assert horizontalMax.morphologyRectangleMaximum(width=3, height=1) is None
+    assert [[horizontalMax._pilImage().getpixel((x, y))[0] for x in range(3)] for y in range(3)] == [
+        [19, 29, 29],
+        [49, 61, 61],
+        [79, 90, 90],
+    ]
+
+    verticalMax = ImageObject(imagePath)
+    assert verticalMax.morphologyRectangleMaximum(width=1, height=3) is None
+    assert [[verticalMax._pilImage().getpixel((x, y))[0] for x in range(3)] for y in range(3)] == [
+        [40, 49, 61],
+        [70, 79, 90],
+        [70, 79, 90],
+    ]
+
+    horizontalMin = ImageObject(imagePath)
+    assert horizontalMin.morphologyRectangleMinimum(width=3, height=1) is None
+    assert [[horizontalMin._pilImage().getpixel((x, y))[0] for x in range(3)] for y in range(3)] == [
+        [9, 9, 19],
+        [40, 40, 49],
+        [70, 70, 79],
+    ]
+
+    verticalMin = ImageObject(imagePath)
+    assert verticalMin.morphologyRectangleMinimum(width=1, height=3) is None
+    assert [[verticalMin._pilImage().getpixel((x, y))[0] for x in range(3)] for y in range(3)] == [
+        [9, 19, 29],
+        [9, 19, 29],
+        [40, 49, 61],
+    ]
+
+
 def test_imageObject_pixellate_uses_center(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "pixellate.png"
     image = Image.new("RGBA", (6, 1))
