@@ -283,6 +283,56 @@ def test_imageObject():
     assert im2.size() == (512, 512)
 
 
+def test_imageObject_pillow_filter_batch(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "filters.png"
+    image = Image.new("RGBA", (20, 20), (20, 40, 80, 255))
+    image.putpixel((10, 10), (200, 100, 50, 255))
+    image.save(imagePath)
+
+    im = ImageObject(imagePath)
+    im.crop((2, 3, 10, 11))
+    assert im.size() == (10, 11)
+    assert im.offset() == (2, 3)
+    im.lanczosScaleTransform(scale=2)
+    assert im.size() == (20, 22)
+
+    filterCalls = [
+        ("gammaAdjust", (), {"power": 0.8}),
+        ("exposureAdjust", (), {"EV": 1}),
+        ("hueAdjust", (), {"angle": 45}),
+        ("vibrance", (), {"amount": 0.4}),
+        ("temperatureAndTint", (), {"targetNeutral": (7000, 10)}),
+        ("whitePointAdjust", (), {"color": (0.8, 0.9, 1, 1)}),
+        ("colorMonochrome", (), {}),
+        ("falseColor", (), {}),
+        ("colorPosterize", (), {"levels": 4}),
+        ("minimumComponent", (), {}),
+        ("maximumComponent", (), {}),
+        ("maskToAlpha", (), {}),
+        ("unsharpMask", (), {}),
+        ("noiseReduction", (), {"noiseLevel": 0.02}),
+        ("edges", (), {}),
+        ("edgeWork", (), {}),
+        ("pixellate", (), {"scale": 4}),
+        ("motionBlur", (), {"radius": 2}),
+        ("zoomBlur", (), {"amount": 5}),
+        ("vignette", (), {"intensity": 0.2}),
+        ("vignetteEffect", (), {"center": (10, 10), "radius": 8}),
+        ("bloom", (), {}),
+        ("gloom", (), {}),
+        ("photoEffectTonal", (), {}),
+        ("photoEffectFade", (), {}),
+        ("photoEffectInstant", (), {}),
+        ("photoEffectProcess", (), {}),
+        ("photoEffectTransfer", (), {}),
+        ("photoEffectChrome", (), {}),
+    ]
+    for methodName, args, kwargs in filterCalls:
+        im = ImageObject(imagePath)
+        assert getattr(im, methodName)(*args, **kwargs) is None
+        assert im.size() == (20, 20)
+
+
 def test_numberOfPages_gif(tmpdir):
     source = """
 for i in range(3):

@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-315 passed, 3 skipped, 3 warnings
+316 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -102,30 +102,63 @@ Static comparison source: public methods on `typemytype/drawbot` `ImageObject` v
 Current fork supports:
 
 ```text
+bloom
 boxBlur
 clearFilters
 colorControls
 colorInvert
+colorMonochrome
+colorPosterize
 copy
+crop
+edgeWork
+edges
+exposureAdjust
+falseColor
+gammaAdjust
 gaussianBlur
+gloom
+hueAdjust
+lanczosScaleTransform
 lockFocus
+maskToAlpha
+maximumComponent
+minimumComponent
+motionBlur
+noiseReduction
 offset
 open
+photoEffectChrome
+photoEffectFade
+photoEffectInstant
 photoEffectMono
 photoEffectNoir
+photoEffectProcess
+photoEffectTonal
+photoEffectTransfer
+pixellate
 sepiaTone
 sharpenLuminance
 size
+temperatureAndTint
 unlockFocus
+unsharpMask
+vibrance
+vignette
+vignetteEffect
+whitePointAdjust
+zoomBlur
 ```
 
-DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork intentionally supports only a small subset. Representative missing groups:
+DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 46 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters rather than pixel-identical Core Image implementations.
+
+Representative missing groups:
 
 - generators and barcodes: `QRCodeGenerator`, `PDF417BarcodeGenerator`, `aztecCodeGenerator`, `code128BarcodeGenerator`, gradient/checkerboard/stripe generators;
-- blur and stylization filters: `motionBlur`, `zoomBlur`, `bokehBlur`, `comicEffect`, `pixellate`, `vignette`, `unsharpMask`, `noiseReduction`;
-- color filters: `hueAdjust`, `gammaAdjust`, `exposureAdjust`, `temperatureAndTint`, `vibrance`, `colorMonochrome`, `falseColor`;
+- blur and stylization filters: `bokehBlur`, `comicEffect`, `crystallize`, `pointillize`;
+- color filters: `colorPolynomial`, `colorCrossPolynomial`, `colorThreshold`, `colorThresholdOtsu`;
 - compositing and blend filters: `multiplyCompositing`, `sourceOverCompositing`, `overlayBlendMode`, `screenBlendMode`, `hardLightBlendMode`;
-- geometry and distortion filters: `crop`, `affineTile`, `perspectiveTransform`, `twirlDistortion`, `bumpDistortion`, `kaleidoscope`.
+- geometry and distortion filters: `affineTile`, `perspectiveTransform`, `twirlDistortion`, `bumpDistortion`, `kaleidoscope`.
 
 Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-heavy and "huge", this should not be treated as a blocker for the headline text/path parity milestone unless the project explicitly chooses an ImageObject parity target.
 
