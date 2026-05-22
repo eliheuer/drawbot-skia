@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-318 passed, 3 skipped, 3 warnings
+319 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -107,7 +107,9 @@ additionCompositing
 blendWithAlphaMask
 blendWithMask
 bloom
+blurredRectangleGenerator
 boxBlur
+checkerboardGenerator
 clearFilters
 colorAbsoluteDifference
 colorBlendMode
@@ -124,6 +126,7 @@ colorPosterize
 colorThreshold
 colorThresholdOtsu
 comicEffect
+constantColorGenerator
 copy
 crop
 darkenBlendMode
@@ -137,6 +140,7 @@ exposureAdjust
 falseColor
 gammaAdjust
 gaussianBlur
+gaussianGradient
 gloom
 hardLightBlendMode
 hueAdjust
@@ -145,6 +149,7 @@ lanczosScaleTransform
 lightenBlendMode
 linearBurnBlendMode
 linearDodgeBlendMode
+linearGradient
 linearLightBlendMode
 lockFocus
 luminosityBlendMode
@@ -176,17 +181,23 @@ photoEffectTonal
 photoEffectTransfer
 pinLightBlendMode
 pixellate
+radialGradient
+randomGenerator
+roundedRectangleGenerator
+roundedRectangleStrokeGenerator
 sampleNearest
 saturationBlendMode
 screenBlendMode
 sepiaTone
 sharpenLuminance
 size
+smoothLinearGradient
 softLightBlendMode
 sourceAtopCompositing
 sourceInCompositing
 sourceOutCompositing
 sourceOverCompositing
+stripesGenerator
 subtractBlendMode
 temperatureAndTint
 thermal
@@ -200,11 +211,11 @@ whitePointAdjust
 zoomBlur
 ```
 
-DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 96 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, and blend/compositing modes rather than pixel-identical Core Image implementations.
+DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 107 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, generators, and blend/compositing modes rather than pixel-identical Core Image implementations.
 
 Representative missing groups:
 
-- generators and barcodes: `QRCodeGenerator`, `PDF417BarcodeGenerator`, `aztecCodeGenerator`, `code128BarcodeGenerator`, gradient/checkerboard/stripe generators;
+- generators and barcodes: `QRCodeGenerator`, `PDF417BarcodeGenerator`, `aztecCodeGenerator`, `code128BarcodeGenerator`, advanced Core Image generators;
 - blur and stylization filters: `bokehBlur`, `crystallize`, `pointillize`;
 - color/statistical filters that still need deeper Core Image-equivalent behavior: `KMeans`, `paletteCentroid`, `palettize`, `spotColor`;
 - compositing, transitions, and mask workflows that need deeper Core Image-equivalent semantics: `disintegrateWithMaskTransition`, `pageCurlTransition`, `copyMachineTransition`;

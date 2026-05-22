@@ -419,6 +419,27 @@ def test_imageObject_color_and_morphology_batch(tmpdir):
         assert im.size() == (12, 12)
 
 
+def test_imageObject_generator_batch():
+    calls = [
+        ("constantColorGenerator", ((16, 12),), {}),
+        ("checkerboardGenerator", ((16, 12),), {"width": 4}),
+        ("stripesGenerator", ((16, 12),), {"width": 4}),
+        ("randomGenerator", ((16, 12),), {}),
+        ("linearGradient", ((16, 12),), {}),
+        ("smoothLinearGradient", ((16, 12),), {}),
+        ("radialGradient", ((16, 12),), {}),
+        ("gaussianGradient", ((16, 12),), {}),
+        ("roundedRectangleGenerator", ((16, 12),), {"extent": (2, 2, 10, 8)}),
+        ("roundedRectangleStrokeGenerator", ((16, 12),), {"extent": (2, 2, 10, 8)}),
+        ("blurredRectangleGenerator", ((16, 12),), {"extent": (2, 2, 10, 8), "sigma": 1}),
+    ]
+    for methodName, args, kwargs in calls:
+        im = ImageObject()
+        assert getattr(im, methodName)(*args, **kwargs) is None
+        assert im.size() == (16, 12)
+        assert im.offset() == (0, 0)
+
+
 def test_numberOfPages_gif(tmpdir):
     source = """
 for i in range(3):

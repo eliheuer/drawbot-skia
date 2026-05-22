@@ -77,6 +77,180 @@ class ImageObject:
         inverted.putalpha(a)
         self._setPILImage(inverted)
 
+    def constantColorGenerator(self, size, color=(1.0, 0.0, 0.0, 1.0)):
+        from PIL import Image
+
+        self._setPILImage(Image.new("RGBA", _normalizeSize(size), _colorToRGBABytes(color)))
+        self._path = None
+        self._offset = (0, 0)
+
+    def checkerboardGenerator(
+        self,
+        size,
+        center=(150.0, 150.0),
+        color0=(1.0, 1.0, 1.0, 1.0),
+        color1=(0.0, 0.0, 0.0, 1.0),
+        width=80.0,
+        sharpness=1.0,
+    ):
+        from PIL import Image
+
+        widthPx, heightPx = _normalizeSize(size)
+        cell = max(1, int(round(float(width))))
+        c0 = _colorToRGBABytes(color0)
+        c1 = _colorToRGBABytes(color1)
+        image = Image.new("RGBA", (widthPx, heightPx))
+        pixels = image.load()
+        centerX, centerY = center
+        for y in range(heightPx):
+            for x in range(widthPx):
+                index = (math.floor((x - centerX) / cell) + math.floor((y - centerY) / cell)) & 1
+                pixels[x, y] = c1 if index else c0
+        self._setPILImage(image)
+        self._path = None
+        self._offset = (0, 0)
+
+    def stripesGenerator(
+        self,
+        size,
+        center=(150.0, 150.0),
+        color0=(1.0, 1.0, 1.0, 1.0),
+        color1=(0.0, 0.0, 0.0, 1.0),
+        width=80.0,
+        sharpness=1.0,
+    ):
+        from PIL import Image
+
+        widthPx, heightPx = _normalizeSize(size)
+        stripeWidth = max(1, int(round(float(width))))
+        c0 = _colorToRGBABytes(color0)
+        c1 = _colorToRGBABytes(color1)
+        image = Image.new("RGBA", (widthPx, heightPx))
+        pixels = image.load()
+        centerX, centerY = center
+        for y in range(heightPx):
+            for x in range(widthPx):
+                pixels[x, y] = c1 if math.floor((x - centerX) / stripeWidth) & 1 else c0
+        self._setPILImage(image)
+        self._path = None
+        self._offset = (0, 0)
+
+    def randomGenerator(self, size):
+        from PIL import Image
+
+        width, height = _normalizeSize(size)
+        self._setPILImage(Image.frombytes("RGBA", (width, height), os.urandom(width * height * 4)))
+        self._path = None
+        self._offset = (0, 0)
+
+    def linearGradient(
+        self,
+        size,
+        point0=(0.0, 0.0),
+        point1=(200.0, 200.0),
+        color0=(1.0, 1.0, 1.0, 1.0),
+        color1=(0.0, 0.0, 0.0, 1.0),
+    ):
+        self._setPILImage(_linearGradientImage(size, point0, point1, color0, color1))
+        self._path = None
+        self._offset = (0, 0)
+
+    def smoothLinearGradient(
+        self,
+        size,
+        point0=(0.0, 0.0),
+        point1=(200.0, 200.0),
+        color0=(1.0, 1.0, 1.0, 1.0),
+        color1=(0.0, 0.0, 0.0, 1.0),
+    ):
+        self.linearGradient(size, point0, point1, color0, color1)
+
+    def radialGradient(
+        self,
+        size,
+        center=(150.0, 150.0),
+        radius0=5.0,
+        radius1=100.0,
+        color0=(1.0, 1.0, 1.0, 1.0),
+        color1=(0.0, 0.0, 0.0, 1.0),
+    ):
+        self._setPILImage(_radialGradientImage(size, center, radius0, radius1, color0, color1))
+        self._path = None
+        self._offset = (0, 0)
+
+    def gaussianGradient(
+        self,
+        size,
+        center=(150.0, 150.0),
+        color0=(1.0, 1.0, 1.0, 1.0),
+        color1=(0.0, 0.0, 0.0, 0.0),
+        radius=300.0,
+    ):
+        self._setPILImage(_gaussianGradientImage(size, center, color0, color1, radius))
+        self._path = None
+        self._offset = (0, 0)
+
+    def roundedRectangleGenerator(
+        self,
+        size,
+        extent=(0.0, 0.0, 100.0, 100.0),
+        radius=10.0,
+        color=(1.0, 1.0, 1.0, 1.0),
+    ):
+        from PIL import Image
+        from PIL import ImageDraw
+
+        image = Image.new("RGBA", _normalizeSize(size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        x, y, width, height = extent
+        draw.rounded_rectangle((x, y, x + width, y + height), radius=float(radius), fill=_colorToRGBABytes(color))
+        self._setPILImage(image)
+        self._path = None
+        self._offset = (0, 0)
+
+    def roundedRectangleStrokeGenerator(
+        self,
+        size,
+        extent=(0.0, 0.0, 100.0, 100.0),
+        radius=10.0,
+        color=(1.0, 1.0, 1.0, 1.0),
+        width=10.0,
+    ):
+        from PIL import Image
+        from PIL import ImageDraw
+
+        image = Image.new("RGBA", _normalizeSize(size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        x, y, rectWidth, rectHeight = extent
+        draw.rounded_rectangle(
+            (x, y, x + rectWidth, y + rectHeight),
+            radius=float(radius),
+            outline=_colorToRGBABytes(color),
+            width=max(1, int(round(float(width)))),
+        )
+        self._setPILImage(image)
+        self._path = None
+        self._offset = (0, 0)
+
+    def blurredRectangleGenerator(
+        self,
+        size,
+        extent=(0.0, 0.0, 100.0, 100.0),
+        sigma=10.0,
+        color=(1.0, 1.0, 1.0, 1.0),
+    ):
+        from PIL import Image
+        from PIL import ImageDraw
+        from PIL import ImageFilter
+
+        image = Image.new("RGBA", _normalizeSize(size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        x, y, width, height = extent
+        draw.rectangle((x, y, x + width, y + height), fill=_colorToRGBABytes(color))
+        self._setPILImage(image.filter(ImageFilter.GaussianBlur(float(sigma))))
+        self._path = None
+        self._offset = (0, 0)
+
     def crop(
         self,
         rectangle=(
@@ -834,6 +1008,69 @@ def _colorToRGBABytes(color):
     elif len(values) == 3:
         values = (*values, 1)
     return tuple(_clampByte(value * 255) for value in values[:4])
+
+
+def _normalizeSize(size):
+    width, height = size
+    return max(1, int(round(width))), max(1, int(round(height)))
+
+
+def _mixColor(color0, color1, amount):
+    amount = max(0, min(1, float(amount)))
+    c0 = _colorToRGBABytes(color0)
+    c1 = _colorToRGBABytes(color1)
+    return tuple(_clampByte(a + (b - a) * amount) for a, b in zip(c0, c1))
+
+
+def _linearGradientImage(size, point0, point1, color0, color1):
+    from PIL import Image
+
+    width, height = _normalizeSize(size)
+    x0, y0 = point0
+    x1, y1 = point1
+    dx = x1 - x0
+    dy = y1 - y0
+    lengthSquared = dx * dx + dy * dy or 1
+    image = Image.new("RGBA", (width, height))
+    pixels = image.load()
+    for y in range(height):
+        for x in range(width):
+            amount = ((x - x0) * dx + (y - y0) * dy) / lengthSquared
+            pixels[x, y] = _mixColor(color0, color1, amount)
+    return image
+
+
+def _radialGradientImage(size, center, radius0, radius1, color0, color1):
+    from PIL import Image
+
+    width, height = _normalizeSize(size)
+    cx, cy = center
+    radius0 = float(radius0)
+    radius1 = float(radius1)
+    radiusDelta = radius1 - radius0 or 1
+    image = Image.new("RGBA", (width, height))
+    pixels = image.load()
+    for y in range(height):
+        for x in range(width):
+            amount = (math.hypot(x - cx, y - cy) - radius0) / radiusDelta
+            pixels[x, y] = _mixColor(color0, color1, amount)
+    return image
+
+
+def _gaussianGradientImage(size, center, color0, color1, radius):
+    from PIL import Image
+
+    width, height = _normalizeSize(size)
+    cx, cy = center
+    radius = max(1, float(radius))
+    image = Image.new("RGBA", (width, height))
+    pixels = image.load()
+    for y in range(height):
+        for x in range(width):
+            distance = math.hypot(x - cx, y - cy)
+            amount = 1 - math.exp(-((distance ** 2) / (2 * radius * radius)))
+            pixels[x, y] = _mixColor(color0, color1, amount)
+    return image
 
 
 def _lighterOrDarker(image1, image2, darker=False):
