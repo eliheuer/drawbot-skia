@@ -506,7 +506,7 @@ class ImageObject:
         self._setPILImage(_displacementImage(self._pilImage(), _imageObjectToPIL(displacementImage), scale))
 
     def glassDistortion(self, texture, center=(150.0, 150.0), scale=200.0):
-        self.displacementDistortion(texture, scale=scale)
+        self._setPILImage(_glassDistortionImage(self._pilImage(), _imageObjectToPIL(texture), center, scale))
 
     def glassLozenge(self, point0=(150.0, 150.0), point1=(350.0, 150.0), radius=100.0, refraction=1.7):
         self._setPILImage(_lozengeDistortImage(self._pilImage(), point0, point1, radius, refraction))
@@ -3705,6 +3705,26 @@ def _displacementImage(image, displacement, scale):
 
     def mapPoint(x, y):
         red, green, _blue, _alpha = displacementPixels[x, y]
+        dx = (red - 128) / 128 * scale
+        dy = (green - 128) / 128 * scale
+        return x + dx, y + dy
+
+    return _distortImage(image, mapPoint)
+
+
+def _glassDistortionImage(image, texture, center, scale):
+    texture = texture.convert("RGBA")
+    texturePixels = texture.load()
+    textureWidth, textureHeight = texture.size
+    centerX, centerY = (float(value) for value in center)
+    textureCenterX = textureWidth / 2
+    textureCenterY = textureHeight / 2
+    scale = float(scale)
+
+    def mapPoint(x, y):
+        tx = int(math.floor(x - centerX + textureCenterX)) % textureWidth
+        ty = int(math.floor(y - centerY + textureCenterY)) % textureHeight
+        red, green, _blue, _alpha = texturePixels[tx, ty]
         dx = (red - 128) / 128 * scale
         dy = (green - 128) / 128 * scale
         return x + dx, y + dy

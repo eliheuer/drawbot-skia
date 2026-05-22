@@ -1058,6 +1058,40 @@ def test_imageObject_displacement_distortion_uses_red_green_channels(tmpdir):
     ]
 
 
+def test_imageObject_glass_distortion_uses_centered_texture(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "glass.png"
+    texturePath = pathlib.Path(tmpdir) / "glass-texture.png"
+    image = Image.new("RGBA", (5, 1))
+    for x in range(5):
+        image.putpixel((x, 0), (x * 50, 0, 0, 255))
+    image.save(imagePath)
+
+    texture = Image.new("RGBA", (3, 1))
+    for x, color in enumerate([(0, 128, 0, 255), (128, 128, 0, 255), (255, 128, 0, 255)]):
+        texture.putpixel((x, 0), color)
+    texture.save(texturePath)
+
+    centered = ImageObject(imagePath)
+    assert centered.glassDistortion(texturePath, center=(0, 0), scale=1) is None
+    assert [centered._pilImage().getpixel((x, 0)) for x in range(5)] == [
+        (0, 0, 0, 255),
+        (100, 0, 0, 255),
+        (50, 0, 0, 255),
+        (150, 0, 0, 255),
+        (200, 0, 0, 255),
+    ]
+
+    shifted = ImageObject(imagePath)
+    assert shifted.glassDistortion(texturePath, center=(1, 0), scale=1) is None
+    assert [shifted._pilImage().getpixel((x, 0)) for x in range(5)] == [
+        (0, 0, 0, 255),
+        (50, 0, 0, 255),
+        (150, 0, 0, 255),
+        (100, 0, 0, 255),
+        (200, 0, 0, 255),
+    ]
+
+
 def test_imageObject_droste_uses_inset_and_recursion_parameters(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "droste.png"
     image = Image.new("RGBA", (6, 6), (0, 0, 0, 255))
