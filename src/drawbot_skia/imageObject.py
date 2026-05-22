@@ -1120,7 +1120,8 @@ class ImageObject:
         from PIL import ImageFilter
 
         image = self._pilImage()
-        edge = image.filter(ImageFilter.FIND_EDGES)
+        edge = image.filter(ImageFilter.FIND_EDGES).convert("RGBA")
+        edge.putalpha(image.getchannel("A"))
         self._setPILImage(_blendRGBA(image, edge, intensity))
 
     def cannyEdgeDetector(

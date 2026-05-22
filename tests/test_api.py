@@ -1808,6 +1808,29 @@ def test_imageObject_document_enhancer_uses_amount(tmpdir):
     assert sum(full._pilImage().tobytes()) == 15244
 
 
+def test_imageObject_edges_preserves_alpha(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "edges-alpha.png"
+    image = Image.new("RGBA", (5, 5), (10, 20, 30, 255))
+    for x in range(5):
+        image.putpixel((x, 2), (200, 200, 200, 255))
+    image.save(imagePath)
+
+    half = ImageObject(imagePath)
+    assert half.edges(intensity=0.5) is None
+    assert [half._pilImage().getpixel((x, 2)) for x in range(5)] == [
+        (200, 200, 200, 255),
+        (227, 227, 227, 255),
+        (227, 227, 227, 255),
+        (227, 227, 227, 255),
+        (200, 200, 200, 255),
+    ]
+
+    full = ImageObject(imagePath)
+    assert full.edges(intensity=1) is None
+    assert [full._pilImage().getpixel((x, 2))[3] for x in range(5)] == [255, 255, 255, 255, 255]
+    assert [full._pilImage().getpixel((x, 2))[0] for x in range(5)] == [200, 255, 255, 255, 200]
+
+
 def test_imageObject_person_segmentation_uses_quality_level(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "person-segmentation.png"
     image = Image.new("RGBA", (7, 1), (0, 0, 0, 255))
