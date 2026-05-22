@@ -434,21 +434,7 @@ class ImageObject:
         )
 
     def stretchCrop(self, size=(1280.0, 720.0), cropAmount=0.25, centerStretchAmount=0.25):
-        from PIL import Image
-
-        targetWidth, targetHeight = _normalizeSize(size)
-        image = self._pilImage()
-        sourceRatio = image.width / image.height
-        targetRatio = targetWidth / targetHeight
-        if sourceRatio > targetRatio:
-            cropWidth = int(round(image.height * targetRatio))
-            left = (image.width - cropWidth) // 2
-            image = image.crop((left, 0, left + cropWidth, image.height))
-        else:
-            cropHeight = int(round(image.width / targetRatio))
-            top = (image.height - cropHeight) // 2
-            image = image.crop((0, top, image.width, top + cropHeight))
-        self._setPILImage(image.resize((targetWidth, targetHeight), Image.Resampling.BICUBIC))
+        self._setPILImage(_stretchCropImage(self._pilImage(), size, cropAmount, centerStretchAmount))
         self._offset = (0, 0)
 
     def perspectiveTransform(
@@ -2230,6 +2216,83 @@ def _colorToRGBABytes(color):
 def _normalizeSize(size):
     width, height = size
     return max(1, int(round(width))), max(1, int(round(height)))
+
+
+def _stretchCropImage(image, size, cropAmount, centerStretchAmount):
+    targetWidth, targetHeight = _normalizeSize(size)
+    source = image.convert("RGBA")
+    cropAmount = max(0, min(1, float(cropAmount)))
+    sourceRatio = source.width / source.height
+    targetRatio = targetWidth / targetHeight
+    left = 0
+    top = 0
+    right = source.width
+    bottom = source.height
+    if sourceRatio > targetRatio:
+        fittedWidth = source.height * targetRatio
+        cropWidth = source.width + (fittedWidth - source.width) * cropAmount
+        left = (source.width - cropWidth) / 2
+        right = left + cropWidth
+    elif sourceRatio < targetRatio:
+        fittedHeight = source.width / targetRatio
+        cropHeight = source.height + (fittedHeight - source.height) * cropAmount
+        top = (source.height - cropHeight) / 2
+        bottom = top + cropHeight
+    cropped = source.crop((int(round(left)), int(round(top)), int(round(right)), int(round(bottom))))
+    return _centerStretchResize(cropped, targetWidth, targetHeight, centerStretchAmount)
+
+
+def _centerStretchResize(image, targetWidth, targetHeight, amount):
+    from PIL import Image
+
+    amount = max(0, min(1, float(amount)))
+    if amount >= 0.999:
+        return image.resize((targetWidth, targetHeight), Image.Resampling.BICUBIC)
+    resized = image.convert("RGBA")
+    if resized.width != targetWidth:
+        resized = _centerStretchAxis(resized, targetWidth, amount, axis=0)
+    if resized.height != targetHeight:
+        resized = _centerStretchAxis(resized, targetHeight, amount, axis=1)
+    return resized
+
+
+def _centerStretchAxis(image, targetLength, amount, axis):
+    from PIL import Image
+
+    sourceWidth, sourceHeight = image.size
+    sourceLength = sourceWidth if axis == 0 else sourceHeight
+    targetLength = max(1, int(round(targetLength)))
+    if sourceLength == targetLength:
+        return image.copy()
+    centerSourceLength = max(1, int(round(sourceLength * amount)))
+    sideSourceLength = max(0, (sourceLength - centerSourceLength) // 2)
+    centerSourceStart = sideSourceLength
+    centerSourceEnd = sourceLength - sideSourceLength
+    centerTargetLength = max(1, targetLength - 2 * sideSourceLength)
+    if centerTargetLength < 1 or 2 * sideSourceLength >= targetLength:
+        sideSourceLength = max(0, (targetLength - 1) // 2)
+        centerSourceStart = min(sideSourceLength, sourceLength - 1)
+        centerSourceEnd = max(centerSourceStart + 1, sourceLength - sideSourceLength)
+        centerTargetLength = max(1, targetLength - 2 * sideSourceLength)
+    resultSize = (targetLength, sourceHeight) if axis == 0 else (sourceWidth, targetLength)
+    result = Image.new("RGBA", resultSize)
+    if axis == 0:
+        if sideSourceLength:
+            result.paste(image.crop((0, 0, sideSourceLength, sourceHeight)), (0, 0))
+            right = image.crop((sourceLength - sideSourceLength, 0, sourceLength, sourceHeight))
+            result.paste(right, (targetLength - sideSourceLength, 0))
+        center = image.crop((centerSourceStart, 0, centerSourceEnd, sourceHeight))
+        center = center.resize((centerTargetLength, sourceHeight), Image.Resampling.BICUBIC)
+        result.paste(center, (sideSourceLength, 0))
+    else:
+        if sideSourceLength:
+            result.paste(image.crop((0, 0, sourceWidth, sideSourceLength)), (0, 0))
+            bottom = image.crop((0, sourceLength - sideSourceLength, sourceWidth, sourceLength))
+            result.paste(bottom, (0, targetLength - sideSourceLength))
+        center = image.crop((0, centerSourceStart, sourceWidth, centerSourceEnd))
+        center = center.resize((sourceWidth, centerTargetLength), Image.Resampling.BICUBIC)
+        result.paste(center, (0, sideSourceLength))
+    return result
 
 
 def _mixColor(color0, color1, amount):

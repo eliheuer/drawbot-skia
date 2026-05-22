@@ -1079,6 +1079,31 @@ def test_imageObject_nine_part_geometry_preserves_regions(tmpdir):
     assert tiledImage.getpixel((5, 5)) == rows[3][3]
 
 
+def test_imageObject_stretch_crop_uses_crop_and_center_stretch(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "stretch-crop.png"
+    image = Image.new("RGBA", (6, 2))
+    for y in range(2):
+        for x in range(6):
+            image.putpixel((x, y), (x * 40, y * 100, 0, 255))
+    image.save(imagePath)
+
+    stretched = ImageObject(imagePath)
+    assert stretched.stretchCrop(size=(4, 2), cropAmount=0, centerStretchAmount=1) is None
+    cropped = ImageObject(imagePath)
+    assert cropped.stretchCrop(size=(4, 2), cropAmount=1, centerStretchAmount=1) is None
+    narrowCenter = ImageObject(imagePath)
+    assert narrowCenter.stretchCrop(size=(8, 2), cropAmount=0, centerStretchAmount=0.25) is None
+    wideCenter = ImageObject(imagePath)
+    assert wideCenter.stretchCrop(size=(8, 2), cropAmount=0, centerStretchAmount=0.75) is None
+
+    assert [stretched._pilImage().getpixel((x, 0))[0] for x in range(4)] == [12, 68, 132, 188]
+    assert [cropped._pilImage().getpixel((x, 0))[0] for x in range(4)] == [40, 80, 120, 160]
+    assert [narrowCenter._pilImage().getpixel((x, 0))[0] for x in range(8)] == [0, 40, 76, 88, 112, 124, 160, 200]
+    assert [wideCenter._pilImage().getpixel((x, 0))[0] for x in range(8)] == [0, 37, 56, 87, 113, 144, 163, 200]
+    assert stretched._pilImage().tobytes() != cropped._pilImage().tobytes()
+    assert narrowCenter._pilImage().tobytes() != wideCenter._pilImage().tobytes()
+
+
 def test_imageObject_affine_tile_wraps_transformed_samples(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "affine-tile.png"
     image = Image.new("RGBA", (4, 1))
