@@ -210,14 +210,14 @@ class FormattedString:
     def fontLineHeight(self):
         return self._textStyle().getLineHeight()
 
-    def listOpenTypeFeatures(self, fontNameOrPath=None, fontNumber=None):
+    def listOpenTypeFeatures(self, fontNameOrPath=None, fontNumber=0):
         textStyle = self._textStyleForFont(fontNameOrPath, fontNumber)
         features = set()
         for tableTag in ("GSUB", "GPOS"):
             features.update(getFeatures(_hbFaceForTextStyle(textStyle), tableTag))
         return sorted(features)
 
-    def listFontVariations(self, fontNameOrPath=None, fontNumber=None):
+    def listFontVariations(self, fontNameOrPath=None, fontNumber=0):
         ttFont = _ttFontForTextStyle(self._textStyleForFont(fontNameOrPath, fontNumber))
         variations = {}
         if "fvar" in ttFont:
@@ -232,7 +232,7 @@ class FormattedString:
                 )
         return variations
 
-    def listNamedInstances(self, fontNameOrPath=None, fontNumber=None):
+    def listNamedInstances(self, fontNameOrPath=None, fontNumber=0):
         return _namedInstances(_ttFontForTextStyle(self._textStyleForFont(fontNameOrPath, fontNumber)))
 
     def fontNamedInstance(self, name, fontNameOrPath=None):

@@ -3500,8 +3500,13 @@ def test_formattedString_appendGlyph():
 
 
 def test_formattedString_font_feature_queries():
+    import inspect
+
     sourceSerif = testDir / "fonts" / "SourceSerifPro-Regular.otf"
     t = FormattedString(font=sourceSerif)
+    assert inspect.signature(t.listOpenTypeFeatures).parameters["fontNumber"].default == 0
+    assert inspect.signature(t.listFontVariations).parameters["fontNumber"].default == 0
+    assert inspect.signature(t.listNamedInstances).parameters["fontNumber"].default == 0
     features = t.listOpenTypeFeatures()
     assert "smcp" in features
     assert "kern" in features
@@ -3547,7 +3552,8 @@ def test_formattedString_font_queries_use_font_number(tmpdir):
     assert "kern" not in t.listOpenTypeFeatures(collectionPath, fontNumber=1)
 
     t.fontNumber(1)
-    assert set(t.listFontVariations()) == {"HLGT", "wght"}
+    assert set(t.listFontVariations()) == {"wdth", "wght"}
+    assert set(t.listFontVariations(fontNumber=1)) == {"HLGT", "wght"}
 
 
 def test_font_accepts_font_number(tmpdir):
