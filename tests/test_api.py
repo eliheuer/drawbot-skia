@@ -694,6 +694,27 @@ def test_imageObject_color_controls_and_exposure_preserve_alpha(tmpdir):
     assert [pixel[:3] for pixel in exposedPixels] != [pixel[:3] for pixel in loadedPixels]
 
 
+def test_imageObject_mask_to_alpha_uses_source_alpha(tmpdir):
+    from drawbot_skia.imageObject import _getImageData
+
+    sourcePath = pathlib.Path(tmpdir) / "mask-to-alpha.png"
+    image = Image.new("RGBA", (4, 1))
+    pixels = [
+        (255, 255, 255, 0),
+        (255, 255, 255, 64),
+        (128, 128, 128, 128),
+        (0, 0, 0, 255),
+    ]
+    image.putdata(pixels)
+    image.save(sourcePath)
+
+    im = ImageObject(sourcePath)
+    assert im.maskToAlpha() is None
+    result = list(_getImageData(im._pilImage()))
+    assert [pixel[3] for pixel in result] == [0, 64, 64, 0]
+    assert result[1][:3] == result[2][:3] == (255, 255, 255)
+
+
 def test_imageObject_palette_filters(tmpdir):
     import inspect
 

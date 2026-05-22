@@ -1134,7 +1134,7 @@ class ImageObject:
 
     def maskToAlpha(self):
         image = self._pilImage()
-        alpha = image.convert("L")
+        alpha = _alphaScaledLuminanceImage(image)
         white = alpha.point(lambda value: 255)
         self._setPILImage(_mergeRGBA(white, white, white, alpha))
 
