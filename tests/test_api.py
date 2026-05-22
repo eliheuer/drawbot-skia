@@ -2050,6 +2050,30 @@ def test_imageObject_xray_uses_tinted_luminance_ramp():
     assert xray._pilImage().tobytes() != generic._pilImage().tobytes()
 
 
+def test_imageObject_comic_effect_outlines_and_halftones():
+    image = Image.new("RGBA", (8, 8), (40, 80, 160, 200))
+    for y in range(8):
+        for x in range(4, 8):
+            image.putpixel((x, y), (220, 180, 80, 201))
+
+    comic = ImageObject()
+    comic._setPILImage(image)
+    assert comic.comicEffect() is None
+    result = comic._pilImage()
+    assert result.getpixel((0, 0)) == (0, 0, 0, 200)
+    assert result.getpixel((1, 1)) == (37, 37, 74, 200)
+    assert result.getpixel((3, 3)) == (64, 64, 128, 200)
+    assert result.getpixel((4, 3)) == (0, 0, 0, 201)
+    assert result.getpixel((5, 5)) == (110, 110, 37, 201)
+    blackPixels = sum(
+        1
+        for y in range(result.height)
+        for x in range(result.width)
+        if result.getpixel((x, y))[:3] == (0, 0, 0)
+    )
+    assert blackPixels == 34
+
+
 def test_imageObject_cmyk_halftone_uses_gcr_and_ucr(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "cmyk-halftone.png"
     colors = [

@@ -1205,15 +1205,7 @@ class ImageObject:
         self._setPILImage(_mergeRGBA(edges, edges, edges, image.getchannel("A")))
 
     def comicEffect(self):
-        from PIL import ImageFilter
-
-        image = self._pilImage()
-        edges = image.filter(ImageFilter.FIND_EDGES).convert("L")
-        posterized = image.convert("RGB").point(lambda value: _clampByte(round(value / 64) * 64)).convert("RGBA")
-        posterized.putalpha(image.getchannel("A"))
-        posterized = posterized.filter(ImageFilter.SMOOTH_MORE)
-        edgeMask = edges.point(lambda value: 255 if value > 30 else 0)
-        self._setPILImage(_blendRGBA(posterized, _mergeRGBA(edgeMask, edgeMask, edgeMask, image.getchannel("A")), 0.35))
+        self._setPILImage(_comicEffectImage(self._pilImage()))
 
     def XRay(self):
         self._setPILImage(_xrayImage(self._pilImage()))
@@ -2347,6 +2339,42 @@ def _gaborGradientsImage(image):
         value = _clampByte(response / maxResponse * 255)
         data.append((value, value, value, a))
     return _newRGBAWithData(image.size, data)
+
+
+def _comicEffectImage(image):
+    from PIL import ImageFilter
+
+    source = image.convert("RGBA")
+    alpha = source.getchannel("A")
+    posterized = source.convert("RGB").point(
+        lambda value: _clampByte(round(value / 64) * 64)
+    ).convert("RGBA")
+    posterized.putalpha(alpha)
+    edges = source.filter(ImageFilter.FIND_EDGES).convert("L")
+    luminance = source.convert("L")
+    posterizedPixels = list(_getImageData(posterized))
+    edgePixels = list(_getImageData(edges))
+    luminancePixels = list(_getImageData(luminance))
+    alphaPixels = list(_getImageData(alpha))
+    data = []
+    cellSize = 4
+    center = (cellSize - 1) / 2
+    for index, (r, g, b, _a) in enumerate(posterizedPixels):
+        if edgePixels[index] > 30:
+            data.append((0, 0, 0, alphaPixels[index]))
+            continue
+        x = index % source.width
+        y = index // source.width
+        localX = x % cellSize
+        localY = y % cellSize
+        distance = math.hypot(localX - center, localY - center)
+        radius = 0.45 + (1 - luminancePixels[index] / 255) * 1.25
+        if distance <= radius:
+            r = _clampByte(r * 0.58)
+            g = _clampByte(g * 0.58)
+            b = _clampByte(b * 0.58)
+        data.append((r, g, b, alphaPixels[index]))
+    return _newRGBAWithData(source.size, data)
 
 
 def _gaborKernels(size=7, sigma=2.0, wavelength=4.0):
