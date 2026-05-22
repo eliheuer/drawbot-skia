@@ -598,6 +598,8 @@ def test_imageObject_color_and_morphology_batch(tmpdir):
 
 
 def test_imageObject_palette_filters(tmpdir):
+    import inspect
+
     from drawbot_skia.imageObject import _getImageData
 
     sourcePath = pathlib.Path(tmpdir) / "palette-source.png"
@@ -617,7 +619,14 @@ def test_imageObject_palette_filters(tmpdir):
     palette.save(palettePath)
 
     kmeans = ImageObject(sourcePath)
-    assert kmeans.KMeans(count=2) is None
+    assert list(inspect.signature(kmeans.KMeans).parameters) == [
+        "means",
+        "extent",
+        "count",
+        "passes",
+        "perceptual",
+    ]
+    assert kmeans.KMeans(None, count=2) is None
     assert kmeans.size() == (2, 1)
     kmeansPixels = list(_getImageData(kmeans._pilImage()))
     assert {pixel[:3] for pixel in kmeansPixels} == {(225, 0, 0), (0, 0, 225)}
@@ -760,7 +769,7 @@ def test_imageObject_kmeans_uses_passes_and_perceptual_distance():
 
     initial = ImageObject()
     initial._setPILImage(source)
-    assert initial.KMeans(count=2, passes=0) is None
+    assert initial.KMeans(None, count=2, passes=0) is None
     assert list(_getImageData(initial._pilImage())) == [
         (110, 26, 26, 170),
         (84, 129, 42, 85),
@@ -768,7 +777,7 @@ def test_imageObject_kmeans_uses_passes_and_perceptual_distance():
 
     refined = ImageObject()
     refined._setPILImage(source)
-    assert refined.KMeans(count=2, passes=1) is None
+    assert refined.KMeans(None, count=2, passes=1) is None
     assert list(_getImageData(refined._pilImage())) == [
         (120, 34, 34, 170),
         (39, 210, 39, 85),
@@ -788,7 +797,7 @@ def test_imageObject_kmeans_uses_passes_and_perceptual_distance():
 
     rgbDistance = ImageObject()
     rgbDistance._setPILImage(hueRows)
-    assert rgbDistance.KMeans(count=2, passes=3, perceptual=False) is None
+    assert rgbDistance.KMeans(None, count=2, passes=3, perceptual=False) is None
     assert list(_getImageData(rgbDistance._pilImage())) == [
         (128, 120, 128, 170),
         (129, 0, 129, 85),
@@ -796,7 +805,7 @@ def test_imageObject_kmeans_uses_passes_and_perceptual_distance():
 
     perceptualDistance = ImageObject()
     perceptualDistance._setPILImage(hueRows)
-    assert perceptualDistance.KMeans(count=2, passes=3, perceptual=True) is None
+    assert perceptualDistance.KMeans(None, count=2, passes=3, perceptual=True) is None
     assert list(_getImageData(perceptualDistance._pilImage())) == [
         (255, 80, 0, 128),
         (0, 80, 255, 128),
@@ -818,7 +827,7 @@ def test_imageObject_generator_batch():
         ("blurredRectangleGenerator", ((16, 12),), {"extent": (2, 2, 10, 8), "sigma": 1}),
         ("QRCodeGenerator", ((16, 12), "drawbot"), {}),
         ("aztecCodeGenerator", ((16, 12), "drawbot", 0, False), {}),
-        ("PDF417BarcodeGenerator", ((16, 12), "drawbot"), {}),
+        ("PDF417BarcodeGenerator", ((16, 12), "drawbot", 0, 0, 0, 0, 0, 0, 0, 0, False, 0, False), {}),
         ("code128BarcodeGenerator", ((16, 12), "drawbot"), {}),
         ("lenticularHaloGenerator", ((16, 12),), {"center": (8, 6), "haloRadius": 4, "haloWidth": 6}),
         ("starShineGenerator", ((16, 12),), {"center": (8, 6), "radius": 3}),
@@ -1083,10 +1092,27 @@ def test_imageObject_star_shine_generator_uses_cross_opacity_and_epsilon():
 
 
 def test_imageObject_pdf417_barcode_generator():
+    import inspect
+
     import pdf417gen
 
     im = ImageObject()
-    assert im.PDF417BarcodeGenerator((180, 60), "drawbot", dataColumns=4, correctionLevel=2) is None
+    assert list(inspect.signature(im.PDF417BarcodeGenerator).parameters) == [
+        "size",
+        "message",
+        "minWidth",
+        "maxWidth",
+        "minHeight",
+        "maxHeight",
+        "dataColumns",
+        "rows",
+        "preferredAspectRatio",
+        "compactionMode",
+        "compactStyle",
+        "correctionLevel",
+        "alwaysSpecifyCompaction",
+    ]
+    assert im.PDF417BarcodeGenerator((180, 60), "drawbot", 0, 0, 0, 0, 4, 0, 0, 0, False, 2, False) is None
     image = im._pilImage()
     assert image.size == (180, 60)
 

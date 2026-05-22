@@ -297,17 +297,17 @@ class ImageObject:
         self,
         size,
         message,
-        minWidth=0.0,
-        maxWidth=0.0,
-        minHeight=0.0,
-        maxHeight=0.0,
-        dataColumns=0.0,
-        rows=0.0,
-        preferredAspectRatio=0.0,
-        compactionMode=0.0,
-        compactStyle=False,
-        correctionLevel=0.0,
-        alwaysSpecifyCompaction=False,
+        minWidth,
+        maxWidth,
+        minHeight,
+        maxHeight,
+        dataColumns,
+        rows,
+        preferredAspectRatio,
+        compactionMode,
+        compactStyle,
+        correctionLevel,
+        alwaysSpecifyCompaction,
     ):
         self._setPILImage(
             _pdf417BarcodeImage(
@@ -860,7 +860,7 @@ class ImageObject:
 
     def KMeans(
         self,
-        means=None,
+        means,
         extent=(0.0, 0.0, 640.0, 80.0),
         count=8.0,
         passes=5.0,
