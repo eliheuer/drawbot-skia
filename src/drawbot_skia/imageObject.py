@@ -2820,7 +2820,10 @@ def _pdf417TargetSize(width, height, minWidth, maxWidth, minHeight, maxHeight, p
     if preferredAspectRatio:
         ratio = abs(float(preferredAspectRatio))
         if ratio:
-            targetHeight = max(1, min(targetHeight, int(round(targetWidth / ratio))))
+            if targetWidth / targetHeight > ratio:
+                targetWidth = int(round(targetHeight * ratio))
+            else:
+                targetHeight = int(round(targetWidth / ratio))
     return max(1, min(width, targetWidth)), max(1, min(height, targetHeight))
 
 

@@ -1103,6 +1103,7 @@ def test_imageObject_pdf417_barcode_generator():
     import inspect
 
     import pdf417gen
+    from drawbot_skia.imageObject import _pdf417TargetSize
 
     im = ImageObject()
     assert list(inspect.signature(im.PDF417BarcodeGenerator).parameters) == [
@@ -1133,6 +1134,8 @@ def test_imageObject_pdf417_barcode_generator():
     assert pdf417gen.encode("drawbot", columns=4, security_level=2) == expectedCodes
     assert image.getbbox() == (0, 0, 180, 60)
     assert any(image.getpixel((x, image.height // 2))[:3] == (0, 0, 0) for x in range(image.width))
+    assert _pdf417TargetSize(120, 120, 0, 0, 0, 0, 2) == (120, 60)
+    assert _pdf417TargetSize(120, 120, 0, 0, 0, 0, 0.5) == (60, 120)
 
 
 def test_imageObject_aztec_code_generator():
