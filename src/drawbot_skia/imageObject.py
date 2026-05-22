@@ -1464,15 +1464,7 @@ class ImageObject:
         self._filter(ImageFilter.MinFilter(size))
 
     def pixellate(self, center=(150.0, 150.0), scale=8.0):
-        from PIL import Image
-
-        image = self._pilImage()
-        scale = max(1, int(round(float(scale))))
-        small = image.resize(
-            (max(1, image.width // scale), max(1, image.height // scale)),
-            Image.Resampling.BOX,
-        )
-        self._setPILImage(small.resize(image.size, Image.Resampling.NEAREST))
+        self._setPILImage(_pixellateImage(self._pilImage(), center, scale))
 
     def motionBlur(self, radius=20.0, angle=0.0):
         from PIL import Image
@@ -3759,6 +3751,38 @@ def _glassDistortionImage(image, texture, center, scale):
         return x + dx, y + dy
 
     return _distortImage(image, mapPoint)
+
+
+def _pixellateImage(image, center, scale):
+    from PIL import Image
+    from PIL import ImageStat
+
+    source = image.convert("RGBA")
+    result = Image.new("RGBA", source.size, (0, 0, 0, 0))
+    pixels = result.load()
+    width, height = source.size
+    centerX, centerY = (float(value) for value in center)
+    scale = max(1, int(round(float(scale))))
+    blockCache = {}
+    for y in range(height):
+        for x in range(width):
+            blockX = math.floor((x - centerX) / scale)
+            blockY = math.floor((y - centerY) / scale)
+            key = (blockX, blockY)
+            color = blockCache.get(key)
+            if color is None:
+                left = max(0, int(math.floor(centerX + blockX * scale)))
+                top = max(0, int(math.floor(centerY + blockY * scale)))
+                right = min(width, int(math.floor(centerX + (blockX + 1) * scale)))
+                bottom = min(height, int(math.floor(centerY + (blockY + 1) * scale)))
+                if right <= left:
+                    right = min(width, left + 1)
+                if bottom <= top:
+                    bottom = min(height, top + 1)
+                color = tuple(_clampByte(value) for value in ImageStat.Stat(source.crop((left, top, right, bottom))).mean)
+                blockCache[key] = color
+            pixels[x, y] = color
+    return result
 
 
 def _lozengeDistortImage(image, point0, point1, radius, refraction):

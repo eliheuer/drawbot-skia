@@ -1512,6 +1512,36 @@ def test_imageObject_edge_work_uses_radius_and_preserves_alpha(tmpdir):
     assert thick._pilImage().getpixel((3, 1))[3] == 123
 
 
+def test_imageObject_pixellate_uses_center(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "pixellate.png"
+    image = Image.new("RGBA", (6, 1))
+    for x in range(6):
+        image.putpixel((x, 0), (x * 40, 0, 0, 100 + x))
+    image.save(imagePath)
+
+    leftAnchored = ImageObject(imagePath)
+    assert leftAnchored.pixellate(center=(0, 0), scale=2) is None
+    assert [leftAnchored._pilImage().getpixel((x, 0)) for x in range(6)] == [
+        (20, 0, 0, 100),
+        (20, 0, 0, 100),
+        (100, 0, 0, 102),
+        (100, 0, 0, 102),
+        (179, 0, 0, 104),
+        (179, 0, 0, 104),
+    ]
+
+    shifted = ImageObject(imagePath)
+    assert shifted.pixellate(center=(1, 0), scale=2) is None
+    assert [shifted._pilImage().getpixel((x, 0)) for x in range(6)] == [
+        (0, 0, 0, 100),
+        (60, 0, 0, 102),
+        (60, 0, 0, 102),
+        (140, 0, 0, 104),
+        (140, 0, 0, 104),
+        (199, 0, 0, 105),
+    ]
+
+
 def test_imageObject_depth_of_field_uses_focus_line(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "depth-of-field.png"
     image = Image.new("RGBA", (7, 5), (0, 0, 0, 255))
