@@ -90,6 +90,21 @@ class FormattedString:
     def baselineShift(self, baselineShift):
         self._properties["baselineShift"] = baselineShift
 
+    def indent(self, indent):
+        self._properties["indent"] = indent
+
+    def tailIndent(self, indent):
+        self._properties["tailIndent"] = indent
+
+    def firstLineIndent(self, indent):
+        self._properties["firstLineIndent"] = indent
+
+    def paragraphTopSpacing(self, value):
+        self._properties["paragraphTopSpacing"] = value
+
+    def paragraphBottomSpacing(self, value):
+        self._properties["paragraphBottomSpacing"] = value
+
     def underline(self, underline):
         self._properties["underline"] = underline
 

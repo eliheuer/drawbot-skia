@@ -298,12 +298,25 @@ class Drawing:
             return txt.copy()
 
         lines, overflow = self._wrapFormattedString(txt, width, maxLines)
-        baseline = y + height - _formattedLineBaselineOffset(lines[0], self._gstate.textStyle)
+        firstLine = lines[0][0]
+        baseline = y + height - _formattedLineBaselineOffset(
+            firstLine, self._gstate.textStyle
+        )
         boxAlign = _textBoxAlign(align)
-        for line in lines:
-            self.text(line, (x, baseline), align=boxAlign)
-            lineInfo = self._formattedLines(line)[0]
-            baseline -= _lineHeight(lineInfo)
+        for line, xOffset, paragraphStart, paragraphEnd, paragraphProperties in lines:
+            if paragraphStart:
+                baseline -= paragraphProperties.get("paragraphTopSpacing") or 0
+            self.text(line, (x + xOffset, baseline), align=boxAlign)
+            if line:
+                lineInfo = self._formattedLines(line)[0]
+                lineHeight = _lineHeight(lineInfo)
+            else:
+                lineHeight = _formattedStringBaseLineHeight(
+                    line, self._gstate.textStyle
+                )
+            baseline -= lineHeight
+            if paragraphEnd:
+                baseline -= paragraphProperties.get("paragraphBottomSpacing") or 0
         return overflow
 
     def _wrapFormattedString(self, txt, width, maxLines):
@@ -311,19 +324,38 @@ class Drawing:
         lines = []
         line = []
         index = 0
+        paragraphProperties = txt.textProperties()
+        paragraphStart = True
+        firstParagraphLine = True
 
-        def finishLine(nextIndex):
-            if line or not lines:
-                lines.append(_formattedStringFromTokens(line, txt))
+        def finishLine(nextIndex, paragraphEnd=False):
+            nonlocal firstParagraphLine, paragraphStart
+            if line or paragraphEnd or not lines:
+                xOffset, lineWidth = _formattedLineBox(
+                    paragraphProperties, width, firstParagraphLine
+                )
+                lines.append(
+                    (
+                        _formattedStringFromTokens(line, txt),
+                        xOffset,
+                        paragraphStart,
+                        paragraphEnd,
+                        dict(paragraphProperties),
+                    )
+                )
             if len(lines) == maxLines:
                 return _formattedStringFromTokens(tokens[nextIndex:], txt)
             line.clear()
+            paragraphStart = paragraphEnd
+            firstParagraphLine = paragraphEnd
             return None
 
         while index < len(tokens):
             tokenText, tokenProperties = tokens[index]
+            if not line and firstParagraphLine:
+                paragraphProperties = tokenProperties
             if tokenText == "\n":
-                overflow = finishLine(index + 1)
+                overflow = finishLine(index + 1, paragraphEnd=True)
                 if overflow is not None:
                     return lines, overflow
                 index += 1
@@ -333,7 +365,10 @@ class Drawing:
                 continue
 
             candidate = line + [(tokenText, tokenProperties)]
-            if self.textSize(_formattedStringFromTokens(candidate, txt))[0] <= width:
+            xOffset, lineWidth = _formattedLineBox(
+                paragraphProperties, width, firstParagraphLine
+            )
+            if self.textSize(_formattedStringFromTokens(candidate, txt))[0] <= lineWidth:
                 line[:] = candidate
                 index += 1
                 continue
@@ -344,7 +379,7 @@ class Drawing:
                 continue
 
             fitText, restText = self._breakFormattedToken(
-                tokenText, tokenProperties, txt, width
+                tokenText, tokenProperties, txt, lineWidth
             )
             line.append((fitText, tokenProperties))
             if restText:
@@ -356,7 +391,18 @@ class Drawing:
                 return lines, overflow
 
         if line or not lines:
-            lines.append(_formattedStringFromTokens(line, txt))
+            xOffset, lineWidth = _formattedLineBox(
+                paragraphProperties, width, firstParagraphLine
+            )
+            lines.append(
+                (
+                    _formattedStringFromTokens(line, txt),
+                    xOffset,
+                    paragraphStart,
+                    True,
+                    dict(paragraphProperties),
+                )
+            )
         return lines, _formattedStringFromTokens([], txt)
 
     def _breakFormattedToken(self, tokenText, tokenProperties, source, width):
@@ -701,6 +747,20 @@ def _textBoxAlign(align):
     if align == "justified":
         return None
     return align
+
+
+def _formattedLineBox(properties, width, isFirstLine):
+    indent = properties.get("indent") or 0
+    if isFirstLine:
+        indent += properties.get("firstLineIndent") or 0
+    tailIndent = properties.get("tailIndent")
+    if tailIndent is None:
+        rightEdge = width
+    elif tailIndent <= 0:
+        rightEdge = width + tailIndent
+    else:
+        rightEdge = tailIndent
+    return indent, max(0, rightEdge - indent)
 
 
 def _formattedStringTokens(txt):

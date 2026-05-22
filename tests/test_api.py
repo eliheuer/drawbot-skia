@@ -314,6 +314,11 @@ def test_formattedString_properties():
     t.strokeWidth(2)
     t.tracking(4)
     t.baselineShift(3)
+    t.indent(24)
+    t.tailIndent(-12)
+    t.firstLineIndent(36)
+    t.paragraphTopSpacing(5)
+    t.paragraphBottomSpacing(7)
     t.underline("single")
     t.strikethrough("double")
     t.writingDirection("RTL")
@@ -326,6 +331,11 @@ def test_formattedString_properties():
     assert runProperties["strokeWidth"] == 2
     assert runProperties["tracking"] == 4
     assert runProperties["baselineShift"] == 3
+    assert runProperties["indent"] == 24
+    assert runProperties["tailIndent"] == -12
+    assert runProperties["firstLineIndent"] == 36
+    assert runProperties["paragraphTopSpacing"] == 5
+    assert runProperties["paragraphBottomSpacing"] == 7
     assert runProperties["underline"] == "single"
     assert runProperties["strikethrough"] == "double"
     assert runProperties["direction"] == "rtl"
