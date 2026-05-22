@@ -1,4 +1,5 @@
 import os
+import math
 from io import BytesIO
 import skia
 
@@ -30,7 +31,28 @@ class ImageObject:
         return other
 
     def clearFilters(self):
+        if self._path is not None:
+            self.open(self._path)
+        self._offset = (0, 0)
         return None
+
+    def gaussianBlur(self, radius=10.0):
+        from PIL import Image
+        from PIL import ImageFilter
+
+        image = self._pilImage()
+        radius = float(radius)
+        pad = max(0, int(math.ceil(radius * 3)))
+        padded = Image.new(
+            "RGBA",
+            (image.width + pad * 2, image.height + pad * 2),
+            (0, 0, 0, 0),
+        )
+        padded.alpha_composite(image, (pad, pad))
+        blurred = padded.filter(ImageFilter.GaussianBlur(radius))
+        self._setPILImage(blurred)
+        x, y = self._offset
+        self._offset = (x - pad, y - pad)
 
     def lockFocus(self):
         raise NotImplementedError("drawing into ImageObject is not supported yet")
@@ -48,3 +70,8 @@ class ImageObject:
 
         data = self._skiaImage().encodeToData(skia.kPNG, 100).bytes()
         return Image.open(BytesIO(data)).convert("RGBA")
+
+    def _setPILImage(self, image):
+        data = BytesIO()
+        image.save(data, format="PNG")
+        self._image = skia.Image.MakeFromEncoded(data.getvalue())

@@ -247,6 +247,13 @@ def test_imageObject():
     im2 = im.copy()
     assert im2 is not im
     assert im2.size() == im.size()
+    im2.gaussianBlur(radius=4)
+    assert im2.offset() == (-12, -12)
+    assert im2.size() == (536, 536)
+    assert im.size() == (512, 512)
+    im2.clearFilters()
+    assert im2.offset() == (0, 0)
+    assert im2.size() == (512, 512)
 
 
 def test_numberOfPages_gif(tmpdir):
