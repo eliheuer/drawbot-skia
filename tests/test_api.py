@@ -1677,6 +1677,38 @@ def test_imageObject_bokeh_blur_uses_ring_parameters(tmpdir):
     assert [ringed._pilImage().getpixel((x, 2))[0] for x in range(7)] == [0, 0, 17, 29, 17, 0, 0]
 
 
+def test_imageObject_noise_reduction_controls_noise_and_sharpness(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "noise-reduction.png"
+    image = Image.new("RGBA", (5, 5), (80, 90, 100, 255))
+    colors = [
+        (20, 40, 60, 255),
+        (200, 180, 160, 255),
+        (70, 120, 190, 255),
+        (250, 250, 250, 255),
+        (0, 10, 20, 255),
+    ]
+    for y in range(5):
+        for x in range(5):
+            image.putpixel((x, y), colors[(x + y * 2) % len(colors)])
+    image.save(imagePath)
+
+    unchanged = ImageObject(imagePath)
+    assert unchanged.noiseReduction(noiseLevel=0, sharpness=0) is None
+    assert unchanged._pilImage().tobytes() == image.tobytes()
+
+    sharpened = ImageObject(imagePath)
+    assert sharpened.noiseReduction(noiseLevel=0, sharpness=0.8) is None
+    assert sharpened._pilImage().getpixel((2, 2)) == (255, 255, 208, 255)
+    assert sharpened._pilImage().getpixel((0, 0)) == (0, 0, 0, 255)
+    assert sum(sharpened._pilImage().tobytes()) == 15691
+
+    denoised = ImageObject(imagePath)
+    assert denoised.noiseReduction(noiseLevel=0.02, sharpness=0) is None
+    assert denoised._pilImage().getpixel((2, 2)) == (70, 120, 160, 255)
+    assert denoised._pilImage().getpixel((0, 0)) == (70, 120, 160, 255)
+    assert sum(denoised._pilImage().tobytes()) == 15095
+
+
 def test_imageObject_masked_variable_blur_uses_mask_as_radius(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "variable-blur.png"
     maskPath = pathlib.Path(tmpdir) / "variable-blur-mask.png"

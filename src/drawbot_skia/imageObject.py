@@ -1108,11 +1108,12 @@ class ImageObject:
         from PIL import ImageFilter
 
         image = self._pilImage()
-        radius = max(1, int(round(float(noiseLevel) * 50)))
-        image = image.filter(ImageFilter.MedianFilter(size=radius * 2 + 1))
-        image = image.filter(
-            ImageFilter.UnsharpMask(percent=max(0, int(float(sharpness) * 250)))
-        )
+        radius = max(0, int(round(float(noiseLevel) * 50)))
+        if radius:
+            image = image.filter(ImageFilter.MedianFilter(size=radius * 2 + 1))
+        sharpness = max(0, float(sharpness))
+        if sharpness:
+            image = image.filter(ImageFilter.UnsharpMask(percent=int(sharpness * 250)))
         self._setPILImage(image)
 
     def edges(self, intensity=1.0):
