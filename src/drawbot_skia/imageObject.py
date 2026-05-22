@@ -4084,9 +4084,9 @@ def _motionBlurImage(image, radius, angle):
     radius = max(0, int(round(float(radius))))
     if radius == 0:
         return source
-    radians = math.radians(float(angle))
-    dx = math.cos(radians)
-    dy = math.sin(radians)
+    angle = float(angle)
+    dx = math.cos(angle)
+    dy = math.sin(angle)
     offsets = sorted(
         {
             (int(round(index * dx)), int(round(index * dy)))

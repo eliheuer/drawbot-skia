@@ -1733,7 +1733,7 @@ def test_imageObject_motion_blur_uses_radius_and_angle(tmpdir):
     assert [horizontal._pilImage().getpixel((3, y))[0] for y in range(7)] == [0, 0, 0, 85, 0, 0, 0]
 
     vertical = ImageObject(imagePath)
-    assert vertical.motionBlur(radius=1, angle=90) is None
+    assert vertical.motionBlur(radius=1, angle=math.pi / 2) is None
     assert [vertical._pilImage().getpixel((x, 3))[0] for x in range(7)] == [0, 0, 0, 85, 0, 0, 0]
     assert [vertical._pilImage().getpixel((3, y))[0] for y in range(7)] == [0, 0, 85, 85, 85, 0, 0]
 
