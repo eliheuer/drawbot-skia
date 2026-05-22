@@ -1671,7 +1671,7 @@ class ImageObject:
         compression=300.0,
     ):
         target = _imageObjectToPIL(targetImage).resize(self.size())
-        mask = _radialMask(self.size(), center, max(1, float(radius)) * (0.25 + float(time)), 1)
+        mask = _modTransitionMask(self.size(), center, time, angle, radius, compression)
         self._setPILImage(_blendWithMask(self._pilImage(), target, mask))
 
     def rippleTransition(
@@ -2897,6 +2897,35 @@ def _radialTransitionMask(size, center, radius, extent=None):
                 continue
             distance = math.hypot(x - cx, y - cy)
             pixels[x, y] = _clampByte((1 - distance / radius) * 255)
+    return mask
+
+
+def _modTransitionMask(size, center, time, angle, radius, compression):
+    from PIL import Image
+
+    width, height = size
+    cx, cy = center
+    time = max(0, min(1, float(time)))
+    radius = max(1, float(radius))
+    compression = max(1, float(compression))
+    angle = math.radians(float(angle)) if abs(float(angle)) > math.tau else float(angle)
+    cosAngle = math.cos(angle)
+    sinAngle = math.sin(angle)
+    reach = radius * (0.25 + time)
+    mask = Image.new("L", size)
+    pixels = mask.load()
+    for y in range(height):
+        for x in range(width):
+            dx = x - cx
+            dy = y - cy
+            distance = math.hypot(dx, dy)
+            if distance > reach:
+                pixels[x, y] = 0
+                continue
+            rotated = dx * cosAngle + dy * sinAngle
+            wave = (math.sin((rotated / compression + time) * math.tau) + 1) / 2
+            radial = max(0, 1 - distance / reach)
+            pixels[x, y] = _clampByte(radial * (0.35 + 0.65 * wave) * 255)
     return mask
 
 

@@ -1,4 +1,5 @@
 import os
+import math
 import pathlib
 import shutil
 import sys
@@ -998,6 +999,45 @@ def test_imageObject_ripple_transition_extent_and_shading(tmpdir):
         (100, 80, 255, 255),
     ]
     assert [image.getpixel((x, 1)) for x in range(3, 5)] == [(255, 0, 0, 255)] * 2
+
+
+def test_imageObject_mod_transition_angle_compression(tmpdir):
+    sourcePath = pathlib.Path(tmpdir) / "mod-source.png"
+    targetPath = pathlib.Path(tmpdir) / "mod-target.png"
+    Image.new("RGBA", (5, 5), (255, 0, 0, 255)).save(sourcePath)
+    Image.new("RGBA", (5, 5), (0, 0, 255, 255)).save(targetPath)
+
+    horizontal = ImageObject(sourcePath)
+    assert horizontal.modTransition(
+        targetPath,
+        center=(2, 2),
+        time=0.75,
+        angle=0,
+        radius=4,
+        compression=2,
+    ) is None
+    vertical = ImageObject(sourcePath)
+    assert vertical.modTransition(
+        targetPath,
+        center=(2, 2),
+        time=0.75,
+        angle=math.pi / 2,
+        radius=4,
+        compression=2,
+    ) is None
+    assert [horizontal._pilImage().getpixel((x, 2))[2] for x in range(5)] == [45, 191, 89, 191, 45]
+    assert [vertical._pilImage().getpixel((x, 2))[2] for x in range(5)] == [45, 67, 89, 67, 45]
+
+    compressed = ImageObject(sourcePath)
+    assert compressed.modTransition(
+        targetPath,
+        center=(2, 2),
+        time=0.75,
+        angle=0,
+        radius=4,
+        compression=4,
+    ) is None
+    assert [compressed._pilImage().getpixel((x, 2))[2] for x in range(5)] == [128, 129, 89, 129, 128]
 
 
 def test_numberOfPages_gif(tmpdir):
