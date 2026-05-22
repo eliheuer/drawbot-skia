@@ -2335,6 +2335,28 @@ def test_imageObject_bokeh_blur_zero_radius_is_noop(tmpdir):
     assert blurred._pilImage().tobytes() != image.tobytes()
 
 
+def test_imageObject_disc_blur_uses_circular_kernel(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "disc-blur.png"
+    image = Image.new("RGBA", (5, 5), (0, 0, 0, 255))
+    image.putpixel((2, 2), (255, 255, 255, 255))
+    image.save(imagePath)
+
+    unchanged = ImageObject(imagePath)
+    assert unchanged.discBlur(radius=0) is None
+    assert unchanged._pilImage().tobytes() == image.tobytes()
+
+    blurred = ImageObject(imagePath)
+    assert blurred.discBlur(radius=1) is None
+    assert [[blurred._pilImage().getpixel((x, y))[0] for x in range(5)] for y in range(5)] == [
+        [0, 0, 0, 0, 0],
+        [0, 0, 51, 0, 0],
+        [0, 51, 51, 51, 0],
+        [0, 0, 51, 0, 0],
+        [0, 0, 0, 0, 0],
+    ]
+    assert [[blurred._pilImage().getpixel((x, y))[3] for x in range(5)] for y in range(5)] == [[255] * 5 for _ in range(5)]
+
+
 def test_imageObject_motion_blur_uses_radius_and_angle(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "motion-blur.png"
     image = Image.new("RGBA", (7, 7), (0, 0, 0, 255))

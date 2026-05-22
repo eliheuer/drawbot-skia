@@ -1247,9 +1247,7 @@ class ImageObject:
         self._setPILImage(_bokehBlurImage(self._pilImage(), radius, ringAmount, ringSize, softness))
 
     def discBlur(self, radius=8.0):
-        from PIL import ImageFilter
-
-        self._filter(ImageFilter.BoxBlur(float(radius)))
+        self._setPILImage(_discBlurImage(self._pilImage(), radius))
 
     def depthOfField(
         self,
@@ -3793,6 +3791,36 @@ def _bokehBlurImage(image, radius, ringAmount, ringSize, softness):
     source = image.convert("RGBA")
     channels = [channel.filter(kernel) for channel in source.split()]
     return Image.merge("RGBA", channels)
+
+
+def _discBlurImage(image, radius):
+    from PIL import Image
+
+    source = image.convert("RGBA")
+    radius = max(0, int(round(float(radius))))
+    if radius == 0:
+        return source
+    offsets = [
+        (x, y)
+        for y in range(-radius, radius + 1)
+        for x in range(-radius, radius + 1)
+        if x * x + y * y <= radius * radius
+    ]
+    sampleCount = len(offsets) or 1
+    sourcePixels = source.load()
+    result = Image.new("RGBA", source.size)
+    resultPixels = result.load()
+    for y in range(source.height):
+        for x in range(source.width):
+            totals = [0, 0, 0, 0]
+            for offsetX, offsetY in offsets:
+                sampleX = max(0, min(source.width - 1, x + offsetX))
+                sampleY = max(0, min(source.height - 1, y + offsetY))
+                pixel = sourcePixels[sampleX, sampleY]
+                for channel in range(4):
+                    totals[channel] += pixel[channel]
+            resultPixels[x, y] = tuple(_clampByte(total / sampleCount) for total in totals)
+    return result
 
 
 def _maskedVariableBlurImage(image, mask, radius):
