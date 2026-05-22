@@ -132,6 +132,9 @@ hueAdjust
 hueBlendMode
 lanczosScaleTransform
 lightenBlendMode
+linearBurnBlendMode
+linearDodgeBlendMode
+linearLightBlendMode
 lockFocus
 luminosityBlendMode
 maskToAlpha
@@ -146,6 +149,7 @@ noiseReduction
 offset
 open
 overlayBlendMode
+pinLightBlendMode
 photoEffectChrome
 photoEffectFade
 photoEffectInstant
@@ -165,24 +169,26 @@ sourceAtopCompositing
 sourceInCompositing
 sourceOutCompositing
 sourceOverCompositing
+subtractBlendMode
 temperatureAndTint
 unlockFocus
 unsharpMask
 vibrance
 vignette
 vignetteEffect
+vividLightBlendMode
 whitePointAdjust
 zoomBlur
 ```
 
-DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 71 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters and blend/compositing modes rather than pixel-identical Core Image implementations.
+DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports 78 of those methods. The newly added methods are Pillow-backed approximations of common Core Image filters and blend/compositing modes rather than pixel-identical Core Image implementations.
 
 Representative missing groups:
 
 - generators and barcodes: `QRCodeGenerator`, `PDF417BarcodeGenerator`, `aztecCodeGenerator`, `code128BarcodeGenerator`, gradient/checkerboard/stripe generators;
 - blur and stylization filters: `bokehBlur`, `comicEffect`, `crystallize`, `pointillize`;
 - color filters: `colorPolynomial`, `colorCrossPolynomial`, `colorThreshold`, `colorThresholdOtsu`;
-- compositing and blend filters not yet covered by Pillow-backed approximations: `divideBlendMode`, `linearBurnBlendMode`, `linearDodgeBlendMode`, `pinLightBlendMode`, `vividLightBlendMode`;
+- compositing, transitions, and mask workflows that need deeper Core Image-equivalent semantics: `disintegrateWithMaskTransition`, `pageCurlTransition`, `copyMachineTransition`;
 - geometry and distortion filters: `affineTile`, `perspectiveTransform`, `twirlDistortion`, `bumpDistortion`, `kaleidoscope`.
 
 Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-heavy and "huge", this should not be treated as a blocker for the headline text/path parity milestone unless the project explicitly chooses an ImageObject parity target.

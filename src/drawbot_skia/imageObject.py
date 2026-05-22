@@ -425,6 +425,48 @@ class ImageObject:
     def colorDodgeBlendMode(self, backgroundImage):
         self._composite(backgroundImage, _colorDodgeBlend)
 
+    def divideBlendMode(self, backgroundImage):
+        self._composite(backgroundImage, _divideBlend)
+
+    def linearBurnBlendMode(self, backgroundImage):
+        self._composite(
+            backgroundImage,
+            lambda source, background: _channelBlend(
+                source,
+                background,
+                lambda s, b: _clampByte(s + b - 255),
+            ),
+        )
+
+    def linearDodgeBlendMode(self, backgroundImage):
+        self._composite(
+            backgroundImage,
+            lambda source, background: _channelBlend(
+                source,
+                background,
+                lambda s, b: _clampByte(s + b),
+            ),
+        )
+
+    def linearLightBlendMode(self, backgroundImage):
+        self._composite(backgroundImage, _linearLightBlend)
+
+    def pinLightBlendMode(self, backgroundImage):
+        self._composite(backgroundImage, _pinLightBlend)
+
+    def subtractBlendMode(self, backgroundImage):
+        self._composite(
+            backgroundImage,
+            lambda source, background: _channelBlend(
+                source,
+                background,
+                lambda s, b: _clampByte(b - s),
+            ),
+        )
+
+    def vividLightBlendMode(self, backgroundImage):
+        self._composite(backgroundImage, _vividLightBlend)
+
     def hueBlendMode(self, backgroundImage):
         self._composite(backgroundImage, lambda source, background: _hslBlend(source, background, "hue"))
 
@@ -681,6 +723,52 @@ def _colorDodgeBlend(source, background):
         background,
         lambda s, b: 255 if s == 255 else _clampByte(min(255, b * 255 / (255 - s))),
     )
+
+
+def _divideBlend(source, background):
+    return _channelBlend(
+        source,
+        background,
+        lambda s, b: 255 if s == 0 else _clampByte(min(255, b * 255 / s)),
+    )
+
+
+def _linearLightBlend(source, background):
+    return _channelBlend(
+        source,
+        background,
+        lambda s, b: _clampByte(b + 2 * s - 255),
+    )
+
+
+def _pinLightBlend(source, background):
+    return _channelBlend(
+        source,
+        background,
+        lambda s, b: min(b, 2 * s) if s < 128 else max(b, 2 * (s - 128)),
+    )
+
+
+def _vividLightBlend(source, background):
+    return _channelBlend(
+        source,
+        background,
+        lambda s, b: _colorBurnChannel(2 * s, b)
+        if s < 128
+        else _colorDodgeChannel(2 * (s - 128), b),
+    )
+
+
+def _colorBurnChannel(source, background):
+    if source <= 0:
+        return 0
+    return _clampByte(255 - min(255, (255 - background) * 255 / source))
+
+
+def _colorDodgeChannel(source, background):
+    if source >= 255:
+        return 255
+    return _clampByte(min(255, background * 255 / (255 - source)))
 
 
 def _channelBlend(source, background, blend):
