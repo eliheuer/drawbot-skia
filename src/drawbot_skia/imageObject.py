@@ -1376,7 +1376,7 @@ class ImageObject:
 
     def hatchedScreen(self, center=(150.0, 150.0), angle=0.0, width=6.0, sharpness=0.7):
         image = _screenImage(self._pilImage(), center, angle, width, sharpness, "line")
-        cross = _screenImage(self._pilImage(), center, angle + 90, width, sharpness, "line")
+        cross = _screenImage(self._pilImage(), center, angle + math.pi / 2, width, sharpness, "line")
         self._setPILImage(_blendRGBA(image, cross, 0.5))
 
     def CMYKHalftone(
@@ -3280,7 +3280,7 @@ def _screenImage(image, center, angle, width, sharpness, mode):
     width = max(1, float(width))
     sharpness = max(0, min(1, float(sharpness)))
     centerX, centerY = center
-    angle = math.radians(float(angle))
+    angle = float(angle)
     cosAngle = math.cos(angle)
     sinAngle = math.sin(angle)
     gray = image.convert("L")
@@ -3328,10 +3328,10 @@ def _cmykHalftoneImage(image, center, angle, width, sharpness, GCR, UCR):
     alphaPixels = alpha.load()
     pixels = result.load()
     channelAngles = (
-        math.radians(float(angle) + 15),
-        math.radians(float(angle) + 75),
-        math.radians(float(angle)),
-        math.radians(float(angle) + 45),
+        float(angle) + math.radians(15),
+        float(angle) + math.radians(75),
+        float(angle),
+        float(angle) + math.radians(45),
     )
     transition = max(0.001, 0.5 * (1 - sharpness))
     for y in range(source.height):

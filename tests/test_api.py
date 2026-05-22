@@ -1647,6 +1647,26 @@ def test_imageObject_cmyk_halftone_uses_gcr_and_ucr(tmpdir):
     assert noRemoval._pilImage().tobytes() != fullRemoval._pilImage().tobytes()
 
 
+def test_imageObject_screen_angles_are_radians(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "screen-angle.png"
+    Image.new("RGBA", (4, 4), (128, 128, 128, 255)).save(imagePath)
+
+    horizontal = ImageObject(imagePath)
+    assert horizontal.lineScreen(center=(0, 0), angle=0, width=4, sharpness=1) is None
+    assert [horizontal._pilImage().getpixel((x, 0))[0] for x in range(4)] == [255, 255, 255, 254]
+    assert [horizontal._pilImage().getpixel((0, y))[0] for y in range(4)] == [255, 255, 255, 255]
+
+    vertical = ImageObject(imagePath)
+    assert vertical.lineScreen(center=(0, 0), angle=math.pi / 2, width=4, sharpness=1) is None
+    assert [vertical._pilImage().getpixel((x, 0))[0] for x in range(4)] == [255, 255, 255, 255]
+    assert [vertical._pilImage().getpixel((0, y))[0] for y in range(4)] == [255, 255, 255, 254]
+
+    hatched = ImageObject(imagePath)
+    assert hatched.hatchedScreen(center=(0, 0), angle=0, width=4, sharpness=1) is None
+    assert [hatched._pilImage().getpixel((x, 0))[0] for x in range(4)] == [255, 255, 255, 254]
+    assert [hatched._pilImage().getpixel((x, 3))[0] for x in range(4)] == [254, 254, 254, 254]
+
+
 def test_imageObject_spot_light_targets_light_points_at(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "spotlight.png"
     Image.new("RGBA", (7, 5), (20, 40, 60, 255)).save(imagePath)
