@@ -544,10 +544,10 @@ class ImageObject:
         )
 
     def keystoneCorrectionHorizontal(self, focalLength=28.0):
-        self.perspectiveRotate(focalLength=focalLength, yaw=8)
+        self.perspectiveRotate(focalLength=focalLength, yaw=math.radians(8))
 
     def keystoneCorrectionVertical(self, focalLength=28.0):
-        self.perspectiveRotate(focalLength=focalLength, pitch=8)
+        self.perspectiveRotate(focalLength=focalLength, pitch=math.radians(8))
 
     def droste(
         self,
@@ -4244,9 +4244,9 @@ def _perspectiveRotateImage(image, focalLength, pitch, yaw, roll):
     halfWidth = width / 2
     halfHeight = height / 2
     focal = max(1, float(focalLength)) / 35 * max(width, height)
-    pitch = _angleToRadians(pitch)
-    yaw = _angleToRadians(yaw)
-    roll = _angleToRadians(roll)
+    pitch = float(pitch)
+    yaw = float(yaw)
+    roll = float(roll)
     if pitch == 0 and yaw == 0 and roll == 0:
         return image.convert("RGBA")
     cosPitch = math.cos(pitch)
@@ -4274,15 +4274,10 @@ def _perspectiveRotateImage(image, focalLength, pitch, yaw, roll):
     return _quadTransformImage(image, *corners)
 
 
-def _angleToRadians(value):
-    value = float(value)
-    return math.radians(value) if abs(value) > math.tau else value
-
-
 def _lightTunnelImage(image, center, rotation, radius):
     cx, cy = center
     radius = max(1, float(radius))
-    rotation = _angleToRadians(rotation)
+    rotation = float(rotation)
 
     def mapPoint(x, y):
         dx = x - cx

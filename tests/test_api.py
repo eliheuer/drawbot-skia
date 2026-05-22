@@ -1502,33 +1502,59 @@ def test_imageObject_perspective_rotate_projects_corners(tmpdir):
         (0, 0, 0),
     ]
 
+    largeRadians = ImageObject(imagePath)
+    assert largeRadians.perspectiveRotate(focalLength=28, yaw=90, pitch=0, roll=0) is None
+    assert [largeRadians._pilImage().getpixel((x, 2))[:3] for x in range(5)] == [
+        (61, 144, 0),
+        (55, 134, 0),
+        (0, 0, 0),
+        (0, 0, 0),
+        (0, 0, 0),
+    ]
+
 
 def test_imageObject_light_tunnel_uses_center_and_radius(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "light-tunnel.png"
-    image = Image.new("RGBA", (5, 5), (0, 0, 0, 255))
-    for y in range(5):
-        for x in range(5):
-            image.putpixel((x, y), (x * 50, y * 50, 0, 255))
+    image = Image.new("RGBA", (7, 7), (0, 0, 0, 255))
+    for y in range(7):
+        for x in range(7):
+            image.putpixel((x, y), (x * 30, y * 30, (x + y) * 20, 255))
     image.save(imagePath)
 
     unchanged = ImageObject(imagePath)
-    assert unchanged.lightTunnel(center=(2, 2), rotation=0, radius=1) is None
-    assert [unchanged._pilImage().getpixel((x, 2))[:3] for x in range(5)] == [
-        (0, 100, 0),
-        (50, 100, 0),
-        (100, 100, 0),
-        (150, 100, 0),
-        (200, 100, 0),
+    assert unchanged.lightTunnel(center=(3, 3), rotation=0, radius=1) is None
+    assert [unchanged._pilImage().getpixel((x, 3))[:3] for x in range(7)] == [
+        (0, 90, 60),
+        (30, 90, 80),
+        (60, 90, 100),
+        (90, 90, 120),
+        (120, 90, 140),
+        (150, 90, 160),
+        (180, 90, 180),
     ]
 
     tunneled = ImageObject(imagePath)
-    assert tunneled.lightTunnel(center=(2, 2), rotation=0, radius=3) is None
-    assert [tunneled._pilImage().getpixel((x, 2))[:3] for x in range(5)] == [
-        (150, 50, 0),
-        (100, 150, 0),
-        (100, 100, 0),
-        (100, 50, 0),
-        (50, 150, 0),
+    assert tunneled.lightTunnel(center=(3, 3), rotation=0, radius=4) is None
+    assert [tunneled._pilImage().getpixel((x, 3))[:3] for x in range(7)] == [
+        (90, 30, 80),
+        (120, 90, 140),
+        (90, 120, 140),
+        (90, 90, 120),
+        (90, 60, 100),
+        (60, 90, 100),
+        (90, 150, 160),
+    ]
+
+    largeRadians = ImageObject(imagePath)
+    assert largeRadians.lightTunnel(center=(3, 3), rotation=90, radius=4) is None
+    assert [largeRadians._pilImage().getpixel((x, 3))[:3] for x in range(7)] == [
+        (150, 120, 180),
+        (60, 120, 120),
+        (60, 90, 100),
+        (90, 90, 120),
+        (120, 90, 140),
+        (120, 60, 120),
+        (30, 60, 60),
     ]
 
 
