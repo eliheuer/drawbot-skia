@@ -1122,9 +1122,17 @@ class ImageObject:
         unsharpMaskIntensity=0.5,
         radius=6.0,
     ):
-        self.gaussianBlur(radius)
-        self.colorControls(saturation=saturation)
-        self.unsharpMask(radius=unsharpMaskRadius, intensity=unsharpMaskIntensity)
+        self._setPILImage(
+            _depthOfFieldImage(
+                self._pilImage(),
+                point0,
+                point1,
+                saturation,
+                unsharpMaskRadius,
+                unsharpMaskIntensity,
+                radius,
+            )
+        )
 
     def documentEnhancer(self, amount=1.0):
         from PIL import ImageEnhance
@@ -2996,6 +3004,50 @@ def _guidedFilterImage(image, guide, radius, epsilon):
                 for index in range(4)
             )
     return result
+
+
+def _depthOfFieldImage(image, point0, point1, saturation, unsharpMaskRadius, unsharpMaskIntensity, radius):
+    from PIL import Image
+    from PIL import ImageEnhance
+    from PIL import ImageFilter
+
+    source = image.convert("RGBA")
+    radius = max(0, float(radius))
+    if radius == 0:
+        focused = source
+    else:
+        blurred = source.filter(ImageFilter.GaussianBlur(radius))
+        mask = Image.new("L", source.size, 0)
+        maskPixels = mask.load()
+        focusWidth = max(1, radius)
+        falloff = max(1, radius * 2)
+        for y in range(source.height):
+            for x in range(source.width):
+                distance = _distanceToSegment(x, y, point0, point1)
+                amount = max(0, min(1, (distance - focusWidth) / falloff))
+                maskPixels[x, y] = _clampByte(amount * 255)
+        focused = Image.composite(blurred, source, mask)
+    focused = ImageEnhance.Color(focused).enhance(float(saturation))
+    return focused.filter(
+        ImageFilter.UnsharpMask(
+            radius=max(0, float(unsharpMaskRadius)),
+            percent=max(0, int(float(unsharpMaskIntensity) * 250)),
+        )
+    )
+
+
+def _distanceToSegment(x, y, point0, point1):
+    x0, y0 = point0
+    x1, y1 = point1
+    dx = x1 - x0
+    dy = y1 - y0
+    lengthSquared = dx * dx + dy * dy
+    if lengthSquared == 0:
+        return math.hypot(x - x0, y - y0)
+    t = max(0, min(1, ((x - x0) * dx + (y - y0) * dy) / lengthSquared))
+    closestX = x0 + t * dx
+    closestY = y0 + t * dy
+    return math.hypot(x - closestX, y - closestY)
 
 
 def _spotLightImage(image, lightPosition, lightPointsAt, brightness, concentration, color):

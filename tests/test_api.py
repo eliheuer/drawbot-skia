@@ -985,6 +985,36 @@ def test_imageObject_guided_filter_preserves_guide_edges(tmpdir):
     assert [smoothed._pilImage().getpixel((x, 0))[0] for x in range(7)] == [22, 33, 44, 152, 22, 16, 11]
 
 
+def test_imageObject_depth_of_field_uses_focus_line(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "depth-of-field.png"
+    image = Image.new("RGBA", (7, 5), (0, 0, 0, 255))
+    image.putpixel((3, 2), (255, 255, 255, 255))
+    image.save(imagePath)
+
+    focused = ImageObject(imagePath)
+    assert focused.depthOfField(
+        point0=(0, 2),
+        point1=(6, 2),
+        saturation=1,
+        unsharpMaskRadius=0,
+        unsharpMaskIntensity=0,
+        radius=1,
+    ) is None
+    assert focused.size() == (7, 5)
+    assert [focused._pilImage().getpixel((x, 2))[0] for x in range(7)] == [0, 0, 0, 255, 0, 0, 0]
+
+    blurred = ImageObject(imagePath)
+    assert blurred.depthOfField(
+        point0=(0, 0),
+        point1=(6, 0),
+        saturation=1,
+        unsharpMaskRadius=0,
+        unsharpMaskIntensity=0,
+        radius=1,
+    ) is None
+    assert [blurred._pilImage().getpixel((x, 2))[0] for x in range(7)] == [1, 3, 12, 148, 12, 3, 1]
+
+
 def test_imageObject_transition_batch(tmpdir):
     sourcePath = pathlib.Path(tmpdir) / "source.png"
     targetPath = pathlib.Path(tmpdir) / "target.png"
