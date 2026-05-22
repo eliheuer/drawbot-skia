@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="460" height="180">
+	<rect fill="white" transform="matrix(1 0 -0 -1 0 180)" width="460" height="180"/>
+	<rect fill="#D9D9D9" transform="matrix(1 0 -0 -1 0 180)" x="28" y="118" width="404" height="1"/>
+	<rect fill="#D9D9D9" transform="matrix(1 0 -0 -1 0 180)" x="28" y="58" width="404" height="1"/>
+	<text fill="#0D0D0D" transform="translate(28 54)" font-size="36" font-family="IBM Plex Sans Arabic" x="0, 23.076, 46.584, 68.940002, 77.435997, 99.036003, 120.636, " y="0, ">
+			ABC 123
+	</text>
+	<text fill="red" transform="translate(28 114)" font-size="36" font-family="IBM Plex Sans Arabic" x="0, 21.6, 43.200001, 64.800003, 73.295998, 95.652, 118.8, " y="0, ">
+			321 CBA
+	</text>
+</svg>

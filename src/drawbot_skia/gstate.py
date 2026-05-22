@@ -460,6 +460,7 @@ class TextStyle(_ImmutableContainer):
     features = {}  # won't get mutated
     variations = {}  # won't get mutated
     language = None
+    direction = None
     font = None
     lineHeight = None
 
@@ -506,6 +507,7 @@ class TextStyle(_ImmutableContainer):
                 features=self.features,
                 variations=self.variations,
                 language=self.language,
+                direction=self.direction,
             )
             if glyphsInfo is None:
                 glyphsInfo = runInfo

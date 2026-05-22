@@ -111,6 +111,17 @@ class FormattedString:
     def language(self, language):
         self._properties["language"] = language
 
+    def writingDirection(self, direction):
+        if direction is not None:
+            direction = direction.lower()
+            direction = {
+                "left-to-right": "ltr",
+                "lefttoright": "ltr",
+                "right-to-left": "rtl",
+                "righttoleft": "rtl",
+            }.get(direction, direction)
+        self._properties["direction"] = direction
+
     def size(self):
         from .drawing import Drawing
 
@@ -232,6 +243,7 @@ class FormattedString:
                 "features",
                 "variations",
                 "language",
+                "direction",
             )
             if name in properties
         }

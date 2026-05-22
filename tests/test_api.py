@@ -316,6 +316,7 @@ def test_formattedString_properties():
     t.baselineShift(3)
     t.underline("single")
     t.strikethrough("double")
+    t.writingDirection("RTL")
     t.align("right")
     t += " world"
     runText, runProperties = list(t._iterRuns())[-1]
@@ -327,6 +328,7 @@ def test_formattedString_properties():
     assert runProperties["baselineShift"] == 3
     assert runProperties["underline"] == "single"
     assert runProperties["strikethrough"] == "double"
+    assert runProperties["direction"] == "rtl"
     assert runProperties["align"] == "right"
 
     t.cmykStroke(0, 1, 1, 0, 0.5)

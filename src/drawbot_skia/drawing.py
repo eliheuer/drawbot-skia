@@ -643,6 +643,7 @@ def _textStyleWithProperties(textStyle, properties):
         "features",
         "variations",
         "language",
+        "direction",
     ):
         if name in properties:
             textProperties[name] = properties[name]
