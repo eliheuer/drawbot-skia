@@ -3075,6 +3075,37 @@ def test_textBox_returns_overflow():
     assert bounds[0].bounds[2] > 0
 
 
+def test_textSize_accepts_constraints():
+    db = Drawing()
+    db.fontSize(20)
+    db.lineHeight(24)
+    naturalWidth, naturalHeight = db.textSize("one two three four five six")
+    constrainedWidth, constrainedHeight = db.textSize(
+        "one two three four five six",
+        width=80,
+    )
+    assert constrainedWidth <= 80
+    assert constrainedWidth < naturalWidth
+    assert constrainedHeight > naturalHeight
+    assert db.textSize("one two three", align="center") == db.textSize(
+        "one two three"
+    )
+    assert db.textSize("one two three", height=48) == db.textSize("one two three")
+    with pytest.raises(DrawbotError, match="only have one constrain"):
+        db.textSize("one two three", width=80, height=48)
+    with pytest.raises(TypeError, match="expected 'str' or 'FormattedString'"):
+        db.textSize(123)
+
+    t = FormattedString(fontSize=20)
+    t += "one two "
+    t.append("three four five six", fontSize=12, baselineShift=2)
+    naturalWidth, naturalHeight = db.textSize(t)
+    constrainedWidth, constrainedHeight = db.textSize(t, width=80)
+    assert constrainedWidth <= 80
+    assert constrainedWidth < naturalWidth
+    assert constrainedHeight > naturalHeight
+
+
 def test_textBox_rejects_bezier_path_box():
     db = Drawing()
     path = BezierPath()

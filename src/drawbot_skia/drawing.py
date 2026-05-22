@@ -367,11 +367,23 @@ class Drawing:
             path = self._currentPath()
         self._canvas.clipPath(path.path, doAntiAlias=True)
 
-    def textSize(self, txt):
+    def textSize(self, txt, align=None, width=None, height=None):
+        if not isinstance(txt, (str, FormattedString)):
+            raise TypeError(
+                "expected 'str' or 'FormattedString', got "
+                f"'{type(txt).__name__}'"
+            )
+        if width is not None and height is not None:
+            raise DrawbotError(
+                "Calculating textSize can only have one constrain, "
+                "either width or height must be None"
+            )
         # TODO: with some smartness we can shape only once, for a
         # textSize()/text() call combination with the same text and
         # the same text parameters.
         if isinstance(txt, FormattedString):
+            if width is not None:
+                return self._formattedTextSizeConstrainedToWidth(txt, width)
             lines = self._formattedLines(txt)
             if not lines:
                 return (0, 0)
@@ -381,6 +393,8 @@ class Drawing:
                 textHeight += _lineHeight(line)
             return (max(lineWidths), textHeight)
         else:
+            if width is not None:
+                return self._plainTextSizeConstrainedToWidth(txt, width)
             lines = txt.split("\n")
             lineWidths = []
             textStyle = self._gstate.textStyle
@@ -397,6 +411,35 @@ class Drawing:
             if len(lines) > 1:
                 textHeight += lineHeight * (len(lines) - 1)
             return (max(lineWidths), textHeight)
+
+    def _plainTextSizeConstrainedToWidth(self, txt, width):
+        maxLines = _unboundedTextLineCount(txt)
+        lines, overflow = self._wrapText(txt, width, maxLines)
+        lineWidths = [self.textSize(line)[0] if line else 0 for line in lines]
+        if not lineWidths:
+            lineWidths = [0]
+        textStyle = self._gstate.textStyle
+        textHeight = textStyle.skFont.getSpacing()
+        if len(lines) > 1:
+            textHeight += textStyle.getLineHeight() * (len(lines) - 1)
+        return (max(lineWidths), textHeight)
+
+    def _formattedTextSizeConstrainedToWidth(self, txt, width):
+        maxLines = _unboundedTextLineCount(str(txt))
+        lines, overflow = self._wrapFormattedString(txt, width, maxLines)
+        lineWidths = []
+        textHeight = 0
+        for lineIndex, (line, xOffset, _, _, _) in enumerate(lines):
+            lineInfo = self._formattedLines(line)[0]
+            lineWidth = lineInfo[0]
+            lineWidths.append(xOffset + lineWidth)
+            if lineIndex == 0:
+                textHeight += _lineSpacing(lineInfo)
+            else:
+                textHeight += _lineHeight(lineInfo)
+        if not lineWidths:
+            lineWidths = [0]
+        return (max(lineWidths), textHeight)
 
     def text(self, txt, position, align=None):
         if not txt:
@@ -1338,6 +1381,10 @@ def _textBoxAlign(align):
     if align == "justified":
         return None
     return align
+
+
+def _unboundedTextLineCount(txt):
+    return max(1, len(txt) + txt.count("\n") + 1)
 
 
 def _rectTextBox(box):
