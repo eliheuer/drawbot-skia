@@ -496,7 +496,7 @@ class BezierPath(BasePen):
         self.path = optimizedPath.path
 
     def expandStroke(
-        self, width, lineCap="butt", lineJoin="miter", miterLimit=10
+        self, width, lineCap="round", lineJoin="round", miterLimit=10
     ):
         if lineCap not in _strokeCapMapping:
             raise DrawbotError(f"lineCap must be one of: {sorted(_strokeCapMapping)}")

@@ -3832,6 +3832,24 @@ def test_bezier_path_dashStroke():
     assert dashed.contours[0][1] == ((5.0, 0.0),)
 
 
+def test_bezier_path_expandStroke_defaults():
+    import inspect
+
+    path = BezierPath()
+    path.moveTo((0, 0))
+    path.lineTo((10, 0))
+    signature = inspect.signature(path.expandStroke)
+    assert signature.parameters["lineCap"].default == "round"
+    assert signature.parameters["lineJoin"].default == "round"
+
+    expanded = path.expandStroke(4)
+    explicit = path.expandStroke(4, lineCap="round", lineJoin="round")
+    butt = path.expandStroke(4, lineCap="butt", lineJoin="miter")
+    assert expanded.bounds() == pytest.approx(explicit.bounds())
+    assert expanded.bounds()[0] < butt.bounds()[0]
+    assert expanded.bounds()[2] > butt.bounds()[2]
+
+
 def test_bezier_path_optimizePath():
     path = BezierPath()
     path.moveTo((0, 0))
