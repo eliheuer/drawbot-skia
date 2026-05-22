@@ -25,3 +25,8 @@ Source:
 
 Source:
 [`examples/images/transition_and_distortion.py`](../examples/images/transition_and_distortion.py)
+
+![Tiling and segmentation](../examples/images/tiling_and_segmentation.jpg)
+
+Source:
+[`examples/images/tiling_and_segmentation.py`](../examples/images/tiling_and_segmentation.py)

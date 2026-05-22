@@ -29,3 +29,8 @@ Source:
 
 Source:
 [`examples/showcase/animation_frames.py`](../examples/showcase/animation_frames.py)
+
+![Text shaping](../examples/showcase/text_shaping.jpg)
+
+Source:
+[`examples/showcase/text_shaping.py`](../examples/showcase/text_shaping.py)

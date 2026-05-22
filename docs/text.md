@@ -24,3 +24,8 @@ Source:
 
 Source:
 [`examples/text/text_metrics.py`](../examples/text/text_metrics.py)
+
+![Font queries](../examples/text/font_queries.jpg)
+
+Source:
+[`examples/text/font_queries.py`](../examples/text/font_queries.py)

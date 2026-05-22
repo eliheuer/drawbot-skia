@@ -27,3 +27,8 @@ Source:
 
 Source:
 [`examples/shapes/path_boolean_operations.py`](../examples/shapes/path_boolean_operations.py)
+
+![Text to path](../examples/shapes/text_to_path.jpg)
+
+Source:
+[`examples/shapes/text_to_path.py`](../examples/shapes/text_to_path.py)
