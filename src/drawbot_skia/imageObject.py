@@ -1171,11 +1171,7 @@ class ImageObject:
         self._setPILImage(_mergeRGBA(detail, blurred, detail, image.getchannel("A")))
 
     def shadedMaterial(self, shadingImage, scale=10.0):
-        shading = _imageObjectToPIL(shadingImage).resize(self.size()).convert("L")
-        image = self._pilImage()
-        amount = max(0, min(1, float(scale) / 20))
-        shaded = _mergeRGBA(shading, shading, shading, image.getchannel("A"))
-        self._setPILImage(_blendRGBA(image, shaded, amount))
+        self._setPILImage(_shadedMaterialImage(self._pilImage(), _imageObjectToPIL(shadingImage), scale))
 
     def spotLight(
         self,
@@ -3048,6 +3044,50 @@ def _distanceToSegment(x, y, point0, point1):
     closestX = x0 + t * dx
     closestY = y0 + t * dy
     return math.hypot(x - closestX, y - closestY)
+
+
+def _shadedMaterialImage(image, shadingImage, scale):
+    from PIL import Image
+
+    source = image.convert("RGBA")
+    shading = shadingImage.resize(source.size).convert("L")
+    scale = float(scale)
+    sourcePixels = source.load()
+    shadingPixels = shading.load()
+    result = Image.new("RGBA", source.size)
+    resultPixels = result.load()
+    lightX, lightY, lightZ = -0.45, -0.45, 1.0
+    lightLength = math.sqrt(lightX * lightX + lightY * lightY + lightZ * lightZ)
+    lightX /= lightLength
+    lightY /= lightLength
+    lightZ /= lightLength
+    strength = max(0, scale) / 10
+    for y in range(source.height):
+        y0 = max(0, y - 1)
+        y1 = min(source.height - 1, y + 1)
+        for x in range(source.width):
+            x0 = max(0, x - 1)
+            x1 = min(source.width - 1, x + 1)
+            dx = (shadingPixels[x1, y] - shadingPixels[x0, y]) / 255 * strength
+            dy = (shadingPixels[x, y1] - shadingPixels[x, y0]) / 255 * strength
+            normalX = -dx
+            normalY = -dy
+            normalZ = 1.0
+            normalLength = math.sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ) or 1
+            normalX /= normalLength
+            normalY /= normalLength
+            normalZ /= normalLength
+            diffuse = max(0, normalX * lightX + normalY * lightY + normalZ * lightZ)
+            ambient = 0.35
+            factor = ambient + diffuse * (1 - ambient)
+            red, green, blue, alpha = sourcePixels[x, y]
+            resultPixels[x, y] = (
+                _clampByte(red * factor),
+                _clampByte(green * factor),
+                _clampByte(blue * factor),
+                alpha,
+            )
+    return result
 
 
 def _spotLightImage(image, lightPosition, lightPointsAt, brightness, concentration, color):

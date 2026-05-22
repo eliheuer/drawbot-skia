@@ -1015,6 +1015,25 @@ def test_imageObject_depth_of_field_uses_focus_line(tmpdir):
     assert [blurred._pilImage().getpixel((x, 2))[0] for x in range(7)] == [1, 3, 12, 148, 12, 3, 1]
 
 
+def test_imageObject_shaded_material_uses_height_gradient(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "material.png"
+    shadingPath = pathlib.Path(tmpdir) / "material-shading.png"
+    Image.new("RGBA", (5, 3), (100, 100, 100, 255)).save(imagePath)
+    shading = Image.new("L", (5, 3))
+    for y in range(3):
+        for x, value in enumerate([255, 192, 128, 64, 0]):
+            shading.putpixel((x, y), value)
+    shading.convert("RGBA").save(shadingPath)
+
+    flat = ImageObject(imagePath)
+    assert flat.shadedMaterial(shadingPath, scale=0) is None
+    assert [flat._pilImage().getpixel((x, 1))[0] for x in range(5)] == [90, 90, 90, 90, 90]
+
+    relieved = ImageObject(imagePath)
+    assert relieved.shadedMaterial(shadingPath, scale=10) is None
+    assert [relieved._pilImage().getpixel((x, 1))[0] for x in range(5)] == [82, 73, 73, 73, 82]
+
+
 def test_imageObject_transition_batch(tmpdir):
     sourcePath = pathlib.Path(tmpdir) / "source.png"
     targetPath = pathlib.Path(tmpdir) / "target.png"
