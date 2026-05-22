@@ -1754,6 +1754,44 @@ def test_imageObject_noise_reduction_controls_noise_and_sharpness(tmpdir):
     assert sum(denoised._pilImage().tobytes()) == 15095
 
 
+def test_imageObject_color_monochrome_preserves_alpha(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "color-monochrome-alpha.png"
+    image = Image.new("RGBA", (4, 1))
+    for x, pixel in enumerate(
+        [
+            (20, 80, 140, 50),
+            (80, 120, 160, 90),
+            (160, 80, 40, 130),
+            (240, 200, 80, 170),
+        ]
+    ):
+        image.putpixel((x, 0), pixel)
+    image.save(imagePath)
+    baseline = ImageObject(imagePath)._pilImage().tobytes()
+
+    unchanged = ImageObject(imagePath)
+    assert unchanged.colorMonochrome(color=(1, 0, 0, 0.25), intensity=0) is None
+    assert unchanged._pilImage().tobytes() == baseline
+
+    monochrome = ImageObject(imagePath)
+    assert monochrome.colorMonochrome(color=(1, 0.5, 0, 0.25), intensity=1) is None
+    assert [monochrome._pilImage().getpixel((x, 0)) for x in range(4)] == [
+        (71, 36, 0, 50),
+        (113, 57, 0, 90),
+        (100, 49, 0, 130),
+        (198, 99, 0, 170),
+    ]
+
+    partial = ImageObject(imagePath)
+    assert partial.colorMonochrome(color=(1, 0.5, 0, 0.25), intensity=0.5) is None
+    assert [partial._pilImage().getpixel((x, 0)) for x in range(4)] == [
+        (46, 56, 71, 50),
+        (96, 88, 79, 90),
+        (129, 65, 20, 130),
+        (219, 149, 41, 170),
+    ]
+
+
 def test_imageObject_sharpen_luminance_preserves_chroma_and_alpha(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "sharpen-luminance.png"
     image = Image.new("RGBA", (5, 1))

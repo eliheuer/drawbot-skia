@@ -663,14 +663,14 @@ class ImageObject:
 
         image = self._pilImage()
         gray = image.convert("L")
-        cr, cg, cb, ca = _colorToRGBABytes(color)
+        cr, cg, cb, _ca = _colorToRGBABytes(color)
         tinted = Image.merge(
             "RGBA",
             (
                 gray.point(lambda value: _clampByte(value * cr / 255)),
                 gray.point(lambda value: _clampByte(value * cg / 255)),
                 gray.point(lambda value: _clampByte(value * cb / 255)),
-                image.getchannel("A").point(lambda value: _clampByte(value * ca / 255)),
+                image.getchannel("A"),
             ),
         )
         self._setPILImage(_blendRGBA(image, tinted, intensity))
