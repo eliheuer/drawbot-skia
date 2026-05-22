@@ -1040,6 +1040,32 @@ def test_imageObject_mod_transition_angle_compression(tmpdir):
     assert [compressed._pilImage().getpixel((x, 2))[2] for x in range(5)] == [128, 129, 89, 129, 128]
 
 
+def test_imageObject_accordion_fold_transition_parameters(tmpdir):
+    sourcePath = pathlib.Path(tmpdir) / "accordion-source.png"
+    targetPath = pathlib.Path(tmpdir) / "accordion-target.png"
+    Image.new("RGBA", (6, 3), (255, 0, 0, 255)).save(sourcePath)
+    Image.new("RGBA", (6, 3), (0, 0, 255, 255)).save(targetPath)
+
+    im = ImageObject(sourcePath)
+    assert im.accordionFoldTransition(
+        targetPath,
+        bottomHeight=1,
+        numberOfFolds=3,
+        foldShadowAmount=0.5,
+        time=0.5,
+    ) is None
+    image = im._pilImage()
+    assert [image.getpixel((x, 0)) for x in range(6)] == [
+        (0, 0, 255, 255),
+        (0, 0, 255, 255),
+        (0, 0, 128, 255),
+        (0, 0, 223, 255),
+        (0, 0, 255, 255),
+        (255, 0, 0, 255),
+    ]
+    assert [image.getpixel((x, 2)) for x in range(6)] == [(255, 0, 0, 255)] * 6
+
+
 def test_numberOfPages_gif(tmpdir):
     source = """
 for i in range(3):

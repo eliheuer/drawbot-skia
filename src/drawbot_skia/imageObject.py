@@ -1726,7 +1726,17 @@ class ImageObject:
         foldShadowAmount=0.1,
         time=0.0,
     ):
-        self.barsSwipeTransition(targetImage, width=max(1, self.size()[0] / max(1, float(numberOfFolds))), time=time)
+        target = _imageObjectToPIL(targetImage).resize(self.size())
+        self._setPILImage(
+            _accordionFoldTransitionImage(
+                self._pilImage(),
+                target,
+                bottomHeight,
+                numberOfFolds,
+                foldShadowAmount,
+                time,
+            )
+        )
 
     def pageCurlTransition(
         self,
@@ -2927,6 +2937,42 @@ def _modTransitionMask(size, center, time, angle, radius, compression):
             radial = max(0, 1 - distance / reach)
             pixels[x, y] = _clampByte(radial * (0.35 + 0.65 * wave) * 255)
     return mask
+
+
+def _accordionFoldTransitionImage(source, target, bottomHeight, numberOfFolds, foldShadowAmount, time):
+    source = source.convert("RGBA")
+    target = target.convert("RGBA").resize(source.size)
+    width, height = source.size
+    bottomHeight = max(0, min(height, int(round(float(bottomHeight)))))
+    folds = max(1, int(round(float(numberOfFolds))))
+    foldWidth = max(1, width / folds)
+    foldShadowAmount = max(0, min(1, float(foldShadowAmount)))
+    time = max(0, min(1, float(time)))
+    reveal = width * time
+    result = source.copy()
+    sourcePixels = source.load()
+    targetPixels = target.load()
+    resultPixels = result.load()
+    for y in range(height):
+        if bottomHeight and y >= height - bottomHeight:
+            continue
+        for x in range(width):
+            foldIndex = min(folds - 1, int(x / foldWidth))
+            foldStart = foldIndex * foldWidth
+            foldPhase = (x - foldStart) / foldWidth
+            foldProgress = max(0, min(1, (reveal - foldStart) / foldWidth))
+            if foldPhase <= foldProgress:
+                pixel = targetPixels[x, y]
+            else:
+                pixel = sourcePixels[x, y]
+            shade = 1 - foldShadowAmount * (0.25 + 0.75 * abs(0.5 - foldPhase) * 2) * (foldIndex % 2)
+            resultPixels[x, y] = (
+                _clampByte(pixel[0] * shade),
+                _clampByte(pixel[1] * shade),
+                _clampByte(pixel[2] * shade),
+                pixel[3],
+            )
+    return result
 
 
 def _rippleDistortImage(image, shading, center, width, scale, time):
