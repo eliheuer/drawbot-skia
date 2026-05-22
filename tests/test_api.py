@@ -1066,6 +1066,59 @@ def test_imageObject_accordion_fold_transition_parameters(tmpdir):
     assert [image.getpixel((x, 2)) for x in range(6)] == [(255, 0, 0, 255)] * 6
 
 
+def test_imageObject_page_curl_transition_images(tmpdir):
+    sourcePath = pathlib.Path(tmpdir) / "pagecurl-source.png"
+    targetPath = pathlib.Path(tmpdir) / "pagecurl-target.png"
+    backsidePath = pathlib.Path(tmpdir) / "pagecurl-backside.png"
+    shadingPath = pathlib.Path(tmpdir) / "pagecurl-shading.png"
+    Image.new("RGBA", (6, 3), (255, 0, 0, 255)).save(sourcePath)
+    Image.new("RGBA", (6, 3), (0, 0, 255, 255)).save(targetPath)
+    Image.new("RGBA", (6, 3), (0, 255, 0, 255)).save(backsidePath)
+    Image.new("RGBA", (6, 3), (0, 0, 0, 255)).save(shadingPath)
+
+    curl = ImageObject(sourcePath)
+    assert curl.pageCurlTransition(
+        targetPath,
+        backsidePath,
+        shadingPath,
+        extent=(0, 0, 6, 1),
+        time=0.5,
+        angle=0,
+        radius=2,
+    ) is None
+    assert [curl._pilImage().getpixel((x, 0)) for x in range(6)] == [
+        (0, 0, 255, 255),
+        (0, 0, 255, 255),
+        (0, 0, 255, 255),
+        (0, 140, 0, 255),
+        (255, 0, 0, 255),
+        (255, 0, 0, 255),
+    ]
+    assert [curl._pilImage().getpixel((x, 1)) for x in range(6)] == [(255, 0, 0, 255)] * 6
+
+    shadow = ImageObject(sourcePath)
+    assert shadow.pageCurlWithShadowTransition(
+        targetPath,
+        backsidePath,
+        extent=(0, 0, 6, 1),
+        time=0.5,
+        angle=0,
+        radius=2,
+        shadowSize=0.2,
+        shadowAmount=1,
+        shadowExtent=(0, 0, 6, 1),
+    ) is None
+    assert [shadow._pilImage().getpixel((x, 0)) for x in range(6)] == [
+        (0, 0, 255, 255),
+        (0, 0, 255, 255),
+        (0, 0, 237, 255),
+        (0, 255, 0, 255),
+        (237, 0, 0, 255),
+        (255, 0, 0, 255),
+    ]
+    assert [shadow._pilImage().getpixel((x, 1)) for x in range(6)] == [(255, 0, 0, 255)] * 6
+
+
 def test_numberOfPages_gif(tmpdir):
     source = """
 for i in range(3):

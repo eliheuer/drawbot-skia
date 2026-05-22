@@ -1748,7 +1748,21 @@ class ImageObject:
         angle=0.0,
         radius=100.0,
     ):
-        self.swipeTransition(targetImage, extent=extent, time=time, angle=angle, width=radius)
+        target = _imageObjectToPIL(targetImage).resize(self.size())
+        backside = _imageObjectToPIL(backsideImage).resize(self.size())
+        shading = _imageObjectToPIL(shadingImage).resize(self.size())
+        self._setPILImage(
+            _pageCurlTransitionImage(
+                self._pilImage(),
+                target,
+                backside,
+                shading,
+                extent,
+                time,
+                angle,
+                radius,
+            )
+        )
 
     def pageCurlWithShadowTransition(
         self,
@@ -1762,7 +1776,23 @@ class ImageObject:
         shadowAmount=0.7,
         shadowExtent=(0.0, 0.0, 0.0, 0.0),
     ):
-        self.swipeTransition(targetImage, extent=extent, time=time, angle=angle, width=radius)
+        target = _imageObjectToPIL(targetImage).resize(self.size())
+        backside = _imageObjectToPIL(backsideImage).resize(self.size())
+        self._setPILImage(
+            _pageCurlTransitionImage(
+                self._pilImage(),
+                target,
+                backside,
+                None,
+                extent,
+                time,
+                angle,
+                radius,
+                shadowSize,
+                shadowAmount,
+                shadowExtent,
+            )
+        )
 
     def blendWithAlphaMask(self, backgroundImage, maskImage):
         from PIL import Image
@@ -2975,6 +3005,50 @@ def _accordionFoldTransitionImage(source, target, bottomHeight, numberOfFolds, f
     return result
 
 
+def _pageCurlTransitionImage(
+    source,
+    target,
+    backside,
+    shading,
+    extent,
+    time,
+    angle,
+    radius,
+    shadowSize=0.0,
+    shadowAmount=0.0,
+    shadowExtent=None,
+):
+    from PIL import ImageFilter
+
+    size = source.size
+    radius = max(1, float(radius))
+    transitionMask = _linearTransitionMask(size, time, angle, radius, extent)
+    curlMask = _linearTransitionBandMask(size, time, angle, radius, extent)
+    result = _blendWithMask(source, target, transitionMask)
+    backside = backside.convert("RGBA")
+    if shading is not None:
+        shade = shading.resize(size).convert("L")
+        shadedData = []
+        for pixel, shadeValue in zip(_getImageData(backside), _getImageData(shade)):
+            factor = 0.55 + 0.45 * (shadeValue / 255)
+            shadedData.append((
+                _clampByte(pixel[0] * factor),
+                _clampByte(pixel[1] * factor),
+                _clampByte(pixel[2] * factor),
+                pixel[3],
+            ))
+        backside = _newRGBAWithData(size, shadedData)
+    if shadowAmount:
+        shadow = curlMask.filter(ImageFilter.GaussianBlur(max(0, float(shadowSize) * radius))).point(
+            lambda value: _clampByte(value * float(shadowAmount))
+        )
+        if shadowExtent is not None:
+            clipped = _extentMask(size, shadowExtent)
+            shadow = _multiplyMask(shadow, clipped)
+        result = _blendWithMask(result, _solidFromColor((0, 0, 0, 255), size), shadow)
+    return _blendWithMask(result, backside, curlMask)
+
+
 def _rippleDistortImage(image, shading, center, width, scale, time):
     shading = shading.resize(image.size).convert("L")
     shadingPixels = shading.load()
@@ -3084,6 +3158,24 @@ def _pointInExtent(x, y, extent, size):
     right = min(imageWidth, left + float(ew))
     bottom = min(imageHeight, top + float(eh))
     return left <= x < right and top <= y < bottom
+
+
+def _extentMask(size, extent):
+    from PIL import Image
+
+    mask = Image.new("L", size, 0)
+    pixels = mask.load()
+    width, height = size
+    for y in range(height):
+        for x in range(width):
+            pixels[x, y] = 255 if _pointInExtent(x, y, extent, size) else 0
+    return mask
+
+
+def _multiplyMask(mask1, mask2):
+    from PIL import ImageChops
+
+    return ImageChops.multiply(mask1, mask2)
 
 
 def _barsTransitionMask(size, time, angle, width, barOffset):
