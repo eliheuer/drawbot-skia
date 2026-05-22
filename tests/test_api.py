@@ -785,6 +785,54 @@ def test_imageObject_simple_geometry_batch(tmpdir):
         assert im.size() == (20, 12)
 
 
+def test_imageObject_nine_part_geometry_preserves_regions(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "nine-part.png"
+    image = Image.new("RGBA", (4, 4), (0, 0, 0, 255))
+    rows = [
+        [(255, 0, 0, 255), (220, 0, 0, 255), (180, 0, 0, 255), (140, 0, 0, 255)],
+        [(0, 255, 0, 255), (10, 20, 30, 255), (40, 50, 60, 255), (0, 180, 0, 255)],
+        [(0, 0, 255, 255), (70, 80, 90, 255), (100, 110, 120, 255), (0, 0, 180, 255)],
+        [(255, 255, 0, 255), (220, 220, 0, 255), (180, 180, 0, 255), (140, 140, 0, 255)],
+    ]
+    for y, row in enumerate(rows):
+        for x, color in enumerate(row):
+            image.putpixel((x, y), color)
+    image.save(imagePath)
+
+    stretched = ImageObject(imagePath)
+    assert stretched.ninePartStretched(breakpoint0=(1, 1), breakpoint1=(3, 3), growAmount=(2, 2)) is None
+    stretchedImage = stretched._pilImage()
+    assert stretchedImage.size == (6, 6)
+    assert stretchedImage.getpixel((0, 0)) == rows[0][0]
+    assert stretchedImage.getpixel((5, 0)) == rows[0][3]
+    assert stretchedImage.getpixel((0, 5)) == rows[3][0]
+    assert stretchedImage.getpixel((5, 5)) == rows[3][3]
+
+    tiled = ImageObject(imagePath)
+    assert tiled.ninePartTiled(
+        breakpoint0=(1, 1),
+        breakpoint1=(3, 3),
+        growAmount=(2, 2),
+        flipYTiles=False,
+    ) is None
+    tiledImage = tiled._pilImage()
+    assert tiledImage.size == (6, 6)
+    assert [tiledImage.getpixel((x, 1)) for x in range(1, 5)] == [
+        rows[1][1],
+        rows[1][2],
+        rows[1][1],
+        rows[1][2],
+    ]
+    assert [tiledImage.getpixel((x, 2)) for x in range(1, 5)] == [
+        rows[2][1],
+        rows[2][2],
+        rows[2][1],
+        rows[2][2],
+    ]
+    assert tiledImage.getpixel((0, 0)) == rows[0][0]
+    assert tiledImage.getpixel((5, 5)) == rows[3][3]
+
+
 def test_imageObject_analysis_and_stylize_batch(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "analysis.png"
     image = Image.new("RGBA", (24, 16), (40, 80, 160, 255))

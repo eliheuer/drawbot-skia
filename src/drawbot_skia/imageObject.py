@@ -514,17 +514,12 @@ class ImageObject:
         self._setPILImage(_tileImage(self._pilImage(), rotations=8, reflect=False, angle=rotation))
 
     def ninePartStretched(self, breakpoint0=(50.0, 50.0), breakpoint1=(150.0, 150.0), growAmount=(100.0, 100.0)):
-        from PIL import Image
-
-        image = self._pilImage()
-        growX, growY = growAmount
-        size = (max(1, int(round(image.width + growX))), max(1, int(round(image.height + growY))))
-        self._setPILImage(image.resize(size, Image.Resampling.BICUBIC))
+        self._setPILImage(_ninePartImage(self._pilImage(), breakpoint0, breakpoint1, growAmount, tiled=False))
         self._offset = (0, 0)
 
     def ninePartTiled(self, breakpoint0=(50.0, 50.0), breakpoint1=(150.0, 150.0), growAmount=(100.0, 100.0), flipYTiles=True):
-        self.ninePartStretched(breakpoint0, breakpoint1, growAmount)
-        self._setPILImage(_offsetTileImage(self._pilImage(), max(1, growAmount[0]), 0))
+        self._setPILImage(_ninePartImage(self._pilImage(), breakpoint0, breakpoint1, growAmount, tiled=True, flipYTiles=flipYTiles))
+        self._offset = (0, 0)
 
     def crop(
         self,
@@ -3338,6 +3333,62 @@ def _torusDistortImage(image, center, radius, width, refraction):
         return cx + dx * factor, cy + dy * factor
 
     return _distortImage(image, mapPoint)
+
+
+def _ninePartImage(image, breakpoint0, breakpoint1, growAmount, tiled=False, flipYTiles=True):
+    from PIL import Image
+
+    source = image.convert("RGBA")
+    x0, y0 = breakpoint0
+    x1, y1 = breakpoint1
+    left = max(0, min(source.width, int(round(min(x0, x1)))))
+    right = max(left, min(source.width, int(round(max(x0, x1)))))
+    top = max(0, min(source.height, int(round(min(y0, y1)))))
+    bottom = max(top, min(source.height, int(round(max(y0, y1)))))
+    growX, growY = growAmount
+    targetWidth = max(1, int(round(source.width + float(growX))))
+    targetHeight = max(1, int(round(source.height + float(growY))))
+    targetLeft = min(left, targetWidth)
+    targetRightWidth = min(source.width - right, max(0, targetWidth - targetLeft))
+    targetCenterWidth = max(0, targetWidth - targetLeft - targetRightWidth)
+    targetTop = min(top, targetHeight)
+    targetBottomHeight = min(source.height - bottom, max(0, targetHeight - targetTop))
+    targetCenterHeight = max(0, targetHeight - targetTop - targetBottomHeight)
+    sourceXs = (0, left, right, source.width)
+    sourceYs = (0, top, bottom, source.height)
+    targetXs = (0, targetLeft, targetLeft + targetCenterWidth, targetWidth)
+    targetYs = (0, targetTop, targetTop + targetCenterHeight, targetHeight)
+    result = Image.new("RGBA", (targetWidth, targetHeight), (0, 0, 0, 0))
+    for row in range(3):
+        for column in range(3):
+            box = (sourceXs[column], sourceYs[row], sourceXs[column + 1], sourceYs[row + 1])
+            patch = source.crop(box)
+            targetBox = (targetXs[column], targetYs[row], targetXs[column + 1], targetYs[row + 1])
+            targetPatchWidth = targetBox[2] - targetBox[0]
+            targetPatchHeight = targetBox[3] - targetBox[1]
+            if patch.width <= 0 or patch.height <= 0 or targetPatchWidth <= 0 or targetPatchHeight <= 0:
+                continue
+            if tiled and (row == 1 or column == 1):
+                patch = _tilePatch(patch, targetPatchWidth, targetPatchHeight, flipY=flipYTiles and row == 1)
+            elif patch.size != (targetPatchWidth, targetPatchHeight):
+                patch = patch.resize((targetPatchWidth, targetPatchHeight), Image.Resampling.BICUBIC)
+            result.alpha_composite(patch, (targetBox[0], targetBox[1]))
+    return result
+
+
+def _tilePatch(patch, width, height, flipY=False):
+    from PIL import Image
+
+    result = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    patch = patch.convert("RGBA")
+    for y in range(0, height, patch.height):
+        rowIndex = y // patch.height
+        rowPatch = patch.transpose(Image.Transpose.FLIP_TOP_BOTTOM) if flipY and rowIndex % 2 else patch
+        for x in range(0, width, patch.width):
+            tile = rowPatch.transpose(Image.Transpose.FLIP_LEFT_RIGHT) if flipY and (x // patch.width) % 2 else rowPatch
+            tile = tile.crop((0, 0, min(tile.width, width - x), min(tile.height, height - y)))
+            result.alpha_composite(tile, (x, y))
+    return result
 
 
 def _quadTransformImage(image, topLeft, topRight, bottomRight, bottomLeft):
