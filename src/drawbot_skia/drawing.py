@@ -4,6 +4,7 @@ import math
 import os
 import re
 import skia
+from collections import namedtuple
 from .document import RecordingDocument
 from .errors import DrawbotError
 from .formattedString import FormattedString
@@ -12,6 +13,9 @@ from .shaping import alignGlyphPositions
 
 
 DEFAULT_CANVAS_DIMENSIONS = (1000, 1000)
+CharactersBounds = namedtuple(
+    "CharactersBounds", ["bounds", "baselineOffset", "formattedSubString"]
+)
 
 _paperSizes = {
     "Letter": (612, 792),
@@ -381,6 +385,67 @@ class Drawing:
             )
         return baselines
 
+    def textBoxCharacterBounds(self, txt, box, align=None):
+        x, y, width, height = box
+        boxAlign = _textBoxAlign(align)
+        if isinstance(txt, FormattedString):
+            lineHeight = _formattedStringBaseLineHeight(txt, self._gstate.textStyle)
+            maxLines = max(0, int(height // lineHeight))
+            if maxLines == 0:
+                return []
+            lines, overflow = self._wrapFormattedString(txt, width, maxLines)
+            baseline = y + height - _formattedLineBaselineOffset(
+                lines[0][0], self._gstate.textStyle
+            )
+            bounds = []
+            for line, xOffset, paragraphStart, paragraphEnd, paragraphProperties in lines:
+                if paragraphStart:
+                    baseline -= paragraphProperties.get("paragraphTopSpacing") or 0
+                lineInfo = self._formattedLines(line)[0]
+                lineWidth = lineInfo[0]
+                bounds.extend(
+                    self._formattedLineCharacterBounds(
+                        line,
+                        x + xOffset + _alignmentOffset(lineWidth, boxAlign),
+                        baseline,
+                    )
+                )
+                if line:
+                    lineHeight = _lineHeight(lineInfo)
+                else:
+                    lineHeight = _formattedStringBaseLineHeight(
+                        line, self._gstate.textStyle
+                    )
+                baseline -= lineHeight
+                if paragraphEnd:
+                    baseline -= paragraphProperties.get("paragraphBottomSpacing") or 0
+            return bounds
+
+        lineHeight = self._gstate.textStyle.getLineHeight()
+        maxLines = max(0, int(height // lineHeight))
+        if maxLines == 0:
+            return []
+        lines, overflow = self._wrapText(txt, width, maxLines)
+        firstBaseline = y + height - self._gstate.textStyle.fontSize
+        bounds = []
+        for lineIndex, line in enumerate(lines):
+            lineWidth, parts = _textLineRunParts(
+                line, self._gstate.textStyle, self._gstate.textStyle.tracking
+            )
+            baseline = firstBaseline - lineIndex * lineHeight
+            xOffset = _alignmentOffset(lineWidth, boxAlign)
+            for runX, runText, glyphsInfo in parts:
+                bounds.append(
+                    _characterBounds(
+                        x + xOffset + runX,
+                        baseline,
+                        glyphsInfo.endPos[0],
+                        self._gstate.textStyle,
+                        runText,
+                    )
+                )
+        return bounds
+
     def _wrapText(self, txt, width, maxLines):
         lines = []
         remainingParagraphs = txt.split("\n")
@@ -670,34 +735,33 @@ class Drawing:
         return lines
 
     def _textLineRuns(self, line, textStyle, tracking=None):
-        tabs = textStyle.tabs
-        if not tabs or "\t" not in line:
-            glyphsInfo = textStyle.shape(line)
-            if tracking is not None:
-                _applyTracking(glyphsInfo, tracking)
-            return glyphsInfo.endPos[0], [(0, glyphsInfo)]
+        lineWidth, runs = _textLineRunParts(line, textStyle, tracking)
+        return lineWidth, [(runX, glyphsInfo) for runX, runText, glyphsInfo in runs]
 
-        runs = []
-        lineWidth = 0
-        pendingTab = None
-        for index, part in enumerate(line.split("\t")):
-            if index:
-                pendingTab = _nextTabStop(lineWidth, tabs)
-            if not part:
+    def _formattedLineCharacterBounds(self, line, x, baseline):
+        bounds = []
+        currentX = 0
+        for runText, properties in line._iterRuns():
+            if not runText:
                 continue
-            glyphsInfo = textStyle.shape(part)
-            if tracking is not None:
-                _applyTracking(glyphsInfo, tracking)
-            runWidth = glyphsInfo.endPos[0]
-            if pendingTab is None:
-                runX = lineWidth
-            else:
-                tabPosition, alignment = pendingTab
-                runX = _alignedTabRunX(part, runWidth, tabPosition, alignment, textStyle)
-                pendingTab = None
-            runs.append((runX, glyphsInfo))
-            lineWidth = max(lineWidth, runX + runWidth)
-        return lineWidth, runs
+            textStyle = _textStyleWithProperties(self._gstate.textStyle, properties)
+            lineWidth, parts = _textLineRunParts(
+                runText, textStyle, properties.get("tracking", textStyle.tracking)
+            )
+            for runX, partText, glyphsInfo in parts:
+                subString = _formattedStringFromTokens([(partText, properties)], line)
+                bounds.append(
+                    _characterBounds(
+                        x + currentX + runX,
+                        baseline
+                        + properties.get("baselineShift", textStyle.baselineShift),
+                        glyphsInfo.endPos[0],
+                        textStyle,
+                        subString,
+                    )
+                )
+            currentX += lineWidth
+        return bounds
 
     def _drawGlyphs(self, glyphsInfo, y, x=0):
         textStyle = self._gstate.textStyle
@@ -941,6 +1005,48 @@ def _lineTextProperties(textStyle):
         textStyle.baselineShift or 0,
         textStyle.underline,
         textStyle.strikethrough,
+    )
+
+
+def _textLineRunParts(line, textStyle, tracking=None):
+    tabs = textStyle.tabs
+    if not tabs or "\t" not in line:
+        glyphsInfo = textStyle.shape(line)
+        if tracking is not None:
+            _applyTracking(glyphsInfo, tracking)
+        return glyphsInfo.endPos[0], [(0, line, glyphsInfo)]
+
+    runs = []
+    lineWidth = 0
+    pendingTab = None
+    for index, part in enumerate(line.split("\t")):
+        if index:
+            pendingTab = _nextTabStop(lineWidth, tabs)
+        if not part:
+            continue
+        glyphsInfo = textStyle.shape(part)
+        if tracking is not None:
+            _applyTracking(glyphsInfo, tracking)
+        runWidth = glyphsInfo.endPos[0]
+        if pendingTab is None:
+            runX = lineWidth
+        else:
+            tabPosition, alignment = pendingTab
+            runX = _alignedTabRunX(part, runWidth, tabPosition, alignment, textStyle)
+            pendingTab = None
+        runs.append((runX, part, glyphsInfo))
+        lineWidth = max(lineWidth, runX + runWidth)
+    return lineWidth, runs
+
+
+def _characterBounds(x, baseline, width, textStyle, formattedSubString):
+    metrics = textStyle.skFont.getMetrics()
+    baselineOffset = -metrics.fAscent
+    height = baselineOffset + metrics.fDescent
+    return CharactersBounds(
+        (x, baseline - baselineOffset, width, height),
+        baselineOffset,
+        formattedSubString,
     )
 
 

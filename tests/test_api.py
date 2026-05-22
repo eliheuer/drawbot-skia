@@ -338,6 +338,12 @@ def test_textBox_returns_overflow():
         (0, 28),
         (0, 4),
     ]
+    bounds = db.textBoxCharacterBounds("one two three four five six", (0, 0, 80, 48))
+    assert len(bounds) == 2
+    assert [item.formattedSubString for item in bounds] == ["one two", "three"]
+    assert bounds[0].bounds[0] == 0
+    assert bounds[0].bounds[1] < bounds[0].baselineOffset
+    assert bounds[0].bounds[2] > 0
 
 
 def test_textBox_hyphenation():
@@ -394,6 +400,11 @@ def test_textBox_formattedString_returns_overflow():
     assert list(overflow._iterRuns())[-1][1]["fill"] == (255, 0, 0, 255)
     assert str(db.textOverflow(t, (0, 0, 80, 48))) == str(overflow)
     assert len(db.textBoxBaselines(t, (0, 0, 80, 48))) == 2
+    bounds = db.textBoxCharacterBounds(t, (0, 0, 80, 48))
+    assert len(bounds) >= 2
+    assert isinstance(bounds[0].formattedSubString, FormattedString)
+    assert str(bounds[0].formattedSubString)
+    assert bounds[0].bounds[2] > 0
 
 
 def test_textBox_formattedString_hyphenation():
