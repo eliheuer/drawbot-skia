@@ -327,16 +327,16 @@ DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork
 
 Representative behavior follow-up groups:
 
-- generators and barcodes: barcode and advanced Core Image generator method names now exist, but barcode output is deterministic placeholder pattern generation rather than standards-compliant QR/PDF417/Aztec/Code 128 encoding;
-- blur, stylization, saliency, segmentation, material, and lighting filters now exist as Pillow-backed approximations and still need deeper Core Image-equivalent behavior;
-- color/statistical filters now exist as Pillow-backed approximations and still need deeper Core Image-equivalent behavior for true Lab, KMeans, palette, and spot-color semantics;
-- compositing, transition, and mask workflow method names now exist as Pillow-backed approximations and still need deeper Core Image-equivalent transition semantics;
-- geometry and distortion method names now exist as Pillow-backed approximations and still need deeper Core Image-equivalent behavior for keystone, Droste, and advanced warps.
+- generators and barcodes: barcode and advanced Core Image generator method names now exist, but barcode output is deterministic placeholder pattern generation rather than standards-compliant QR/PDF417/Aztec/Code 128 encoding; tracked in [#6](https://github.com/eliheuer/drawbot-skia/issues/6).
+- blur, stylization, saliency, segmentation, material, and lighting filters now exist as Pillow-backed approximations and still need deeper Core Image-equivalent behavior; tracked in [#8](https://github.com/eliheuer/drawbot-skia/issues/8).
+- color/statistical filters now exist as Pillow-backed approximations and still need deeper Core Image-equivalent behavior for true Lab, KMeans, palette, and spot-color semantics; tracked in [#7](https://github.com/eliheuer/drawbot-skia/issues/7).
+- compositing, transition, and mask workflow method names now exist as Pillow-backed approximations and still need deeper Core Image-equivalent transition semantics; tracked in [#9](https://github.com/eliheuer/drawbot-skia/issues/9).
+- geometry and distortion method names now exist as Pillow-backed approximations and still need deeper Core Image-equivalent behavior for keystone, Droste, and advanced warps; tracked in [#10](https://github.com/eliheuer/drawbot-skia/issues/10).
 
 Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-heavy and "huge", this should not be treated as a blocker for the headline text/path parity milestone unless the project explicitly chooses an ImageObject parity target.
 
 ## Recommended Next Work
 
-1. Decide whether `mkbitmap`/`potrace` should be documented as optional traceImage dependencies, bundled, or replaced with a Python tracing dependency.
-2. Decide whether to keep explicit unsupported errors for macOS-only APIs or document them as permanently out of scope: `Variable`, `pdfImage`, `printImage`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`.
-3. Decide whether the Pillow-backed `ImageObject` approximations are sufficient for this fork or whether specific filters need Core Image-equivalent behavior.
+1. Decide whether `mkbitmap`/`potrace` should be documented as optional traceImage dependencies, bundled, or replaced with a Python tracing dependency; tracked in [#11](https://github.com/eliheuer/drawbot-skia/issues/11).
+2. Decide whether to keep explicit unsupported errors for macOS-only APIs or document them as permanently out of scope: `Variable`, `pdfImage`, `printImage`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`; tracked in [#1](https://github.com/eliheuer/drawbot-skia/issues/1).
+3. Decide whether the Pillow-backed `ImageObject` approximations are sufficient for this fork or whether specific filters need Core Image-equivalent behavior; umbrella tracked in [#2](https://github.com/eliheuer/drawbot-skia/issues/2), with specific follow-up issues [#6](https://github.com/eliheuer/drawbot-skia/issues/6), [#7](https://github.com/eliheuer/drawbot-skia/issues/7), [#8](https://github.com/eliheuer/drawbot-skia/issues/8), [#9](https://github.com/eliheuer/drawbot-skia/issues/9), and [#10](https://github.com/eliheuer/drawbot-skia/issues/10).
