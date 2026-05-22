@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-305 passed, 3 skipped, 3 warnings
+307 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -22,7 +22,7 @@ The fork has moved past the original upstream README blockers for animated GIF e
 
 The remaining parity work is concentrated in:
 
-- top-level DrawBot namespace gaps, including link annotations, installed font helpers, and app/page helpers;
+- top-level DrawBot namespace gaps, including link annotations and app/page helpers;
 - `BezierPath` gaps, especially `intersectionPoints()` and `traceImage()`;
 - `ImageObject`, where only a small cross-platform subset exists compared with DrawBot's Core Image-backed API;
 - macOS/AppKit-only APIs that should be deliberately documented as unsupported instead of silently treated as parity gaps.
@@ -50,16 +50,12 @@ Missing in `drawbot_skia.drawbot` after the latest parity wrapper batch:
 
 ```text
 Variable
-drawing
-installFont
-installedFonts
 linkDestination
 linkRect
 linkURL
 pages
 pdfImage
 printImage
-uninstallFont
 ```
 
 Notes:
@@ -68,9 +64,10 @@ Notes:
 - `textBoxCharacterBounds()` has been added for rectangular text boxes using drawbot-skia's current line wrapping and shaping stack.
 - `colorSpace()` and `listColorSpaces()` have been added as compatibility-level API/state support for DrawBot's standard color-space names. Rendering remains RGB-backed in Skia rather than CoreGraphics color-managed.
 - `listLanguages()` has been added with Python-locale-derived identifiers.
+- `drawing()` has been added as a reset/cleanup context manager.
+- `installedFonts()`, `installFont()`, and `uninstallFont()` have been added. Temporary font installation is process-local in drawbot-skia: `installFont(path)` returns the font's PostScript name and registers that name as an alias for the path so it can be passed to `font()`. As in DrawBot, these functions are deprecated in favor of passing font paths directly.
 - `linkURL`, `linkDestination`, and `linkRect` require output-context support, at least for PDF.
-- `Variable`, `drawing`, `pages`, `pdfImage`, and `printImage` are app/macOS-oriented and need a deliberate cross-platform support decision.
-- `installFont`/`uninstallFont` are likely macOS-specific in original DrawBot; cross-platform behavior should be scoped before implementation.
+- `Variable`, `pages`, `pdfImage`, and `printImage` are app/macOS-oriented and need a deliberate cross-platform support decision.
 
 ## `BezierPath` Gaps
 
@@ -146,5 +143,5 @@ Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-
 
 1. Implement or explicitly document PDF link annotation support for `linkURL`, `linkDestination`, `linkRect`, and richer `FormattedString.url()` behavior.
 2. Scope `BezierPath.intersectionPoints()` and `traceImage()` separately; both need targeted tests and may need new dependencies or geometry algorithms.
-3. Decide which app/macOS-only APIs are out of scope and document them: `Variable`, `drawing`, `pages`, `pdfImage`, `printImage`, `installFont`, `uninstallFont`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`.
+3. Decide which app/macOS-only APIs are out of scope and document them: `Variable`, `pages`, `pdfImage`, `printImage`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`.
 4. Decide an `ImageObject` target subset rather than chasing all Core Image filters.

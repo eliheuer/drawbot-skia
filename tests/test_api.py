@@ -629,6 +629,50 @@ def test_color_space_and_languages():
     assert "en-US" in languages
 
 
+def test_installed_fonts_and_temp_font_install():
+    db = Drawing()
+    installed = db.installedFonts()
+    assert installed == sorted(installed)
+    assert installed
+    assert db.installedFonts("A")
+    with pytest.raises(DrawbotError):
+        db.installedFonts("")
+
+    fontPath = testDir / "fonts" / "MutatorSans.ttf"
+    with pytest.warns(UserWarning, match="installFont"):
+        fontName = db.installFont(fontPath)
+    assert fontName == "MutatorMathTest-LightCondensed"
+    assert fontName in db.installedFonts()
+    assert fontName in db.installedFonts("A")
+    db.font(fontName)
+    assert db.fontContainsGlyph("A")
+    with pytest.warns(UserWarning, match="uninstallFont"):
+        assert db.uninstallFont(fontPath) is None
+    assert fontName not in db.installedFonts()
+
+
+def test_drawing_context_manager(tmpdir):
+    db = Drawing()
+    firstPath = pathlib.Path(tmpdir) / "first.png"
+    secondPath = pathlib.Path(tmpdir) / "second.png"
+
+    with db.drawing():
+        db.size(20, 20)
+        db.rect(0, 0, 20, 20)
+        db.saveImage(firstPath)
+        assert db.pageCount() == 1
+
+    assert db.pageCount() == 0
+    with db.drawing():
+        db.size(10, 10)
+        db.rect(0, 0, 10, 10)
+        db.saveImage(secondPath)
+
+    assert firstPath.exists()
+    assert secondPath.exists()
+    assert db.pageCount() == 0
+
+
 def test_opacity(tmpdir):
     path = pathlib.Path(tmpdir) / "opacity.png"
     db = Drawing()

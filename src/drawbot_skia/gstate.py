@@ -668,10 +668,31 @@ class TextStyle(_ImmutableContainer):
 
 
 _fontObjectsCache = {}
+_tempFontPathsByName = {}
+_tempFontNamesByPath = {}
 
 
 def clearFontCache():
     _fontObjectsCache.clear()
+
+
+def registerTempFont(path, fontName):
+    path = os.fspath(path)
+    _tempFontPathsByName[fontName] = path
+    _tempFontNamesByPath[path] = fontName
+    clearFontCache()
+
+
+def unregisterTempFont(path):
+    path = os.fspath(path)
+    fontName = _tempFontNamesByPath.pop(path, None)
+    if fontName is not None:
+        _tempFontPathsByName.pop(fontName, None)
+    clearFontCache()
+
+
+def getTempFontNames():
+    return set(_tempFontPathsByName)
 
 
 def _getFontObjects(fontNameOrPath):
@@ -694,7 +715,11 @@ class FontObjects:
         else:
             fontNameOrPath = os.fspath(fontNameOrPath)
             if not os.path.exists(fontNameOrPath):
-                typeface = skia.Typeface(fontNameOrPath)
+                fontPath = _tempFontPathsByName.get(fontNameOrPath)
+                if fontPath is None:
+                    typeface = skia.Typeface(fontNameOrPath)
+                else:
+                    typeface = skia.Typeface.MakeFromFile(fontPath)
             else:
                 typeface = skia.Typeface.MakeFromFile(fontNameOrPath)
                 if typeface is None:

@@ -5,11 +5,20 @@ import math
 import os
 import re
 import skia
+import warnings
 from collections import namedtuple
+from fontTools.ttLib import TTFont, TTLibError
 from .document import RecordingDocument
 from .errors import DrawbotError
 from .formattedString import FormattedString
-from .gstate import GraphicsState, GraphicsStateMixin
+from .gstate import (
+    GraphicsState,
+    GraphicsStateMixin,
+    _getFontObjects,
+    getTempFontNames,
+    registerTempFont,
+    unregisterTempFont,
+)
 from .shaping import alignGlyphPositions
 
 
@@ -83,6 +92,15 @@ class Drawing:
         self._canvas = None
         self._document.endDrawing()
 
+    @contextlib.contextmanager
+    def drawing(self):
+        self.newDrawing()
+        try:
+            yield
+        finally:
+            self.endDrawing()
+            self.newDrawing()
+
     def size(self, width, height=None):
         if self._document.isDrawing:
             raise DrawbotError(
@@ -145,6 +163,39 @@ class Drawing:
         languages.setdefault("en", "en")
         languages.setdefault("en-US", "en-US")
         return dict(sorted(languages.items()))
+
+    def installedFonts(self, supportsCharacters=None):
+        if supportsCharacters is not None and not supportsCharacters:
+            raise DrawbotError("supportsCharacters must contain at least one character")
+        fontNames = set(getTempFontNames())
+        fontMgr = skia.FontMgr.RefDefault()
+        for index in range(fontMgr.countFamilies()):
+            fontNames.add(fontMgr.getFamilyName(index))
+        fontNames = sorted(fontNames)
+        if supportsCharacters is None:
+            return fontNames
+        return [
+            fontName
+            for fontName in fontNames
+            if _fontSupportsCharacters(fontName, supportsCharacters)
+        ]
+
+    def installFont(self, path):
+        warnings.warn(
+            "installFont(path) has been deprecated, use the font path directly in all places that accept a font name.",
+            stacklevel=2,
+        )
+        path = os.fspath(path)
+        fontName = _fontNameForPath(path)
+        registerTempFont(path, fontName)
+        return fontName
+
+    def uninstallFont(self, path):
+        warnings.warn(
+            "uninstallFont(path) has been deprecated, use the font path directly in all places that accept a font name.",
+            stacklevel=2,
+        )
+        unregisterTempFont(path)
 
     def sizes(self, paperSize=None):
         if paperSize is None:
@@ -988,6 +1039,31 @@ def _pageSize(width, height=None):
     if height is None:
         raise TypeError("size() takes either a paper size name or width and height")
     return width, height
+
+
+def _fontNameForPath(path):
+    try:
+        font = TTFont(path, fontNumber=0)
+    except OSError:
+        raise DrawbotError(f"Font '{path}' does not exist.") from None
+    except TTLibError:
+        raise DrawbotError(f"Font '{path}' is not a valid font.") from None
+    try:
+        nameTable = font["name"]
+        name = nameTable.getName(6, 1, 0)
+        if name is None:
+            name = nameTable.getName(6, 3, 1)
+        if name is None:
+            raise DrawbotError(f"Font '{path}' does not have a PostScript name.")
+        return name.toUnicode()
+    finally:
+        font.close()
+
+
+def _fontSupportsCharacters(fontName, characters):
+    typeface = _getFontObjects(fontName).skTypeface
+    glyphs = typeface.unicharsToGlyphs([ord(character) for character in characters])
+    return all(glyph != 0 for glyph in glyphs)
 
 
 def _textStyleWithProperties(textStyle, properties):
