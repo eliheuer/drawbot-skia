@@ -263,6 +263,13 @@ At a high level:
 3. Each page is stored as a Skia picture.
 4. `saveImage()` or the CLI exports the recorded pages to the requested format.
 
+## Agent Notes
+
+If you are an AI coding agent or future maintainer, start with
+[`AGENTS.md`](AGENTS.md). It summarizes the project shape, verification
+commands, common workflows, and current caveats. Use `.agents/` for durable
+task notes when work spans multiple turns or multiple agents.
+
 ## Documentation And Visual Examples
 
 Local docs live in [`docs/`](docs/). Local examples live in
