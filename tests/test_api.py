@@ -3076,6 +3076,16 @@ def test_multipleDocuments(tmpdir):
 def test_polygon_args():
     db = Drawing()
     db.polygon([0, 0], [0, 100], [100, 0])
+    db.polygon([0, 0], [0, 100], close=False)
+    with pytest.raises(TypeError, match="more than a single point"):
+        db.polygon([0, 0])
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        db.polygon([0, 0], [0, 100], closed=False)
+
+    path = BezierPath()
+    path.polygon([0, 0], [0, 100], [100, 0])
+    with pytest.raises(TypeError, match="more than a single point"):
+        path.polygon([0, 0])
 
 
 def test_line_args():

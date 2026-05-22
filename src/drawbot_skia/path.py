@@ -109,8 +109,13 @@ class BezierPath(BasePen):
         points = [(x, y) for x, y in [pt1, pt2]]
         self.path.addPoly(points, False)
 
-    def polygon(self, firstPoint, *points, close=True):
-        points = [(x, y) for x, y in (firstPoint,) + points]
+    def polygon(self, *points, **kwargs):
+        if len(points) <= 1:
+            raise TypeError("polygon() expects more than a single point")
+        close = kwargs.get("close", True)
+        if (len(kwargs) == 1 and "close" not in kwargs) or len(kwargs) > 1:
+            raise TypeError("unexpected keyword argument for this function")
+        points = [(x, y) for x, y in points]
         self.path.addPoly(points, close)
 
     def getNSBezierPath(self):

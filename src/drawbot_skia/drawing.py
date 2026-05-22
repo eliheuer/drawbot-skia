@@ -319,11 +319,11 @@ class Drawing:
         x2, y2 = pt2
         self._drawItem(self._canvas.drawLine, x1, y1, x2, y2)
 
-    def polygon(self, firstPoint, *points, close=True):
+    def polygon(self, *points, **kwargs):
         from .path import BezierPath
 
         bez = BezierPath()
-        bez.polygon(firstPoint, *points, close=close)
+        bez.polygon(*points, **kwargs)
         self.drawPath(bez)
 
     def newPath(self):

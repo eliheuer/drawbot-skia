@@ -59,6 +59,7 @@ Notes:
 - `font()` accepts `fontNumber` for drawing state and `FormattedString`, matching DrawBot's collection-font API.
 - `textSize()` accepts DrawBot's `align`, `width`, and `height` arguments and measures width-constrained plain and formatted text through drawbot-skia's wrapping stack.
 - `image()` and `imageSize()` accept `pageNumber` for multi-frame raster image paths.
+- `polygon()` and `BezierPath.polygon()` now match DrawBot's variadic point API and validation for too few points or unexpected keyword arguments.
 - `textBoxCharacterBounds()` has been added for rectangular text boxes using drawbot-skia's current line wrapping and shaping stack.
 - BezierPath text containers remain unsupported for `textBox()`, `textOverflow()`, `textBoxBaselines()`, and `textBoxCharacterBounds()` because DrawBot flows text inside arbitrary path shapes through the macOS text stack; tracked in [#15](https://github.com/eliheuer/drawbot-skia/issues/15).
 - `colorSpace()` and `listColorSpaces()` have been added as compatibility-level API/state support for DrawBot's standard color-space names. Rendering remains RGB-backed in Skia rather than CoreGraphics color-managed.
