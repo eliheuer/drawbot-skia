@@ -1693,6 +1693,31 @@ def test_imageObject_bokeh_blur_zero_radius_is_noop(tmpdir):
     assert blurred._pilImage().tobytes() != image.tobytes()
 
 
+def test_imageObject_motion_blur_uses_radius_and_angle(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "motion-blur.png"
+    image = Image.new("RGBA", (7, 7), (0, 0, 0, 255))
+    image.putpixel((3, 3), (255, 255, 255, 255))
+    image.save(imagePath)
+
+    unchanged = ImageObject(imagePath)
+    assert unchanged.motionBlur(radius=0, angle=0) is None
+    assert unchanged._pilImage().tobytes() == image.tobytes()
+
+    horizontal = ImageObject(imagePath)
+    assert horizontal.motionBlur(radius=1, angle=0) is None
+    assert [horizontal._pilImage().getpixel((x, 3))[0] for x in range(7)] == [0, 0, 85, 85, 85, 0, 0]
+    assert [horizontal._pilImage().getpixel((3, y))[0] for y in range(7)] == [0, 0, 0, 85, 0, 0, 0]
+
+    vertical = ImageObject(imagePath)
+    assert vertical.motionBlur(radius=1, angle=90) is None
+    assert [vertical._pilImage().getpixel((x, 3))[0] for x in range(7)] == [0, 0, 0, 85, 0, 0, 0]
+    assert [vertical._pilImage().getpixel((3, y))[0] for y in range(7)] == [0, 0, 85, 85, 85, 0, 0]
+
+    wide = ImageObject(imagePath)
+    assert wide.motionBlur(radius=3, angle=0) is None
+    assert [wide._pilImage().getpixel((x, 3))[0] for x in range(7)] == [36, 36, 36, 36, 36, 36, 36]
+
+
 def test_imageObject_noise_reduction_controls_noise_and_sharpness(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "noise-reduction.png"
     image = Image.new("RGBA", (5, 5), (80, 90, 100, 255))

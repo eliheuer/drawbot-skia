@@ -1528,25 +1528,7 @@ class ImageObject:
         self._setPILImage(_pixellateImage(self._pilImage(), center, scale))
 
     def motionBlur(self, radius=20.0, angle=0.0):
-        from PIL import Image
-        from PIL import ImageFilter
-
-        radius = max(1, int(round(float(radius))))
-        size = radius * 2 + 1
-        kernel = Image.new("L", (size, size), 0)
-        pixels = kernel.load()
-        center = radius
-        radians = math.radians(float(angle))
-        dx = math.cos(radians)
-        dy = math.sin(radians)
-        for index in range(size):
-            x = int(round(center + (index - center) * dx))
-            y = int(round(center + (index - center) * dy))
-            if 0 <= x < size and 0 <= y < size:
-                pixels[x, y] = 255
-        values = [value / 255 for value in kernel.tobytes()]
-        total = sum(values) or 1
-        self._filter(ImageFilter.Kernel((size, size), [value / total for value in values]))
+        self._setPILImage(_motionBlurImage(self._pilImage(), radius, angle))
 
     def zoomBlur(self, center=(150.0, 150.0), amount=20.0):
         from PIL import Image
@@ -4004,6 +3986,39 @@ def _pixellateImage(image, center, scale):
                 color = tuple(_clampByte(value) for value in ImageStat.Stat(source.crop((left, top, right, bottom))).mean)
                 blockCache[key] = color
             pixels[x, y] = color
+    return result
+
+
+def _motionBlurImage(image, radius, angle):
+    from PIL import Image
+
+    source = image.convert("RGBA")
+    radius = max(0, int(round(float(radius))))
+    if radius == 0:
+        return source
+    radians = math.radians(float(angle))
+    dx = math.cos(radians)
+    dy = math.sin(radians)
+    offsets = sorted(
+        {
+            (int(round(index * dx)), int(round(index * dy)))
+            for index in range(-radius, radius + 1)
+        }
+    )
+    sampleCount = len(offsets)
+    sourcePixels = source.load()
+    result = Image.new("RGBA", source.size)
+    resultPixels = result.load()
+    for y in range(source.height):
+        for x in range(source.width):
+            totals = [0, 0, 0, 0]
+            for offsetX, offsetY in offsets:
+                sampleX = max(0, min(source.width - 1, x + offsetX))
+                sampleY = max(0, min(source.height - 1, y + offsetY))
+                pixel = sourcePixels[sampleX, sampleY]
+                for channel in range(4):
+                    totals[channel] += pixel[channel]
+            resultPixels[x, y] = tuple(_clampByte(total / sampleCount) for total in totals)
     return result
 
 
