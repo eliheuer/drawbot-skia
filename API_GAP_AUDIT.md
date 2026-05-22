@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-324 passed, 3 skipped, 3 warnings
+351 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -63,6 +63,7 @@ Notes:
 - `pages()` has been added for recorded drawings, including context-manager support for drawing back into an existing page.
 - `linkURL`, `linkDestination`, and `linkRect` have been added with SVG output annotations and PDF link annotations. PDF support is implemented as a post-processing pass over Skia's emitted PDF because skia-python's PDF API does not expose URL/destination annotation hooks.
 - `Variable`, `pdfImage`, and `printImage` are intentionally out of scope for drawbot-skia's cross-platform package target. They now exist and raise explicit `DrawbotError`s explaining that they are macOS application/PDFKit features and are unavailable in drawbot-skia.
+- `ImageObject.lockFocus()`, `ImageObject.unlockFocus()`, and `with ImageObject():` drawing have been added for module-level drawing into image objects while preserving the surrounding drawing state.
 
 ## `BezierPath` Gaps
 
@@ -324,7 +325,7 @@ whitePointAdjust
 zoomBlur
 ```
 
-DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports all 219 of those method names. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, generators, simple geometry filters, analysis/statistical filters, stylization filters, screen/halftone filters, masked blur/upsample filters, distortion/tiling filters, transition filters, segmentation/saliency/material filters, and blend/compositing modes rather than pixel-identical Core Image implementations. `aztecCodeGenerator()` is backed by `aztec-code-generator` for standards-compliant Aztec output. `QRCodeGenerator()` is backed by a standards-compliant byte-mode QR encoder for messages that fit QR versions 1-4. `PDF417BarcodeGenerator()` is backed by `pdf417gen` for standards-compliant PDF417 output. `code128BarcodeGenerator()` is backed by a standards-compliant Code 128 Set B encoder for text input.
+DrawBot exposes 219 public `ImageObject` methods in the audited commit. The fork now supports all 219 of those method names, including focused drawing into an image object with `lockFocus()`, `unlockFocus()`, and `with imageObject:`. The newly added methods are Pillow-backed approximations of common Core Image filters, color operations, morphology filters, generators, simple geometry filters, analysis/statistical filters, stylization filters, screen/halftone filters, masked blur/upsample filters, distortion/tiling filters, transition filters, segmentation/saliency/material filters, and blend/compositing modes rather than pixel-identical Core Image implementations. `aztecCodeGenerator()` is backed by `aztec-code-generator` for standards-compliant Aztec output. `QRCodeGenerator()` is backed by a standards-compliant byte-mode QR encoder for messages that fit QR versions 1-4. `PDF417BarcodeGenerator()` is backed by `pdf417gen` for standards-compliant PDF417 output. `code128BarcodeGenerator()` is backed by a standards-compliant Code 128 Set B encoder for text input.
 
 Representative behavior follow-up groups:
 

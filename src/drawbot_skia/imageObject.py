@@ -3,12 +3,16 @@ import math
 from io import BytesIO
 import skia
 
+from .errors import DrawbotError
+
 
 class ImageObject:
-    def __init__(self, path=None):
+    def __init__(self, path=None, _drawing=None):
         self._image = None
         self._path = None
         self._offset = (0, 0)
+        self._focusState = None
+        self._drawing = _drawing
         if path is not None:
             self.open(path)
 
@@ -28,6 +32,7 @@ class ImageObject:
         other._image = self._image
         other._path = self._path
         other._offset = self._offset
+        other._drawing = self._drawing
         return other
 
     def clearFilters(self):
@@ -35,6 +40,14 @@ class ImageObject:
             self.open(self._path)
         self._offset = (0, 0)
         return None
+
+    def __enter__(self):
+        self.lockFocus()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.unlockFocus()
+        return False
 
     def gaussianBlur(self, radius=10.0):
         from PIL import Image
@@ -1911,10 +1924,47 @@ class ImageObject:
         )
 
     def lockFocus(self):
-        raise NotImplementedError("drawing into ImageObject is not supported yet")
+        if self._focusState is not None:
+            raise DrawbotError("ImageObject focus is already locked")
+
+        drawing = self._drawing
+        if drawing is None:
+            from . import drawbot
+
+            drawing = drawbot._db
+        self._focusState = (
+            drawing,
+            drawing._stack,
+            drawing._gstate,
+            drawing._path,
+            drawing._colorSpace,
+            drawing._document,
+            drawing._skia_canvas,
+        )
+        drawing.newDrawing()
 
     def unlockFocus(self):
-        raise NotImplementedError("drawing into ImageObject is not supported yet")
+        if self._focusState is None:
+            raise DrawbotError("ImageObject focus is not locked")
+        from .document import _pictureToSkiaImage
+
+        drawing, stack, gstate, path, colorSpace, document, skiaCanvas = self._focusState
+        self._focusState = None
+        try:
+            if drawing._document.isDrawing:
+                drawing._document.endPage()
+                drawing._canvas = None
+            if drawing._document._pictures:
+                self._image = _pictureToSkiaImage(drawing._document._pictures[-1])
+                self._path = None
+                self._offset = (0, 0)
+        finally:
+            drawing._stack = stack
+            drawing._gstate = gstate
+            drawing._path = path
+            drawing._colorSpace = colorSpace
+            drawing._document = document
+            drawing._skia_canvas = skiaCanvas
 
     def _skiaImage(self):
         if self._image is None:

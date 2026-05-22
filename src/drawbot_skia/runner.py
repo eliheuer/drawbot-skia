@@ -17,10 +17,17 @@ def makeDrawbotNamespace(drawbot):
     import math
     import random
 
+    class BoundImageObject(ImageObject):
+        def __init__(self, path=None):
+            super().__init__(path, _drawing=drawbot)
+
+    BoundImageObject.__name__ = "ImageObject"
+    BoundImageObject.__qualname__ = "ImageObject"
+    BoundImageObject.__module__ = ImageObject.__module__
     additionalNames = dict(
         BezierPath=BezierPath,
         FormattedString=FormattedString,
-        ImageObject=ImageObject,
+        ImageObject=BoundImageObject,
     )
     for name in ["random", "randint", "choice", "shuffle"]:
         additionalNames[name] = getattr(random, name)

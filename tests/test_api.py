@@ -7,6 +7,7 @@ import pytest
 from PIL import Image
 from PIL import ImageDraw
 import numpy as np
+import drawbot_skia.drawbot as drawbot
 from drawbot_skia.runner import makeDrawbotNamespace, runScript, runScriptSource
 from drawbot_skia.drawing import Drawing
 from drawbot_skia.errors import DrawbotError
@@ -962,6 +963,76 @@ def test_imageObject_light_tunnel_uses_center_and_radius(tmpdir):
         (100, 50, 0),
         (50, 150, 0),
     ]
+
+
+def test_imageObject_focus_context_draws_into_image_and_restores_drawing(tmpdir):
+    mainPath = pathlib.Path(tmpdir) / "main.png"
+    drawbot.newDrawing()
+    try:
+        drawbot.size(8, 4)
+        drawbot.fill(1, 0, 0)
+        drawbot.rect(0, 0, 8, 4)
+
+        im = ImageObject()
+        with im:
+            drawbot.size(4, 4)
+            drawbot.fill(0, 1, 0)
+            drawbot.rect(0, 0, 4, 4)
+
+        drawbot.fill(0, 0, 1)
+        drawbot.rect(4, 0, 4, 4)
+        drawbot.saveImage(mainPath)
+
+        assert im.size() == (4, 4)
+        assert im._pilImage().getpixel((2, 2)) == (0, 255, 0, 255)
+        with Image.open(mainPath) as mainImage:
+            mainImage = mainImage.convert("RGBA")
+            assert mainImage.getpixel((2, 2)) == (255, 0, 0, 255)
+            assert mainImage.getpixel((6, 2)) == (0, 0, 255, 255)
+    finally:
+        drawbot.newDrawing()
+
+
+def test_imageObject_focus_context_uses_bound_namespace_drawing(tmpdir):
+    mainPath = pathlib.Path(tmpdir) / "bound-main.png"
+    db = Drawing()
+    namespace = makeDrawbotNamespace(db)
+    BoundImageObject = namespace["ImageObject"]
+
+    namespace["size"](6, 3)
+    namespace["fill"](1, 0, 0)
+    namespace["rect"](0, 0, 6, 3)
+
+    im = BoundImageObject()
+    with im:
+        namespace["size"](3, 3)
+        namespace["fill"](0, 1, 0)
+        namespace["rect"](0, 0, 3, 3)
+
+    namespace["fill"](0, 0, 1)
+    namespace["rect"](3, 0, 3, 3)
+    db.saveImage(mainPath)
+
+    assert im.size() == (3, 3)
+    assert im._pilImage().getpixel((1, 1)) == (0, 255, 0, 255)
+    with Image.open(mainPath) as mainImage:
+        mainImage = mainImage.convert("RGBA")
+        assert mainImage.getpixel((1, 1)) == (255, 0, 0, 255)
+        assert mainImage.getpixel((4, 1)) == (0, 0, 255, 255)
+
+
+def test_imageObject_lock_focus_errors():
+    im = ImageObject()
+    with pytest.raises(DrawbotError):
+        im.unlockFocus()
+    drawbot.newDrawing()
+    try:
+        assert im.lockFocus() is None
+        with pytest.raises(DrawbotError):
+            im.lockFocus()
+    finally:
+        im.unlockFocus()
+        drawbot.newDrawing()
 
 
 def test_imageObject_analysis_and_stylize_batch(tmpdir):
