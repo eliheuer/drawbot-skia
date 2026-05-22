@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-308 passed, 3 skipped, 3 warnings
+309 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -53,7 +53,6 @@ Variable
 linkDestination
 linkRect
 linkURL
-pages
 pdfImage
 printImage
 ```
@@ -66,8 +65,9 @@ Notes:
 - `listLanguages()` has been added with Python-locale-derived identifiers.
 - `drawing()` has been added as a reset/cleanup context manager.
 - `installedFonts()`, `installFont()`, and `uninstallFont()` have been added. Temporary font installation is process-local in drawbot-skia: `installFont(path)` returns the font's PostScript name and registers that name as an alias for the path so it can be passed to `font()`. As in DrawBot, these functions are deprecated in favor of passing font paths directly.
+- `pages()` has been added for recorded drawings, including context-manager support for drawing back into an existing page.
 - `linkURL`, `linkDestination`, and `linkRect` require output-context support, at least for PDF.
-- `Variable`, `pages`, `pdfImage`, and `printImage` are app/macOS-oriented and need a deliberate cross-platform support decision.
+- `Variable`, `pdfImage`, and `printImage` are app/macOS-oriented and need a deliberate cross-platform support decision.
 
 ## `BezierPath` Gaps
 
@@ -141,5 +141,5 @@ Given upstream README's caveat that DrawBot's `ImageObject` is macOS/Core Image-
 
 1. Implement or explicitly document PDF link annotation support for `linkURL`, `linkDestination`, `linkRect`, and richer `FormattedString.url()` behavior.
 2. Scope `BezierPath.intersectionPoints()` and `traceImage()` separately; both need targeted tests and may need new dependencies or geometry algorithms.
-3. Decide which app/macOS-only APIs are out of scope and document them: `Variable`, `pages`, `pdfImage`, `printImage`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`.
+3. Decide which app/macOS-only APIs are out of scope and document them: `Variable`, `pdfImage`, `printImage`, `getNSObject`, `getNSBezierPath`, `setNSBezierPath`.
 4. Decide an `ImageObject` target subset rather than chasing all Core Image filters.

@@ -677,6 +677,25 @@ def test_drawing_context_manager(tmpdir):
     assert db.pageCount() == 0
 
 
+def test_pages_context(tmpdir):
+    path = pathlib.Path(tmpdir) / "pages.png"
+    db = Drawing()
+    db.size(20, 20)
+    db.fill(1, 0, 0)
+    db.rect(0, 0, 20, 20)
+    pages = db.pages()
+    assert len(pages) == 1
+    assert db.pageCount() == 1
+    with pages[0]:
+        assert db.width() == 20
+        assert db.height() == 20
+        db.fill(0, 1, 0)
+        db.rect(0, 0, 10, 20)
+    db.saveImage(path)
+    assert db.imagePixelColor(path, (5, 5)) == (0, 1, 0, 1)
+    assert db.imagePixelColor(path, (15, 5)) == (1, 0, 0, 1)
+
+
 def test_opacity(tmpdir):
     path = pathlib.Path(tmpdir) / "opacity.png"
     db = Drawing()

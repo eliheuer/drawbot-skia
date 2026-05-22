@@ -214,6 +214,17 @@ class Drawing:
     def pageCount(self):
         return getattr(self._document, "pageCount", 0)
 
+    def pages(self):
+        if not isinstance(self._document, RecordingDocument):
+            raise DrawbotError("pages() is only supported for recorded drawings")
+        if self._document.isDrawing:
+            self._document.endPage()
+            self._canvas = None
+        return tuple(
+            _DrawBotPage(self, index)
+            for index in range(len(self._document._pictures))
+        )
+
     def numberOfPages(self, path=None):
         if path is None:
             return self.pageCount()
@@ -1064,6 +1075,52 @@ def _fontSupportsCharacters(fontName, characters):
     typeface = _getFontObjects(fontName).skTypeface
     glyphs = typeface.unicharsToGlyphs([ord(character) for character in characters])
     return all(glyph != 0 for glyph in glyphs)
+
+
+class _DrawBotPage:
+    def __init__(self, drawing, pageIndex):
+        self._drawing = drawing
+        self._pageIndex = pageIndex
+        self._savedState = None
+
+    def __enter__(self):
+        drawing = self._drawing
+        document = drawing._document
+        if document.isDrawing:
+            raise DrawbotError("can't enter a page while another page is active")
+        picture = document._pictures[self._pageIndex]
+        x, y, width, height = picture.cullRect()
+        assert x == 0 and y == 0
+        recorder = skia.PictureRecorder()
+        canvas = recorder.beginRecording(width, height)
+        canvas.drawPicture(picture)
+        self._savedState = (
+            drawing._skia_canvas,
+            drawing._gstate,
+            document.pageWidth,
+            document.pageHeight,
+            recorder,
+        )
+        drawing._gstate = GraphicsState()
+        drawing._canvas = canvas
+        document.pageWidth = width
+        document.pageHeight = height
+        if drawing._flipCanvas:
+            drawing._canvas.translate(0, height)
+            drawing._canvas.scale(1, -1)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        drawing = self._drawing
+        document = drawing._document
+        canvas, gstate, pageWidth, pageHeight, recorder = self._savedState
+        if exc_type is None:
+            document._pictures[self._pageIndex] = recorder.finishRecordingAsPicture()
+        drawing._canvas = canvas
+        drawing._gstate = gstate
+        document.pageWidth = pageWidth
+        document.pageHeight = pageHeight
+        self._savedState = None
 
 
 def _textStyleWithProperties(textStyle, properties):
