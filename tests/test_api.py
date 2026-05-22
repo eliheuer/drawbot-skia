@@ -467,6 +467,72 @@ def test_imageObject_generator_batch():
         assert im.offset() == (0, 0)
 
 
+def test_imageObject_qr_code_generator():
+    from drawbot_skia.imageObject import _qrInterleavedCodewords
+    from drawbot_skia.imageObject import _qrMatrix
+
+    im = ImageObject()
+    assert im.QRCodeGenerator((128, 128), "drawbot", correctionLevel="M") is None
+    image = im._pilImage()
+    assert image.size == (128, 128)
+
+    expectedCodewords = [
+        64,
+        118,
+        71,
+        38,
+        23,
+        118,
+        38,
+        247,
+        64,
+        236,
+        17,
+        236,
+        17,
+        236,
+        17,
+        236,
+        231,
+        145,
+        143,
+        230,
+        229,
+        168,
+        58,
+        201,
+        12,
+        27,
+    ]
+    dataCodewords = expectedCodewords[:16]
+    assert _qrInterleavedCodewords(1, "M", dataCodewords) == expectedCodewords
+
+    expectedMatrix = [
+        "111111101011001111111",
+        "100000100101101000001",
+        "101110100111101011101",
+        "101110101010101011101",
+        "101110101010101011101",
+        "100000101001001000001",
+        "111111101010101111111",
+        "000000001001100000000",
+        "100010111111011111001",
+        "111011010111100000100",
+        "101011101101001111110",
+        "010110011010011110000",
+        "001010111010111100001",
+        "000000001110111110110",
+        "111111101100110010010",
+        "100000100011100000011",
+        "101110101101001111001",
+        "101110100011100011111",
+        "101110100101001010100",
+        "100000100100011100000",
+        "111111101000111000001",
+    ]
+    assert ["".join("1" if value else "0" for value in row) for row in _qrMatrix("drawbot", "M")] == expectedMatrix
+
+
 def test_imageObject_code128_barcode_generator():
     from drawbot_skia.imageObject import _CODE128_PATTERNS
 

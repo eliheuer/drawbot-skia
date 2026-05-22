@@ -252,7 +252,7 @@ class ImageObject:
         self._offset = (0, 0)
 
     def QRCodeGenerator(self, size, message, correctionLevel="M"):
-        self._setPILImage(_pseudoBarcodeImage(size, message, "qr"))
+        self._setPILImage(_qrCodeImage(size, message, correctionLevel))
         self._path = None
         self._offset = (0, 0)
 
@@ -2024,6 +2024,374 @@ def _pseudoBarcodeImage(size, message, kind):
             if x >= width:
                 break
     return image
+
+
+_QR_ECC_FORMAT_BITS = {
+    "L": 1,
+    "M": 0,
+    "Q": 3,
+    "H": 2,
+}
+
+_QR_RS_BLOCKS = {
+    # version, level: (error correction codewords per block, (block count, data codewords)...)
+    (1, "L"): (7, ((1, 19),)),
+    (1, "M"): (10, ((1, 16),)),
+    (1, "Q"): (13, ((1, 13),)),
+    (1, "H"): (17, ((1, 9),)),
+    (2, "L"): (10, ((1, 34),)),
+    (2, "M"): (16, ((1, 28),)),
+    (2, "Q"): (22, ((1, 22),)),
+    (2, "H"): (28, ((1, 16),)),
+    (3, "L"): (15, ((1, 55),)),
+    (3, "M"): (26, ((1, 44),)),
+    (3, "Q"): (18, ((2, 17),)),
+    (3, "H"): (22, ((2, 13),)),
+    (4, "L"): (20, ((1, 80),)),
+    (4, "M"): (18, ((2, 32),)),
+    (4, "Q"): (26, ((2, 24),)),
+    (4, "H"): (16, ((4, 9),)),
+}
+
+_QR_ALIGNMENT_POSITIONS = {
+    1: [],
+    2: [6, 18],
+    3: [6, 22],
+    4: [6, 26],
+}
+
+
+def _qrCodeImage(size, message, correctionLevel="M"):
+    from PIL import Image
+    from PIL import ImageDraw
+
+    width, height = _normalizeSize(size)
+    matrix = _qrMatrix(message, correctionLevel)
+    moduleCount = len(matrix)
+    quiet = 4
+    scale = max(1, min(width, height) // (moduleCount + quiet * 2))
+    codeSize = moduleCount * scale
+    left = max(0, (width - codeSize) // 2)
+    top = max(0, (height - codeSize) // 2)
+    image = Image.new("RGBA", (width, height), (255, 255, 255, 255))
+    draw = ImageDraw.Draw(image)
+    for y, row in enumerate(matrix):
+        for x, value in enumerate(row):
+            if value:
+                draw.rectangle(
+                    (
+                        left + x * scale,
+                        top + y * scale,
+                        left + (x + 1) * scale - 1,
+                        top + (y + 1) * scale - 1,
+                    ),
+                    fill=(0, 0, 0, 255),
+                )
+    return image
+
+
+def _qrMatrix(message, correctionLevel="M"):
+    data = str(message).encode("utf-8")
+    level = str(correctionLevel or "M").upper()[0]
+    if level not in _QR_ECC_FORMAT_BITS:
+        level = "M"
+    version = _qrVersionForData(len(data), level)
+    dataCodewords = _qrDataCodewords(version, level)
+    bits = [0, 1, 0, 0]
+    countBits = 8 if version <= 9 else 16
+    bits.extend(_intBits(len(data), countBits))
+    for byte in data:
+        bits.extend(_intBits(byte, 8))
+    capacityBits = dataCodewords * 8
+    bits.extend([0] * min(4, capacityBits - len(bits)))
+    while len(bits) % 8:
+        bits.append(0)
+    codewords = [_bitsToInt(bits[index:index + 8]) for index in range(0, len(bits), 8)]
+    pad = 0
+    while len(codewords) < dataCodewords:
+        codewords.append(0xEC if pad % 2 == 0 else 0x11)
+        pad += 1
+    allCodewords = _qrInterleavedCodewords(version, level, codewords)
+    base, reserved = _qrBaseMatrix(version)
+    dataBits = []
+    for codeword in allCodewords:
+        dataBits.extend(_intBits(codeword, 8))
+    bestMatrix = None
+    bestPenalty = None
+    bestMask = 0
+    for mask in range(8):
+        matrix = [row[:] for row in base]
+        _qrPlaceData(matrix, reserved, dataBits, mask)
+        _qrPlaceFormatBits(matrix, level, mask)
+        penalty = _qrPenalty(matrix)
+        if bestPenalty is None or penalty < bestPenalty:
+            bestMatrix = matrix
+            bestPenalty = penalty
+            bestMask = mask
+    _qrPlaceFormatBits(bestMatrix, level, bestMask)
+    return bestMatrix
+
+
+def _qrVersionForData(dataLength, level):
+    for version in sorted({version for version, blockLevel in _QR_RS_BLOCKS if blockLevel == level}):
+        capacityBits = _qrDataCodewords(version, level) * 8
+        countBits = 8 if version <= 9 else 16
+        requiredBits = 4 + countBits + dataLength * 8
+        if requiredBits <= capacityBits:
+            return version
+    raise ValueError("QRCodeGenerator message is too long for the built-in QR encoder")
+
+
+def _qrDataCodewords(version, level):
+    return sum(count * dataCount for count, dataCount in _QR_RS_BLOCKS[(version, level)][1])
+
+
+def _qrInterleavedCodewords(version, level, dataCodewords):
+    eccCount, blockGroups = _QR_RS_BLOCKS[(version, level)]
+    blocks = []
+    index = 0
+    for count, dataCount in blockGroups:
+        for _ in range(count):
+            dataBlock = dataCodewords[index:index + dataCount]
+            index += dataCount
+            blocks.append((dataBlock, _qrReedSolomonRemainder(dataBlock, eccCount)))
+    result = []
+    maxDataLength = max(len(dataBlock) for dataBlock, _ in blocks)
+    for offset in range(maxDataLength):
+        for dataBlock, _ in blocks:
+            if offset < len(dataBlock):
+                result.append(dataBlock[offset])
+    for offset in range(eccCount):
+        for _, eccBlock in blocks:
+            result.append(eccBlock[offset])
+    return result
+
+
+def _qrBaseMatrix(version):
+    size = version * 4 + 17
+    matrix = [[False] * size for _ in range(size)]
+    reserved = [[False] * size for _ in range(size)]
+
+    def setModule(x, y, value=True, reserve=True):
+        if 0 <= x < size and 0 <= y < size:
+            matrix[y][x] = value
+            if reserve:
+                reserved[y][x] = True
+
+    def finder(left, top):
+        for y in range(-1, 8):
+            for x in range(-1, 8):
+                xx = left + x
+                yy = top + y
+                if 0 <= xx < size and 0 <= yy < size:
+                    dark = 0 <= x <= 6 and 0 <= y <= 6 and (
+                        x in (0, 6)
+                        or y in (0, 6)
+                        or (2 <= x <= 4 and 2 <= y <= 4)
+                    )
+                    setModule(xx, yy, dark)
+
+    finder(0, 0)
+    finder(size - 7, 0)
+    finder(0, size - 7)
+
+    for index in range(8, size - 8):
+        setModule(index, 6, index % 2 == 0)
+        setModule(6, index, index % 2 == 0)
+
+    positions = _QR_ALIGNMENT_POSITIONS[version]
+    for cy in positions:
+        for cx in positions:
+            if reserved[cy][cx]:
+                continue
+            for y in range(-2, 3):
+                for x in range(-2, 3):
+                    setModule(cx + x, cy + y, max(abs(x), abs(y)) != 1)
+
+    for index in range(15):
+        if index < 6:
+            setModule(8, index, False)
+        elif index < 8:
+            setModule(8, index + 1, False)
+        else:
+            setModule(8, size - 15 + index, False)
+        if index < 8:
+            setModule(size - index - 1, 8, False)
+        elif index < 9:
+            setModule(15 - index, 8, False)
+        else:
+            setModule(14 - index, 8, False)
+    setModule(8, size - 8, True)
+    return matrix, reserved
+
+
+def _qrPlaceData(matrix, reserved, dataBits, mask):
+    size = len(matrix)
+    bitIndex = 0
+    row = size - 1
+    direction = -1
+    for col in range(size - 1, 0, -2):
+        if col <= 6:
+            col -= 1
+        while True:
+            for xx in (col, col - 1):
+                if not reserved[row][xx]:
+                    bit = bitIndex < len(dataBits) and dataBits[bitIndex]
+                    bitIndex += 1
+                    if _qrMask(mask, xx, row):
+                        bit = not bit
+                    matrix[row][xx] = bool(bit)
+            row += direction
+            if row < 0 or size <= row:
+                row -= direction
+                direction = -direction
+                break
+
+
+def _qrPlaceFormatBits(matrix, level, mask):
+    size = len(matrix)
+    bits = _qrFormatBits(level, mask)
+    for index in range(15):
+        value = bool((bits >> index) & 1)
+        if index < 6:
+            matrix[index][8] = value
+        elif index < 8:
+            matrix[index + 1][8] = value
+        else:
+            matrix[size - 15 + index][8] = value
+
+    for index in range(15):
+        value = bool((bits >> index) & 1)
+        if index < 8:
+            matrix[8][size - index - 1] = value
+        elif index < 9:
+            matrix[8][15 - index] = value
+        else:
+            matrix[8][14 - index] = value
+    matrix[size - 8][8] = True
+
+
+def _qrFormatBits(level, mask):
+    value = (_QR_ECC_FORMAT_BITS[level] << 3) | mask
+    bits = value << 10
+    generator = 0x537
+    for shift in range(14, 9, -1):
+        if (bits >> shift) & 1:
+            bits ^= generator << (shift - 10)
+    return ((value << 10) | bits) ^ 0x5412
+
+
+def _qrMask(mask, x, y):
+    if mask == 0:
+        return (x + y) % 2 == 0
+    if mask == 1:
+        return y % 2 == 0
+    if mask == 2:
+        return x % 3 == 0
+    if mask == 3:
+        return (x + y) % 3 == 0
+    if mask == 4:
+        return (x // 3 + y // 2) % 2 == 0
+    if mask == 5:
+        return ((x * y) % 2) + ((x * y) % 3) == 0
+    if mask == 6:
+        return (((x * y) % 2) + ((x * y) % 3)) % 2 == 0
+    return (((x + y) % 2) + ((x * y) % 3)) % 2 == 0
+
+
+def _qrPenalty(matrix):
+    size = len(matrix)
+    penalty = 0
+    lines = matrix + [[matrix[y][x] for y in range(size)] for x in range(size)]
+    for line in lines:
+        runColor = line[0]
+        runLength = 1
+        for value in line[1:]:
+            if value == runColor:
+                runLength += 1
+            else:
+                if runLength >= 5:
+                    penalty += 3 + runLength - 5
+                runColor = value
+                runLength = 1
+        if runLength >= 5:
+            penalty += 3 + runLength - 5
+
+    for y in range(size - 1):
+        for x in range(size - 1):
+            value = matrix[y][x]
+            if (
+                matrix[y][x + 1] == value
+                and matrix[y + 1][x] == value
+                and matrix[y + 1][x + 1] == value
+            ):
+                penalty += 3
+
+    pattern = [True, False, True, True, True, False, True, False, False, False, False]
+    reversePattern = list(reversed(pattern))
+    for line in lines:
+        for index in range(size - 10):
+            window = line[index:index + 11]
+            if window == pattern or window == reversePattern:
+                penalty += 40
+
+    dark = sum(sum(1 for value in row if value) for row in matrix)
+    percent = dark * 100 / (size * size)
+    penalty += int(abs(percent - 50) // 5) * 10
+    return penalty
+
+
+_QR_GF_EXP = [0] * 512
+_QR_GF_LOG = [0] * 256
+_qrValue = 1
+for _qrIndex in range(255):
+    _QR_GF_EXP[_qrIndex] = _qrValue
+    _QR_GF_LOG[_qrValue] = _qrIndex
+    _qrValue <<= 1
+    if _qrValue & 0x100:
+        _qrValue ^= 0x11D
+for _qrIndex in range(255, 512):
+    _QR_GF_EXP[_qrIndex] = _QR_GF_EXP[_qrIndex - 255]
+
+
+def _qrGFMul(a, b):
+    if a == 0 or b == 0:
+        return 0
+    return _QR_GF_EXP[_QR_GF_LOG[a] + _QR_GF_LOG[b]]
+
+
+def _qrGeneratorPolynomial(degree):
+    poly = [1]
+    for index in range(degree):
+        nextPoly = [0] * (len(poly) + 1)
+        for coefficientIndex, coefficient in enumerate(poly):
+            nextPoly[coefficientIndex] ^= _qrGFMul(coefficient, 1)
+            nextPoly[coefficientIndex + 1] ^= _qrGFMul(coefficient, _QR_GF_EXP[index])
+        poly = nextPoly
+    return poly
+
+
+def _qrReedSolomonRemainder(data, degree):
+    generator = _qrGeneratorPolynomial(degree)
+    result = [0] * degree
+    for byte in data:
+        factor = byte ^ result.pop(0)
+        result.append(0)
+        if factor:
+            for index in range(degree):
+                result[index] ^= _qrGFMul(generator[index + 1], factor)
+    return result
+
+
+def _intBits(value, width):
+    return [(value >> shift) & 1 for shift in range(width - 1, -1, -1)]
+
+
+def _bitsToInt(bits):
+    value = 0
+    for bit in bits:
+        value = (value << 1) | int(bit)
+    return value
 
 
 _CODE128_PATTERNS = [
