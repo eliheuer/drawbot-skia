@@ -533,21 +533,45 @@ class ImageObject:
 
     def keystoneCorrectionCombined(
         self,
+        topLeft,
+        topRight,
+        bottomRight,
+        bottomLeft,
         focalLength=28.0,
-        topLeft=(0.0, 0.0),
-        topRight=(0.0, 0.0),
-        bottomRight=(0.0, 0.0),
-        bottomLeft=(0.0, 0.0),
     ):
         self._setPILImage(
-            _keystoneCombinedImage(self._pilImage(), focalLength, topLeft, topRight, bottomRight, bottomLeft)
+            _keystoneCombinedImage(
+                self._pilImage(), focalLength, topLeft, topRight, bottomRight, bottomLeft
+            )
         )
 
-    def keystoneCorrectionHorizontal(self, focalLength=28.0):
-        self.perspectiveRotate(focalLength=focalLength, yaw=math.radians(8))
+    def keystoneCorrectionHorizontal(
+        self,
+        topLeft,
+        topRight,
+        bottomRight,
+        bottomLeft,
+        focalLength=28.0,
+    ):
+        self._setPILImage(
+            _keystoneCombinedImage(
+                self._pilImage(), focalLength, topLeft, topRight, bottomRight, bottomLeft
+            )
+        )
 
-    def keystoneCorrectionVertical(self, focalLength=28.0):
-        self.perspectiveRotate(focalLength=focalLength, pitch=math.radians(8))
+    def keystoneCorrectionVertical(
+        self,
+        topLeft,
+        topRight,
+        bottomRight,
+        bottomLeft,
+        focalLength=28.0,
+    ):
+        self._setPILImage(
+            _keystoneCombinedImage(
+                self._pilImage(), focalLength, topLeft, topRight, bottomRight, bottomLeft
+            )
+        )
 
     def droste(
         self,

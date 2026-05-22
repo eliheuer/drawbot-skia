@@ -1151,6 +1151,13 @@ def test_imageObject_keystone_combined_uses_focal_length(tmpdir):
     assert outputs[14].tobytes() != outputs[28].tobytes()
     assert outputs[28].tobytes() != outputs[56].tobytes()
 
+    horizontal = ImageObject(imagePath)
+    assert horizontal.keystoneCorrectionHorizontal(**kwargs) is None
+    vertical = ImageObject(imagePath)
+    assert vertical.keystoneCorrectionVertical(**kwargs) is None
+    assert horizontal._pilImage().tobytes() == outputs[28].tobytes()
+    assert vertical._pilImage().tobytes() == outputs[28].tobytes()
+
 
 def test_imageObject_simple_geometry_batch(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "geometry.png"
@@ -1177,8 +1184,16 @@ def test_imageObject_simple_geometry_batch(tmpdir):
         ("perspectiveTile", (), {"topLeft": (0, 0), "topRight": (20, 1), "bottomRight": (19, 12), "bottomLeft": (1, 11)}),
         ("perspectiveRotate", (), {"pitch": 5, "yaw": 5, "roll": 5}),
         ("keystoneCorrectionCombined", (), {"topLeft": (0, 0), "topRight": (20, 1), "bottomRight": (19, 12), "bottomLeft": (1, 11)}),
-        ("keystoneCorrectionHorizontal", (), {}),
-        ("keystoneCorrectionVertical", (), {}),
+        (
+            "keystoneCorrectionHorizontal",
+            (),
+            {"topLeft": (0, 0), "topRight": (20, 1), "bottomRight": (19, 12), "bottomLeft": (1, 11)},
+        ),
+        (
+            "keystoneCorrectionVertical",
+            (),
+            {"topLeft": (0, 0), "topRight": (20, 1), "bottomRight": (19, 12), "bottomLeft": (1, 11)},
+        ),
         ("bumpDistortion", (), {"center": (10, 6), "radius": 8, "scale": 0.4}),
         ("bumpDistortionLinear", (), {"center": (10, 6), "radius": 8, "angle": 15, "scale": 0.4}),
         ("circleSplashDistortion", (), {"center": (10, 6), "radius": 6}),
