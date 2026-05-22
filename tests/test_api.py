@@ -833,6 +833,35 @@ def test_imageObject_nine_part_geometry_preserves_regions(tmpdir):
     assert tiledImage.getpixel((5, 5)) == rows[3][3]
 
 
+def test_imageObject_displacement_distortion_uses_red_green_channels(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "displacement.png"
+    displacementPath = pathlib.Path(tmpdir) / "displacement-map.png"
+    image = Image.new("RGBA", (4, 3))
+    for y in range(3):
+        for x in range(4):
+            image.putpixel((x, y), (x * 50, y * 80, 0, 255))
+    image.save(imagePath)
+
+    Image.new("RGBA", (4, 3), (255, 128, 0, 255)).save(displacementPath)
+    horizontal = ImageObject(imagePath)
+    assert horizontal.displacementDistortion(displacementPath, scale=1) is None
+    assert [horizontal._pilImage().getpixel((x, 1)) for x in range(4)] == [
+        (50, 80, 0, 255),
+        (100, 80, 0, 255),
+        (150, 80, 0, 255),
+        (150, 80, 0, 255),
+    ]
+
+    Image.new("RGBA", (4, 3), (128, 255, 0, 255)).save(displacementPath)
+    vertical = ImageObject(imagePath)
+    assert vertical.displacementDistortion(displacementPath, scale=1) is None
+    assert [vertical._pilImage().getpixel((1, y)) for y in range(3)] == [
+        (50, 80, 0, 255),
+        (50, 160, 0, 255),
+        (50, 160, 0, 255),
+    ]
+
+
 def test_imageObject_analysis_and_stylize_batch(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "analysis.png"
     image = Image.new("RGBA", (24, 16), (40, 80, 160, 255))

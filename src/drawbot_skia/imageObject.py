@@ -3506,13 +3506,15 @@ def _twirlImage(image, center, radius, angle):
 
 
 def _displacementImage(image, displacement, scale):
-    displacement = displacement.resize(image.size).convert("L")
+    displacement = displacement.resize(image.size).convert("RGBA")
     displacementPixels = displacement.load()
     scale = float(scale)
 
     def mapPoint(x, y):
-        amount = (displacementPixels[x, y] - 128) / 128 * scale
-        return x + amount, y + amount
+        red, green, _blue, _alpha = displacementPixels[x, y]
+        dx = (red - 128) / 128 * scale
+        dy = (green - 128) / 128 * scale
+        return x + dx, y + dy
 
     return _distortImage(image, mapPoint)
 
