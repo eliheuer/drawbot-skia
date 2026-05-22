@@ -2775,7 +2775,13 @@ def _pdf417BarcodeImage(
     columns = _pdf417Columns(dataColumns, rows, message, securityLevel)
     for candidateColumns in range(columns, 0, -1):
         try:
-            codes = pdf417gen.encode(str(message), columns=candidateColumns, security_level=securityLevel)
+            codes = _pdf417Encode(
+                message,
+                candidateColumns,
+                securityLevel,
+                compactionMode,
+                alwaysSpecifyCompaction,
+            )
             break
         except ValueError:
             if candidateColumns == 1:
@@ -2801,6 +2807,56 @@ def _pdf417Columns(dataColumns, rows, message, securityLevel=2):
         estimatedCodewords = len(str(message).encode("utf-8")) + 1 + (2 << securityLevel)
         return max(1, min(30, int(math.ceil(estimatedCodewords / rowCount))))
     return 6
+
+
+def _pdf417Encode(message, columns, securityLevel, compactionMode=0.0, alwaysSpecifyCompaction=False):
+    import pdf417gen
+
+    mode = int(round(float(compactionMode or 0)))
+    if mode == 0 and not alwaysSpecifyCompaction:
+        return pdf417gen.encode(str(message), columns=columns, security_level=securityLevel)
+
+    data = str(message).encode("utf-8")
+    dataWords = _pdf417ForcedDataWords(data, mode, alwaysSpecifyCompaction)
+    return _pdf417EncodeDataWords(dataWords, columns, securityLevel)
+
+
+def _pdf417ForcedDataWords(data, compactionMode, alwaysSpecifyCompaction):
+    from pdf417gen.compaction import BYTE_LATCH, BYTE_LATCH_ALT, NUMERIC_LATCH, TEXT_LATCH
+    from pdf417gen.compaction.byte import compact_bytes
+    from pdf417gen.compaction.numeric import compact_numbers
+    from pdf417gen.compaction.text import compact_text
+
+    if compactionMode == 0:
+        from pdf417gen.compaction import compact
+
+        return list(compact(data))
+    if compactionMode == 1:
+        words = list(compact_text(data))
+        return ([TEXT_LATCH] if alwaysSpecifyCompaction else []) + words
+    if compactionMode == 2:
+        latch = BYTE_LATCH_ALT if len(data) % 6 == 0 else BYTE_LATCH
+        return [latch] + list(compact_bytes(data))
+    if compactionMode == 3:
+        return [NUMERIC_LATCH] + list(compact_numbers(data))
+    raise ValueError(f"unsupported PDF417 compactionMode: {compactionMode}")
+
+
+def _pdf417EncodeDataWords(dataWords, columns, securityLevel):
+    from pdf417gen.encoding import encode_rows, get_padding, validate_barcode_size
+    from pdf417gen.error_correction import compute_error_correction_code_words
+    from pdf417gen.util import chunks
+
+    ecCount = 2 ** (securityLevel + 1)
+    paddingWords = get_padding(len(dataWords), ecCount, columns)
+    lengthDescriptor = len(dataWords) + len(paddingWords) + 1
+    codewordCount = lengthDescriptor + ecCount
+    rowCount = math.ceil(codewordCount / columns)
+    validate_barcode_size(lengthDescriptor, rowCount)
+    extendedWords = [lengthDescriptor] + dataWords + paddingWords
+    ecWords = compute_error_correction_code_words(extendedWords, securityLevel)
+    rows = list(chunks(extendedWords + ecWords, columns))
+    return list(encode_rows(rows, columns, securityLevel))
 
 
 def _pdf417CompactRows(codes):

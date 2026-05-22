@@ -1103,7 +1103,12 @@ def test_imageObject_pdf417_barcode_generator():
     import inspect
 
     import pdf417gen
-    from drawbot_skia.imageObject import _pdf417Columns, _pdf417CompactRows, _pdf417TargetSize
+    from drawbot_skia.imageObject import (
+        _pdf417Columns,
+        _pdf417CompactRows,
+        _pdf417Encode,
+        _pdf417TargetSize,
+    )
 
     im = ImageObject()
     assert list(inspect.signature(im.PDF417BarcodeGenerator).parameters) == [
@@ -1136,6 +1141,15 @@ def test_imageObject_pdf417_barcode_generator():
     assert any(image.getpixel((x, image.height // 2))[:3] == (0, 0, 0) for x in range(image.width))
     assert _pdf417Columns(0, 4, "drawbot", 0) == 3
     assert _pdf417Columns(0, 4, "drawbot", 4) == 10
+    autoCodes = _pdf417Encode("123456", 4, 2, 0, False)
+    textCodes = _pdf417Encode("123456", 4, 2, 1, False)
+    byteCodes = _pdf417Encode("123456", 4, 2, 2, False)
+    numericCodes = _pdf417Encode("123456", 4, 2, 3, False)
+    explicitTextCodes = _pdf417Encode("123456", 4, 2, 1, True)
+    assert numericCodes == autoCodes
+    assert textCodes != byteCodes
+    assert textCodes != numericCodes
+    assert explicitTextCodes != textCodes
     compactCodes = _pdf417CompactRows(expectedCodes)
     assert len(compactCodes) == len(expectedCodes)
     assert len(compactCodes[0]) == len(expectedCodes[0]) - 1
