@@ -502,6 +502,12 @@ def test_formattedString_font_info():
     assert t.fontFileFontNumber() == 2
 
 
+def test_formattedString_mac_bridge_api_raises_clear_error():
+    t = FormattedString("hello")
+    with pytest.raises(DrawbotError, match="NSMutableAttributedString"):
+        t.getNSObject()
+
+
 def test_drawing_text_state_properties_and_font_info():
     db = Drawing()
     db.fontSize(20)
@@ -785,6 +791,14 @@ def test_bezier_path_intersectionPoints():
     rectangle = BezierPath()
     rectangle.rect(0, 0, 100, 100)
     assert rectangle.intersectionPoints() == []
+
+
+def test_bezier_path_mac_bridge_apis_raise_clear_errors():
+    path = BezierPath()
+    with pytest.raises(DrawbotError, match="NSBezierPath"):
+        path.getNSBezierPath()
+    with pytest.raises(DrawbotError, match="NSBezierPath"):
+        path.setNSBezierPath(None)
 
 
 def test_bezier_path_textBox_returns_overflow():

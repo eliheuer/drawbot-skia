@@ -105,6 +105,16 @@ class BezierPath(BasePen):
         points = [(x, y) for x, y in (firstPoint,) + points]
         self.path.addPoly(points, close)
 
+    def getNSBezierPath(self):
+        raise DrawbotError(
+            "getNSBezierPath() returns a macOS NSBezierPath and is not available in drawbot-skia"
+        )
+
+    def setNSBezierPath(self, path):
+        raise DrawbotError(
+            "setNSBezierPath() requires a macOS NSBezierPath and is not available in drawbot-skia"
+        )
+
     def pointInside(self, point):
         x, y = point
         return self.path.contains(x, y)

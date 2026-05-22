@@ -152,6 +152,13 @@ class FormattedString:
 
         return Drawing().textSize(self)
 
+    def getNSObject(self):
+        from .errors import DrawbotError
+
+        raise DrawbotError(
+            "getNSObject() returns a macOS NSMutableAttributedString and is not available in drawbot-skia"
+        )
+
     def fontContainsCharacters(self, characters):
         cmaps = [self._ttFont().getBestCmap() or {}]
         fallbackFont = self.textProperties().get("fallbackFont")

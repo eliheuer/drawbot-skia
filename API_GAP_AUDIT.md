@@ -13,7 +13,7 @@ This audit compares the current fork against:
 The test suite is green after the latest parity wrapper batch:
 
 ```text
-312 passed, 3 skipped, 3 warnings
+314 passed, 3 skipped, 3 warnings
 ```
 
 ## Conclusion
@@ -35,7 +35,7 @@ Do not call the larger feature-parity goal complete from this evidence.
 |---|---:|---|
 | Animated GIF export | Implemented | `RecordingDocument._saveImage_gif()`, `tests/test_api.py::test_saveImage_gif_frame_durations`, `tests/test_api.py::test_numberOfPages_gif` |
 | Multi-line, single-style `text()` | Implemented | `Drawing.text()` handles multiline strings through `_formattedLines()`/line drawing; covered by `tests/apitests/multiLineText.py` |
-| `FormattedString` | Implemented, not full DrawBot parity | `src/drawbot_skia/formattedString.py`; missing macOS `getNSObject()` vs DrawBot |
+| `FormattedString` | Implemented | `src/drawbot_skia/formattedString.py`; macOS `getNSObject()` exists as an explicit unsupported API |
 | Multi-style `text()` | Implemented | `Drawing._textFormattedString()` and FormattedString API tests |
 | Remaining `BezierPath` methods | Incomplete | Missing `traceImage()`; macOS bridge methods not applicable |
 | Many-things-I-forgot-to-mention | Incomplete | Top-level namespace is complete; behavior gaps listed below |
@@ -78,7 +78,7 @@ traceImage
 
 Notes:
 
-- `getNSBezierPath` and `setNSBezierPath` are macOS bridge APIs and should probably remain unsupported in `drawbot-skia`.
+- `getNSBezierPath` and `setNSBezierPath` are macOS bridge APIs and now exist as explicit unsupported APIs.
 - `intersectionPoints()` has been added using `fontTools.misc.bezierTools` segment intersections, with support for path-to-path intersections and self-intersections.
 - `traceImage()` is a real DrawBot user-facing path feature.
 - `optimizePath()` has been added for DrawBot's trailing-empty-`moveTo` cleanup behavior.
@@ -90,12 +90,12 @@ Static comparison source: public methods on `typemytype/drawbot` `FormattedStrin
 Missing:
 
 ```text
-getNSObject
+None
 ```
 
 Notes:
 
-- `getNSObject()` is macOS bridge API and should remain unsupported or documented as intentionally absent.
+- `getNSObject()` is a macOS bridge API and now exists as an explicit unsupported API.
 - `url()` has been added as text-style state; rendering URL annotations still depends on the output context and is tracked with the link APIs.
 
 ## `ImageObject` Gaps
