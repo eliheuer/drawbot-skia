@@ -408,8 +408,8 @@ class ImageObject:
         self._path = None
         self._offset = (0, 0)
 
-    def meshGenerator(self, size, width=64.0, color=(1.0, 1.0, 1.0, 1.0)):
-        self._setPILImage(_meshImage(size, width, color))
+    def meshGenerator(self, size, mesh, width=1.5, color=(1.0, 1.0, 1.0, 1.0)):
+        self._setPILImage(_meshImage(size, mesh, width, color))
         self._path = None
         self._offset = (0, 0)
 
@@ -3309,19 +3309,21 @@ def _starImage(size, center, color, radius, crossScale, crossAngle, crossOpacity
     return image.filter(ImageFilter.GaussianBlur(blurRadius))
 
 
-def _meshImage(size, width, color):
+def _meshImage(size, mesh, width, color):
     from PIL import Image
     from PIL import ImageDraw
 
     imageWidth, imageHeight = _normalizeSize(size)
-    step = max(1, int(round(float(width))))
     image = Image.new("RGBA", (imageWidth, imageHeight), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
     color = _colorToRGBABytes(color)
-    for x in range(0, imageWidth, step):
-        draw.line((x, 0, x, imageHeight), fill=color)
-    for y in range(0, imageHeight, step):
-        draw.line((0, y, imageWidth, y), fill=color)
+    width = max(1, int(round(float(width))))
+    for segment in mesh:
+        if len(segment) == 2:
+            (x1, y1), (x2, y2) = segment
+        else:
+            x1, y1, x2, y2 = segment
+        draw.line((x1, y1, x2, y2), fill=color, width=width)
     return image
 
 

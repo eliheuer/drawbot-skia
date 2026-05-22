@@ -811,13 +811,27 @@ def test_imageObject_generator_batch():
         ("lenticularHaloGenerator", ((16, 12),), {"center": (8, 6), "haloRadius": 4, "haloWidth": 6}),
         ("starShineGenerator", ((16, 12),), {"center": (8, 6), "radius": 3}),
         ("sunbeamsGenerator", ((16, 12),), {"center": (8, 6), "sunRadius": 3}),
-        ("meshGenerator", ((16, 12),), {"width": 4}),
+        ("meshGenerator", ((16, 12), (((0, 0), (15, 11)),)), {"width": 4}),
     ]
     for methodName, args, kwargs in calls:
         im = ImageObject()
         assert getattr(im, methodName)(*args, **kwargs) is None
         assert im.size() == (16, 12)
         assert im.offset() == (0, 0)
+
+
+def test_imageObject_meshGenerator_uses_mesh_segments():
+    im = ImageObject()
+    assert im.meshGenerator(
+        (6, 4),
+        [((0, 0), (5, 0)), (0, 3, 5, 3)],
+        width=1,
+        color=(1, 0, 0, 1),
+    ) is None
+    image = im._pilImage()
+    assert [image.getpixel((x, 0)) for x in range(6)] == [(255, 0, 0, 255)] * 6
+    assert [image.getpixel((x, 3)) for x in range(6)] == [(255, 0, 0, 255)] * 6
+    assert image.getpixel((0, 1)) == (0, 0, 0, 0)
 
 
 def test_imageObject_checkerboard_and_stripes_use_sharpness():
