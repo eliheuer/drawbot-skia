@@ -1685,7 +1685,14 @@ class ImageObject:
         scale=50.0,
     ):
         target = _imageObjectToPIL(targetImage).resize(self.size())
-        mask = _radialMask(self.size(), center, max(1, float(width)) * (1 + float(time) * 3), 1)
+        shading = _imageObjectToPIL(shadingImage).resize(self.size())
+        target = _rippleDistortImage(target, shading, center, width, scale, time)
+        mask = _radialTransitionMask(
+            self.size(),
+            center,
+            max(1, float(width)) * (1 + float(time) * 3),
+            extent,
+        )
         self._setPILImage(_blendWithMask(self._pilImage(), target, mask))
 
     def disintegrateWithMaskTransition(
@@ -2873,6 +2880,47 @@ def _radialMask(size, center, radius, amount=1.0):
             distance = math.hypot(x - cx, y - cy)
             pixels[x, y] = _clampByte(max(0, 1 - distance / radius) * 255 * amount)
     return mask
+
+
+def _radialTransitionMask(size, center, radius, extent=None):
+    from PIL import Image
+
+    width, height = size
+    cx, cy = center
+    radius = max(1, float(radius))
+    mask = Image.new("L", size)
+    pixels = mask.load()
+    for y in range(height):
+        for x in range(width):
+            if not _pointInExtent(x, y, extent, size):
+                pixels[x, y] = 0
+                continue
+            distance = math.hypot(x - cx, y - cy)
+            pixels[x, y] = _clampByte((1 - distance / radius) * 255)
+    return mask
+
+
+def _rippleDistortImage(image, shading, center, width, scale, time):
+    shading = shading.resize(image.size).convert("L")
+    shadingPixels = shading.load()
+    cx, cy = center
+    width = max(1, float(width))
+    scale = float(scale)
+    time = max(0, min(1, float(time)))
+
+    def mapPoint(x, y):
+        dx = x - cx
+        dy = y - cy
+        distance = math.hypot(dx, dy)
+        if distance == 0:
+            return x, y
+        phase = distance / width - time * 4
+        wave = math.sin(phase * math.tau)
+        shadingAmount = (shadingPixels[x, y] - 128) / 128
+        amount = wave * shadingAmount * scale * 0.1
+        return x - dx / distance * amount, y - dy / distance * amount
+
+    return _distortImage(image, mapPoint)
 
 
 def _linearTransitionMask(size, time, angle, width, extent=None):

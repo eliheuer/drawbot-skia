@@ -965,6 +965,41 @@ def test_imageObject_disintegrate_transition_shadow(tmpdir):
     assert pixels[3][0] < 255
 
 
+def test_imageObject_ripple_transition_extent_and_shading(tmpdir):
+    sourcePath = pathlib.Path(tmpdir) / "ripple-source.png"
+    targetPath = pathlib.Path(tmpdir) / "ripple-target.png"
+    shadingPath = pathlib.Path(tmpdir) / "ripple-shading.png"
+    Image.new("RGBA", (5, 3), (255, 0, 0, 255)).save(sourcePath)
+    target = Image.new("RGBA", (5, 3))
+    for y in range(3):
+        for x in range(5):
+            target.putpixel((x, y), (x * 50, y * 80, 255, 255))
+    target.save(targetPath)
+    shading = Image.new("L", (5, 3))
+    for y in range(3):
+        for x in range(5):
+            shading.putpixel((x, y), 255 if (x + y) % 2 else 0)
+    shading.convert("RGBA").save(shadingPath)
+
+    im = ImageObject(sourcePath)
+    assert im.rippleTransition(
+        targetPath,
+        shadingPath,
+        center=(2, 1),
+        extent=(0, 0, 3, 3),
+        time=0.5,
+        width=2,
+        scale=20,
+    ) is None
+    image = im._pilImage()
+    assert [image.getpixel((x, 1)) for x in range(3)] == [
+        (102, 48, 153, 255),
+        (91, 64, 204, 255),
+        (100, 80, 255, 255),
+    ]
+    assert [image.getpixel((x, 1)) for x in range(3, 5)] == [(255, 0, 0, 255)] * 2
+
+
 def test_numberOfPages_gif(tmpdir):
     source = """
 for i in range(3):
