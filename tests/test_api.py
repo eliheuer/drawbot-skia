@@ -645,6 +645,47 @@ def test_imageObject_qr_code_generator():
     assert ["".join("1" if value else "0" for value in row) for row in _qrMatrix("drawbot", "M")] == expectedMatrix
 
 
+def test_imageObject_sunbeams_generator_uses_striation_parameters():
+    smooth = ImageObject()
+    assert smooth.sunbeamsGenerator(
+        (7, 7),
+        center=(3, 3),
+        color=(1, 1, 1, 1),
+        sunRadius=2,
+        maxStriationRadius=1,
+        striationStrength=0,
+        striationContrast=1,
+        time=0,
+    ) is None
+    assert [smooth._pilImage().getpixel((x, 3))[0] for x in range(7)] == [219, 255, 219, 182, 219, 255, 219]
+
+    striated = ImageObject()
+    assert striated.sunbeamsGenerator(
+        (7, 7),
+        center=(3, 3),
+        color=(1, 1, 1, 1),
+        sunRadius=2,
+        maxStriationRadius=3,
+        striationStrength=1,
+        striationContrast=2,
+        time=0,
+    ) is None
+    assert [striated._pilImage().getpixel((x, 3))[0] for x in range(7)] == [56, 64, 56, 44, 56, 64, 56]
+
+    shifted = ImageObject()
+    assert shifted.sunbeamsGenerator(
+        (7, 7),
+        center=(3, 3),
+        color=(1, 1, 1, 1),
+        sunRadius=2,
+        maxStriationRadius=3,
+        striationStrength=1,
+        striationContrast=2,
+        time=0.25,
+    ) is None
+    assert shifted._pilImage().tobytes() != striated._pilImage().tobytes()
+
+
 def test_imageObject_pdf417_barcode_generator():
     import pdf417gen
 

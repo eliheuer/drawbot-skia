@@ -358,7 +358,20 @@ class ImageObject:
         striationContrast=1.375,
         time=0.0,
     ):
-        self._setPILImage(_radialLightImage(size, center, color, sunRadius, max(size), rays=True))
+        self._setPILImage(
+            _radialLightImage(
+                size,
+                center,
+                color,
+                sunRadius,
+                max(size),
+                rays=True,
+                rayRadius=maxStriationRadius,
+                rayStrength=striationStrength,
+                rayContrast=striationContrast,
+                rayTime=time,
+            )
+        )
         self._path = None
         self._offset = (0, 0)
 
@@ -2908,6 +2921,7 @@ def _radialLightImage(
     rayRadius=2.58,
     rayStrength=0.5,
     rayContrast=1.0,
+    rayTime=0.0,
     extent=None,
 ):
     from PIL import Image
@@ -2920,6 +2934,7 @@ def _radialLightImage(
     rayRadius = max(0.01, float(rayRadius))
     rayStrength = max(0, min(1, float(rayStrength)))
     rayContrast = max(0.01, float(rayContrast))
+    rayTime = float(rayTime)
     image = Image.new("RGBA", (imageWidth, imageHeight), (0, 0, 0, 0))
     pixels = image.load()
     for y in range(imageHeight):
@@ -2930,7 +2945,7 @@ def _radialLightImage(
             amount = max(0, 1 - abs(distance - radius) / width)
             if rays:
                 angle = math.atan2(y - cy, x - cx)
-                wave = ((math.sin(angle * rayRadius * 12) + 1) / 2) ** rayContrast
+                wave = ((math.sin(angle * rayRadius * 12 + rayTime * math.tau) + 1) / 2) ** rayContrast
                 amount *= 1 - rayStrength + rayStrength * wave
             alpha = _clampByte(color[3] * amount)
             pixels[x, y] = (
