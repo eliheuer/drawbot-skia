@@ -1,44 +1,284 @@
-[![Run tests](https://github.com/justvanrossum/drawbot-skia/workflows/Run%20tests/badge.svg)](https://github.com/justvanrossum/drawbot-skia/actions)
-
 # drawbot-skia
 
-A Python package implementing the [DrawBot](https://www.drawbot.com) drawing API using [Skia](https://skia.org/) as a backend.
+`drawbot-skia` is a Python implementation of the
+[DrawBot](https://www.drawbot.com/) drawing API using
+[Skia](https://skia.org/) as the rendering backend.
 
-Work in progress!
+DrawBot is a friendly, Python-based way to make 2D graphics: posters, diagrams,
+type specimens, generated images, animations, PDFs, SVGs, and quick visual
+experiments. Classic DrawBot is a macOS app. This project is a package and
+command-line tool that lets similar DrawBot scripts run in a normal Python
+environment.
 
-## Roadmap
+This fork focuses on broad DrawBot API coverage, visual test examples, and
+cross-platform use.
 
-1. Get basic shapes working ✅
-1. Get basic colors working ✅
-1. Get minimal `BezierPath` object working ✅
-1. Get transformations working ✅
-1. Get single-line, single style `text()` working ✅
-1. Get Variable Fonts working ✅
-1. Get HarfBuzz shaping working ✅
-1. Get OpenType features working ✅
-1. Get PNG, JPEG image export working ✅
-1. Get PDF export working ✅
-1. Get MP4 export working ✅
-1. Get SVG export working ✅
-1. Get Animated GIF export working ✅
-1. Get multi-line, single style `text()` working ✅
-1. Get `FormattedString` working ✅
-1. Get multi-style `text()` working ✅
-1. Get remaining `BezierPath` methods working ✅
-1. Get many-things-I-forgot-to-mention working ✅ _(static API coverage; behavior caveats below)_
-1. ...
-1. `textBox()` ✅ _(implemented; not CoreText-identical)_
-1. Fill further gaps in DrawBot API ✅ _(static method-name coverage; behavior caveats below)_
+## What It Does
+
+- Runs DrawBot-style Python scripts from the command line.
+- Provides a Python module you can import in your own scripts.
+- Draws shapes, paths, colors, gradients, text, formatted text, and images.
+- Exports PNG, JPEG, PDF, SVG, animated GIF, and MP4 output.
+- Supports `BezierPath`, `FormattedString`, variable fonts, HarfBuzz shaping,
+  many `ImageObject` filters, barcode generators, and visual docs examples.
+- Includes local [`docs/`](docs/) and [`examples/`](examples/) directories with
+  rendered JPG previews that double as visual test fixtures.
 
 The current API audit is tracked in [`API_GAP_AUDIT.md`](API_GAP_AUDIT.md).
 
-## Documentation and examples
+## Quick Start
 
-The local [`docs/`](docs/) and [`examples/`](examples/) directories provide a
-DrawBot-style documentation scaffold with rendered visual fixtures. The examples
-are grouped after the main categories on drawbot.com, and `examples/showcase/`
-is reserved for features that this fork supports beyond the original upstream
-roadmap state.
+Install the package, then run a DrawBot script:
+
+```sh
+drawbot poster.py poster.png
+```
+
+A tiny script looks like this:
+
+```python
+size(600, 400)
+
+fill(0.95)
+rect(0, 0, width(), height())
+
+fill(0.1, 0.2, 0.35)
+fontSize(64)
+text("Hello Skia", (60, 190))
+
+fill(0.95, 0.35, 0.15)
+oval(420, 120, 110, 110)
+```
+
+Save it as `poster.py`, then render it:
+
+```sh
+drawbot poster.py poster.png
+```
+
+The CLI behaves like running a script in the DrawBot app: the drawing API names
+are injected into the script namespace, so the script does not need imports.
+
+## Installation
+
+### Install This Fork From The CLI
+
+To use this fork as your installed `drawbot-skia` package:
+
+```sh
+python -m pip install --upgrade "drawbot-skia @ git+https://github.com/eliheuer/drawbot-skia.git"
+```
+
+That installs the package and the `drawbot` command.
+
+If you already installed the upstream package from PyPI and want this fork
+instead, reinstall from the GitHub URL above. The package name and import path
+are still `drawbot-skia` / `drawbot_skia`, so existing scripts that already use
+`drawbot_skia` should keep the same imports.
+
+### Install With `uv`
+
+For a local project:
+
+```sh
+uv venv
+source .venv/bin/activate
+uv pip install "drawbot-skia @ git+https://github.com/eliheuer/drawbot-skia.git"
+```
+
+Run the CLI:
+
+```sh
+uv run drawbot poster.py poster.png
+```
+
+For development from a clone:
+
+```sh
+git clone https://github.com/eliheuer/drawbot-skia.git
+cd drawbot-skia
+uv venv
+source .venv/bin/activate
+uv pip install -e ".[mp4]"
+uv pip install -r requirements-dev.txt
+```
+
+Run tests:
+
+```sh
+uv run pytest -q
+```
+
+### Install With A Regular `venv`
+
+For a local project:
+
+```sh
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install "drawbot-skia @ git+https://github.com/eliheuer/drawbot-skia.git"
+```
+
+Run the CLI:
+
+```sh
+drawbot poster.py poster.png
+```
+
+For development from a clone:
+
+```sh
+git clone https://github.com/eliheuer/drawbot-skia.git
+cd drawbot-skia
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[mp4]"
+python -m pip install -r requirements-dev.txt
+```
+
+Run tests:
+
+```sh
+python -m pytest -q
+```
+
+Windows note: `skia-python` requires 64-bit Python, so use a 64-bit Python
+installer.
+
+## Using It From Python
+
+You can write scripts with explicit imports:
+
+```python
+from drawbot_skia.drawbot import *
+
+size(400, 300)
+fill(1, 0, 0)
+oval(100, 75, 200, 150)
+saveImage("oval.png")
+```
+
+Or use a module alias:
+
+```python
+import drawbot_skia.drawbot as db
+
+db.size(400, 300)
+db.fill(0.1, 0.2, 0.4)
+db.rect(40, 40, 320, 220)
+db.saveImage("rectangle.png")
+```
+
+Use the command-line runner when you want your script to look like a DrawBot app
+script with no imports:
+
+```sh
+drawbot script.py output.png
+```
+
+You can pass more than one output file:
+
+```sh
+drawbot script.py output.png output.pdf output.svg
+```
+
+Raster outputs can be rendered at a higher pixel scale:
+
+```sh
+drawbot --pixelScale 2 script.py output.jpg
+```
+
+## Using It As A Replacement
+
+### Replacing Upstream `drawbot-skia`
+
+This fork keeps the same package name, CLI command, and import path:
+
+- package: `drawbot-skia`
+- import path: `drawbot_skia`
+- CLI command: `drawbot`
+
+If a script already uses upstream `drawbot-skia`, install this fork from GitHub
+and keep the script as-is:
+
+```python
+from drawbot_skia.drawbot import *
+```
+
+Then run:
+
+```sh
+drawbot script.py output.png
+```
+
+### Porting A DrawBot App Script
+
+Most simple DrawBot app scripts can be run directly with the CLI:
+
+```sh
+drawbot my-drawbot-script.py output.pdf
+```
+
+If you want to run the script with plain Python instead of the CLI, add this at
+the top:
+
+```python
+from drawbot_skia.drawbot import *
+```
+
+Then make sure the script calls `saveImage(...)`:
+
+```python
+saveImage("output.pdf")
+```
+
+Some macOS DrawBot app APIs are intentionally not available in this
+cross-platform package. See [Compatibility Notes](#compatibility-notes).
+
+## Project Architecture
+
+The package is organized around a small set of core layers:
+
+- `drawbot_skia.drawbot`: a module-level DrawBot-style namespace for scripts.
+- `Drawing`: the main stateful drawing object. It owns the current page,
+  drawing state, text state, transforms, and export calls.
+- `runner`: builds the script namespace used by the `drawbot` CLI.
+- `document`: records Skia pictures and exports them as PNG, JPEG, PDF, SVG,
+  GIF, or MP4.
+- `gstate`: stores fill, stroke, shadow, blend mode, text, and transform state.
+- `path`: implements `BezierPath` and path operations.
+- `formattedString`: implements styled text runs.
+- `shaping` and `segmenting`: handle Unicode text shaping, bidi behavior, and
+  text segmentation using HarfBuzz and related libraries.
+- `imageObject`: implements DrawBot-style `ImageObject` generators, filters,
+  compositing, transitions, and barcode helpers.
+
+At a high level:
+
+1. A script calls DrawBot-style functions such as `rect()`, `text()`, or
+   `image()`.
+2. Those calls update a `Drawing` object and draw into a Skia recording canvas.
+3. Each page is stored as a Skia picture.
+4. `saveImage()` or the CLI exports the recorded pages to the requested format.
+
+## Documentation And Visual Examples
+
+Local docs live in [`docs/`](docs/). Local examples live in
+[`examples/`](examples/). The examples are grouped after the main DrawBot
+documentation categories:
+
+- Shapes
+- Colors
+- Canvas
+- Text
+- Images
+- Variables
+- Quick Reference
+
+The extra `examples/showcase/` directory shows features this fork supports that
+were missing or incomplete in the original upstream roadmap.
 
 Regenerate the example previews with the default 2x pixel scale:
 
@@ -46,60 +286,76 @@ Regenerate the example previews with the default 2x pixel scale:
 .venv/bin/python examples/render_examples.py
 ```
 
-## Vision
+The docs completion audit is in [`docs/completion-audit.md`](docs/completion-audit.md).
 
-This project is purely a Python package that implements (part of) the DrawBot drawing API. Using Skia ([skia-python](https://github.com/kyamagu/skia-python)) ensures this can be done in a cross-platform way.
+## Development
 
-A DrawBot-like cross-platform application shell can be developed, but that would be a separate project. Looking forward to the `drawbot-qt`, `drawbot-wx`, `drawbot-win` or any `drawbot-*` projects of the future!
+Clone the repo, install it in editable mode, and run tests:
 
-## Compatibility caveats
+```sh
+git clone https://github.com/eliheuer/drawbot-skia.git
+cd drawbot-skia
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[mp4]"
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+```
 
-Some parts of the DrawBot API will be hard or impractical to duplicate.
+Regenerate visual examples:
 
-Skia has only low level support for text, so Unicode processing, line wrapping, hyphenation, and shaping are implemented in this package rather than delegated to CoreText. `textBox()` and `FormattedString` are available, rectangular BezierPath text boxes are accepted, and `BezierPath.textBox()` can convert wrapped plain or formatted text into path outlines, but output should not be expected to match macOS DrawBot/CoreText pixel-for-pixel.
+```sh
+.venv/bin/python examples/render_examples.py
+```
 
-Generally, 100% text compatibility with DrawBot should not be top priority, as matching CoreText behavior will be a huge challenge.
+## Roadmap Status
 
-The `ImageObject` API in DrawBot relies heavily on Core Image. This fork exposes the audited public `ImageObject` method names, but many filters are Pillow-backed compatibility implementations rather than Core Image-equivalent behavior. In particular:
+The original roadmap items are now broadly implemented in this fork:
 
-- `ImageObject` supports focused drawing with `with im:`, `lockFocus()`, and `unlockFocus()`, rendering module-level drawing commands into the image object while restoring the surrounding drawing state;
-- `aztecCodeGenerator()` uses `aztec-code-generator` for standards-compliant Aztec output; `checkerboardGenerator()` and `stripesGenerator()` use sharpness to soften pattern boundaries; `QRCodeGenerator()` produces standards-compliant byte-mode QR output for messages that fit QR versions 1-4; `PDF417BarcodeGenerator()` uses `pdf417gen` for standards-compliant PDF417 output, with advanced compaction/style option parity tracked in [#13](https://github.com/eliheuer/drawbot-skia/issues/13); `code128BarcodeGenerator()` produces standards-compliant Code 128 Set B output for text input;
-- `hueAdjust()` interprets angle values as radians and preserves exact no-op behavior for zero and full-turn angles. CIE Lab conversion and Delta E are implemented with sRGB/D65 color math; KMeans returns a one-dimensional palette image with alpha weights, uses `passes` for iterative refinement, and uses Lab-space distance when `perceptual=True`; palettize/paletteCentroid use color-distance assignment, and spotColor applies contrast-aware color-range replacement. Swipe/copy-machine transitions respect extent, color, opacity, radians-based angle, width, and time; flash transitions respect extent, color, time, fade threshold, and striation parameters; disintegrate transitions use mask-threshold timing and shadow parameters; ripple transitions use shading-image displacement, extent, scale, width, center, and time; mod transitions use radius, radians-based angle, compression, center, and time; accordion transitions use fold count, fold shadow, bottom height, and time; page-curl transitions use target/backside images, shading, extent, radians-based angle, radius, time, and shadow parameters. Transition approximations preserve the source image exactly at `time=0` and the target image exactly at `time=1`. `affineTile()` applies affine sampling with wraparound tiling. `bumpDistortionLinear()` uses radians-based angle for the linear bump direction, and `circularWrap()`, `twirlDistortion()`, and `vortexDistortion()` treat all angle values as radians without degree fallback. `displacementDistortion()` uses red and green channels for independent x/y displacement. `droste()` uses inset points, strands, periodicity, rotation, and zoom for recursive inset composition. `glassDistortion()` samples the texture relative to the supplied center. `lightTunnel()` uses center, radius, and radians-based rotation for radial tunnel warping. `perspectiveCorrection()` respects crop=False by preserving the expanded transform canvas and offset. `keystoneCorrectionCombined()` scales supplied corner correction by focal length, and `perspectiveRotate()` projects radians-based pitch/yaw/roll corners through focal length before transforming the image. `pixellate()` anchors the pixel grid on the supplied center, and `pointillize()` anchors its dot grid on the supplied center. `stretchCrop()` uses crop amount to interpolate between stretching and aspect-crop fitting, and uses center stretch amount to control the resized center band. Nine-part stretch/tile filters preserve breakpoint-defined edge and corner regions while expanding the center regions. Kaleidoscope and reflected/rotated tile filters use radians-based angles and their center/point argument as the rotation pivot, `triangleKaleidoscope()` uses size for the sampled triangular span and decay for repeated wedge brightness, reflected/rotated tile filters use width to seed the repeated tile source, fourfold tile filters use acute angle for the second tile vector, and translated/parallelogram tile filters use center as a phase or reflection pivot. `bloom()` and `gloom()` preserve source alpha while applying their glow colors. `colorMonochrome()` and `whitePointAdjust()` tint RGB while preserving source alpha. Photo-effect filters use `extrapolate` to strengthen their existing color/contrast curve. `bokehBlur()` treats zero radius as a no-op and uses an aperture kernel with radius, ring amount, ring size, and softness controls for positive radii. `cannyEdgeDetector()` uses low/high thresholds with hysteresis passes and Lab-lightness edge input when `perceptual=True`. Screen and halftone filters interpret angle values as radians; `CMYKHalftone()` uses CMYK separations with GCR/UCR controls before recomposing subtractive dot screens. `depthOfField()` uses the point0/point1 focus line to preserve nearby detail and blur farther pixels. `documentEnhancer()` treats amount zero as a no-op and blends stronger enhancement as amount increases. `edges()` and `edgeWork()` preserve alpha while emphasizing edge content. `guidedFilter()` uses radius-controlled smoothing and guide-edge preservation controlled by epsilon. `highlightShadowAdjust()` uses radius-controlled luminance context while preserving alpha. `lenticularHaloGenerator()` uses halo overlap, striation strength/contrast, and time. `lineOverlay()` uses noise reduction, sharpness, and contrast controls before thresholding edge detail. `maskedVariableBlur()` uses mask luminance to select local blur radius. `morphologyMaximum()` and `morphologyMinimum()` treat zero radius as a no-op, `morphologyGradient()` allows zero radius to produce a zero-difference image, and rectangle morphology uses separate width and height kernels. `motionBlur()` treats zero radius as a no-op and uses radius plus radians-based angle for explicit directional sampling. `noiseReduction()` treats zero noise and sharpness as a no-op and applies denoising and sharpening independently. `personSegmentation()` uses `qualityLevel` to control matte thresholding and softening. `saliencyMapFilter()` emits a grayscale local-contrast saliency map. `shadedMaterial()` treats the shading image as a height field for relief lighting controlled by scale. `sharpenLuminance()` sharpens the luminance plane while preserving original chroma and alpha. `unsharpMask()` sharpens RGB content while preserving source alpha. `vignetteEffect()` darkens RGB content while preserving source alpha. `spotLight()` uses `lightPointsAt` as the beam target and alpha-masks areas outside the highlight. `starShineGenerator()` uses cross opacity and epsilon controls for ray intensity and glow softness. `sunbeamsGenerator()` uses striation radius, strength, contrast, and time when generating ray patterns. `zoomBlur()` treats zero amount as a no-op and uses the provided center as the zoom anchor. Other transition details remain approximations. Saliency, segmentation, material, lighting, and advanced distortion filters are still approximations;
-- exact pixel parity with Core Image should be treated as follow-up work on a method-by-method basis.
+- basic shapes and colors
+- `BezierPath`
+- transformations
+- text and `textBox()`
+- variable fonts
+- HarfBuzz shaping
+- OpenType features
+- PNG, JPEG, PDF, SVG, MP4, and animated GIF export
+- `FormattedString`
+- many `ImageObject` APIs
+- static DrawBot API method coverage, with behavior caveats below
 
-The macOS application/PDFKit bridge APIs are intentionally out of scope for drawbot-skia's cross-platform package target; tracked in [#17](https://github.com/eliheuer/drawbot-skia/issues/17). Their method names exist only as explicit compatibility stubs and raise `DrawbotError`: `Variable()`, `pdfImage()`, `printImage()`, `FormattedString.getNSObject()`, `BezierPath.getNSBezierPath()`, and `BezierPath.setNSBezierPath()`.
+The detailed parity status is tracked in [`API_GAP_AUDIT.md`](API_GAP_AUDIT.md).
 
-Link annotations are supported for SVG and PDF output. PDF annotations are added by post-processing Skia's emitted PDF because skia-python does not expose PDF annotation hooks directly.
+## Compatibility Notes
 
-`radialGradient()` and `cmykRadialGradient()` support DrawBot's `startRadius`, `endRadius`, `startPoint`, and `endPoint` controls through Skia radial/two-point conical shaders.
+This project is cross-platform and Skia-backed. It is not the macOS DrawBot app,
+and it does not use CoreText, Core Image, AppKit, or PDFKit internally.
 
-`BezierPath.traceImage()` follows DrawBot's external-tool model. It requires both `mkbitmap` and `potrace` on `PATH`; if either executable is missing it raises `DrawbotError`. On macOS, install them with `brew install potrace`. On Debian/Ubuntu Linux, install them with `apt install potrace`. They are optional system dependencies, not Python package dependencies.
+Important differences:
 
-## Strategy
+- Text layout and shaping are implemented in this package using Skia,
+  HarfBuzz, FontTools, and related libraries. `textBox()` and
+  `FormattedString` are available, but output should not be expected to match
+  macOS DrawBot/CoreText pixel-for-pixel.
+- Many `ImageObject` methods are Pillow-backed compatibility implementations
+  rather than Core Image-equivalent filters. They are useful and tested, but
+  exact Core Image pixel parity should be treated as method-by-method follow-up
+  work.
+- macOS bridge APIs are intentionally out of scope for this package. These names
+  exist as explicit compatibility stubs and raise `DrawbotError`: `Variable()`,
+  `pdfImage()`, `printImage()`, `FormattedString.getNSObject()`,
+  `BezierPath.getNSBezierPath()`, and `BezierPath.setNSBezierPath()`.
+- `BezierPath.traceImage()` follows DrawBot's external-tool model. It requires
+  both `mkbitmap` and `potrace` on `PATH`. On macOS, install them with
+  `brew install potrace`. On Debian/Ubuntu Linux, install them with
+  `apt install potrace`.
 
-So far no existing DrawBot code has been reused. Perhaps that small snippets will be copied, perhaps a part of the test suite will be adapted. Other than that I want this to be an independent project, and would like to use Skia’s powers to maximum effect, keeping efficiency and performance in mind. DrawBot's ties to macOS are so strong that it makes platform-neutral code reuse virtually impossible.
+Some improvements specific to this fork include focused `ImageObject` drawing,
+barcode generators, alpha-aware mask behavior, broader transition/distortion
+approximations, link annotations for SVG/PDF, and radial gradient parity for
+DrawBot's radius and point controls.
 
-Potentially, some higher level code could be shared (for example, drawing code that uses lower level primitives), but that will have to been seen later.
+## License
 
-## Install
-
-The quickest way to install the latest release is with pip:
-
-`pip install drawbot-skia`
-
-_Note for Windows: skia-python is only supported for the 64-bit version of Python, so that goes for drawbot-skia as well, so make sure you use one of the x86-64 Python installers._
-
-If you want to see the source code and possibly contribute: clone the repo, and do `pip install -e .` in the root directory.
-
-## Usage
-
-To adapt a DrawBot script to `drawbot-skia` you can do a couple of things:
-
-- Add `from drawbot_skia.drawbot import *` at the top of your script
-- Or `import drawbot_skia.drawbot as db` if that's your preferred style
-
-Or you can use the `drawbot` runner tool from the command line:
-
-- `drawbot mydrawbotscript.py output.png`
-
-With the `drawbot` runner tool, you won't need any Drawbot import in the script, nor do you need a `saveImage(...)` to export results. It pretty much behaves as if you hit "Run" in the classic Drawbot application.
+This project uses the Apache License 2.0. See [`LICENSE.txt`](LICENSE.txt).
