@@ -286,6 +286,15 @@ def test_textBox_returns_overflow():
     assert "five" in overflow or "six" in overflow
 
 
+def test_writingDirection():
+    db = Drawing()
+    db.writingDirection("RTL")
+    assert db._gstate.textStyle.direction == "rtl"
+    assert db._gstate.textStyle.shape("ABC 123").clusters == [6, 5, 4, 3, 2, 1, 0]
+    db.writingDirection(None)
+    assert db._gstate.textStyle.direction is None
+
+
 def test_textBox_formattedString_returns_overflow():
     db = Drawing()
     db.size(200, 200)

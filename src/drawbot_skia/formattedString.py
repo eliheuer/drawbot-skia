@@ -1,5 +1,12 @@
 import os
-from .gstate import TextStyle, _cmykArgs, _colorArgs, _getName, _namedInstances
+from .gstate import (
+    TextStyle,
+    _cmykArgs,
+    _colorArgs,
+    _getName,
+    _namedInstances,
+    _normalizeWritingDirection,
+)
 from .shaping import getFeatures
 
 
@@ -127,15 +134,7 @@ class FormattedString:
         self._properties["language"] = language
 
     def writingDirection(self, direction):
-        if direction is not None:
-            direction = direction.lower()
-            direction = {
-                "left-to-right": "ltr",
-                "lefttoright": "ltr",
-                "right-to-left": "rtl",
-                "righttoleft": "rtl",
-            }.get(direction, direction)
-        self._properties["direction"] = direction
+        self._properties["direction"] = _normalizeWritingDirection(direction)
 
     def size(self):
         from .drawing import Drawing

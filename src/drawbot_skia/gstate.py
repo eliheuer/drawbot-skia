@@ -241,6 +241,11 @@ class GraphicsStateMixin:
     def language(self, language):
         self.textStyle = self.textStyle.copy(language=language)
 
+    def writingDirection(self, direction):
+        self.textStyle = self.textStyle.copy(
+            direction=_normalizeWritingDirection(direction)
+        )
+
     def listFontVariations(self):
         ttFont = self.textStyle.ttFont
         variations = {}
@@ -279,6 +284,18 @@ def _getName(nameTable, nameID):
     if nameRecord is not None:
         return nameRecord.toUnicode()
     return None
+
+
+def _normalizeWritingDirection(direction):
+    if direction is not None:
+        direction = direction.lower()
+        direction = {
+            "left-to-right": "ltr",
+            "lefttoright": "ltr",
+            "right-to-left": "rtl",
+            "righttoleft": "rtl",
+        }.get(direction, direction)
+    return direction
 
 
 def _namedInstances(ttFont):
