@@ -1698,10 +1698,18 @@ class ImageObject:
         shadowOffset=(0.0, -10.0),
     ):
         target = _imageObjectToPIL(targetImage).resize(self.size())
-        mask = _imageObjectToPIL(maskImage).resize(self.size()).convert("L").point(
-            lambda value: 255 if value / 255 <= float(time) else 0
+        maskSource = _imageObjectToPIL(maskImage).resize(self.size()).convert("L")
+        mask, shadow = _disintegrateMasks(
+            maskSource,
+            time,
+            shadowRadius,
+            shadowDensity,
+            shadowOffset,
         )
-        self._setPILImage(_blendWithMask(self._pilImage(), target, mask))
+        result = self._pilImage()
+        if shadow is not None:
+            result = _blendWithMask(result, _solidFromColor((0, 0, 0, 255), self.size()), shadow)
+        self._setPILImage(_blendWithMask(result, target, mask))
 
     def accordionFoldTransition(
         self,
@@ -2914,6 +2922,29 @@ def _linearTransitionBandMask(size, time, angle, width, extent=None):
             projection = (x - cx) * dx + (y - cy) * dy
             pixels[x, y] = _clampByte(max(0, 1 - abs(projection - edge) / halfWidth) * 255)
     return mask
+
+
+def _disintegrateMasks(maskSource, time, shadowRadius, shadowDensity, shadowOffset):
+    from PIL import Image
+    from PIL import ImageChops
+    from PIL import ImageFilter
+
+    time = max(0, min(1, float(time)))
+    transitionWidth = 0.12
+    low = max(0, time - transitionWidth / 2)
+    high = min(1, time + transitionWidth / 2)
+    span = high - low or 1
+    mask = maskSource.point(lambda value: _clampByte((time - value / 255 + transitionWidth / 2) / span * 255))
+    radius = max(0, float(shadowRadius))
+    density = max(0, min(1, float(shadowDensity)))
+    if radius == 0 or density == 0:
+        return mask, None
+    edge = ImageChops.difference(mask, mask.filter(ImageFilter.MinFilter(3)))
+    shadow = edge.filter(ImageFilter.GaussianBlur(radius)).point(lambda value: _clampByte(value * density))
+    offsetX, offsetY = shadowOffset
+    shifted = Image.new("L", maskSource.size, 0)
+    shifted.paste(shadow, (int(round(float(offsetX))), int(round(float(offsetY)))))
+    return mask, shifted
 
 
 def _pointInExtent(x, y, extent, size):

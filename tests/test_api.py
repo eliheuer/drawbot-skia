@@ -925,6 +925,46 @@ def test_imageObject_swipe_transition_color_extent(tmpdir):
     assert [image.getpixel((x, 1)) for x in range(6)] == [(255, 0, 0, 255)] * 6
 
 
+def test_imageObject_disintegrate_transition_shadow(tmpdir):
+    sourcePath = pathlib.Path(tmpdir) / "disintegrate-source.png"
+    targetPath = pathlib.Path(tmpdir) / "disintegrate-target.png"
+    maskPath = pathlib.Path(tmpdir) / "disintegrate-mask.png"
+    Image.new("RGBA", (4, 1), (255, 0, 0, 255)).save(sourcePath)
+    Image.new("RGBA", (4, 1), (0, 0, 255, 255)).save(targetPath)
+    mask = Image.new("L", (4, 1))
+    mask.putdata([0, 85, 170, 255])
+    mask.convert("RGBA").save(maskPath)
+
+    noShadow = ImageObject(sourcePath)
+    assert noShadow.disintegrateWithMaskTransition(
+        targetPath,
+        maskPath,
+        time=0.5,
+        shadowRadius=0,
+        shadowDensity=0,
+    ) is None
+    assert [noShadow._pilImage().getpixel((x, 0)) for x in range(4)] == [
+        (0, 0, 255, 255),
+        (0, 0, 255, 255),
+        (255, 0, 0, 255),
+        (255, 0, 0, 255),
+    ]
+
+    shadowed = ImageObject(sourcePath)
+    assert shadowed.disintegrateWithMaskTransition(
+        targetPath,
+        maskPath,
+        time=0.5,
+        shadowRadius=1,
+        shadowDensity=1,
+        shadowOffset=(1, 0),
+    ) is None
+    pixels = [shadowed._pilImage().getpixel((x, 0)) for x in range(4)]
+    assert pixels[:2] == [(0, 0, 255, 255), (0, 0, 255, 255)]
+    assert pixels[2][0] < 255
+    assert pixels[3][0] < 255
+
+
 def test_numberOfPages_gif(tmpdir):
     source = """
 for i in range(3):
