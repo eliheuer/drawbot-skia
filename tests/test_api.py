@@ -935,6 +935,35 @@ def test_imageObject_perspective_rotate_projects_corners(tmpdir):
     ]
 
 
+def test_imageObject_light_tunnel_uses_center_and_radius(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "light-tunnel.png"
+    image = Image.new("RGBA", (5, 5), (0, 0, 0, 255))
+    for y in range(5):
+        for x in range(5):
+            image.putpixel((x, y), (x * 50, y * 50, 0, 255))
+    image.save(imagePath)
+
+    unchanged = ImageObject(imagePath)
+    assert unchanged.lightTunnel(center=(2, 2), rotation=0, radius=1) is None
+    assert [unchanged._pilImage().getpixel((x, 2))[:3] for x in range(5)] == [
+        (0, 100, 0),
+        (50, 100, 0),
+        (100, 100, 0),
+        (150, 100, 0),
+        (200, 100, 0),
+    ]
+
+    tunneled = ImageObject(imagePath)
+    assert tunneled.lightTunnel(center=(2, 2), rotation=0, radius=3) is None
+    assert [tunneled._pilImage().getpixel((x, 2))[:3] for x in range(5)] == [
+        (150, 50, 0),
+        (100, 150, 0),
+        (100, 100, 0),
+        (100, 50, 0),
+        (50, 150, 0),
+    ]
+
+
 def test_imageObject_analysis_and_stylize_batch(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "analysis.png"
     image = Image.new("RGBA", (24, 16), (40, 80, 160, 255))

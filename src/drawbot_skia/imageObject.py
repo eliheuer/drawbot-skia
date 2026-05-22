@@ -514,7 +514,7 @@ class ImageObject:
         self._setPILImage(_drosteImage(self._pilImage(), insetPoint0, insetPoint1, strands, periodicity, rotation, zoom))
 
     def lightTunnel(self, center=(150.0, 150.0), rotation=0.0, radius=100.0):
-        self._setPILImage(_tileImage(self._pilImage(), rotations=8, reflect=False, angle=rotation))
+        self._setPILImage(_lightTunnelImage(self._pilImage(), center, rotation, radius))
 
     def ninePartStretched(self, breakpoint0=(50.0, 50.0), breakpoint1=(150.0, 150.0), growAmount=(100.0, 100.0)):
         self._setPILImage(_ninePartImage(self._pilImage(), breakpoint0, breakpoint1, growAmount, tiled=False))
@@ -3644,6 +3644,25 @@ def _perspectiveRotateImage(image, focalLength, pitch, yaw, roll):
 def _angleToRadians(value):
     value = float(value)
     return math.radians(value) if abs(value) > math.tau else value
+
+
+def _lightTunnelImage(image, center, rotation, radius):
+    cx, cy = center
+    radius = max(1, float(radius))
+    rotation = _angleToRadians(rotation)
+
+    def mapPoint(x, y):
+        dx = x - cx
+        dy = y - cy
+        distance = math.hypot(dx, dy)
+        if distance >= radius or distance == 0:
+            return x, y
+        amount = 1 - distance / radius
+        theta = math.atan2(dy, dx) + rotation + amount * math.tau
+        tunnelDistance = distance * (0.45 + 0.55 * amount)
+        return cx + math.cos(theta) * tunnelDistance, cy + math.sin(theta) * tunnelDistance
+
+    return _distortImage(image, mapPoint)
 
 
 def _ninePartImage(image, breakpoint0, breakpoint1, growAmount, tiled=False, flipYTiles=True):
