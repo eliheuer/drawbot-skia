@@ -1304,6 +1304,35 @@ def test_imageObject_displacement_distortion_uses_red_green_channels(tmpdir):
     ]
 
 
+def test_imageObject_linear_bump_uses_radian_angle(tmpdir):
+    imagePath = pathlib.Path(tmpdir) / "linear-bump.png"
+    image = Image.new("RGBA", (5, 5))
+    for y in range(5):
+        for x in range(5):
+            image.putpixel((x, y), (x * 40, y * 40, 0, 255))
+    image.save(imagePath)
+
+    vertical = ImageObject(imagePath)
+    assert vertical.bumpDistortionLinear(center=(2, 2), radius=3, angle=0, scale=1) is None
+    assert [vertical._pilImage().getpixel((x, 2)) for x in range(5)] == [
+        (0, 40, 0, 255),
+        (40, 40, 0, 255),
+        (80, 40, 0, 255),
+        (120, 40, 0, 255),
+        (160, 40, 0, 255),
+    ]
+
+    horizontal = ImageObject(imagePath)
+    assert horizontal.bumpDistortionLinear(center=(2, 2), radius=3, angle=math.pi / 2, scale=1) is None
+    assert [horizontal._pilImage().getpixel((x, 2)) for x in range(5)] == [
+        (0, 80, 0, 255),
+        (40, 80, 0, 255),
+        (120, 80, 0, 255),
+        (120, 80, 0, 255),
+        (160, 80, 0, 255),
+    ]
+
+
 def test_imageObject_glass_distortion_uses_centered_texture(tmpdir):
     imagePath = pathlib.Path(tmpdir) / "glass.png"
     texturePath = pathlib.Path(tmpdir) / "glass-texture.png"

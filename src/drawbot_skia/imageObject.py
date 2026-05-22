@@ -3976,9 +3976,9 @@ def _linearBumpImage(image, center, radius, angle, scale):
     cx, cy = center
     radius = max(1, float(radius))
     scale = float(scale)
-    radians = math.radians(float(angle))
-    normalX = -math.sin(radians)
-    normalY = math.cos(radians)
+    angle = float(angle)
+    normalX = -math.sin(angle)
+    normalY = math.cos(angle)
 
     def mapPoint(x, y):
         distance = (x - cx) * normalX + (y - cy) * normalY
