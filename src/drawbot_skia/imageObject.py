@@ -2780,6 +2780,8 @@ def _pdf417BarcodeImage(
         except ValueError:
             if candidateColumns == 1:
                 raise
+    if compactStyle:
+        codes = _pdf417CompactRows(codes)
     barcode = pdf417gen.render_image(codes, scale=1, ratio=3, padding=0).convert("RGBA")
     targetWidth, targetHeight = _pdf417TargetSize(width, height, minWidth, maxWidth, minHeight, maxHeight, preferredAspectRatio)
     barcode = barcode.resize((targetWidth, targetHeight), Image.Resampling.NEAREST)
@@ -2799,6 +2801,10 @@ def _pdf417Columns(dataColumns, rows, message, securityLevel=2):
         estimatedCodewords = len(str(message).encode("utf-8")) + 1 + (2 << securityLevel)
         return max(1, min(30, int(math.ceil(estimatedCodewords / rowCount))))
     return 6
+
+
+def _pdf417CompactRows(codes):
+    return [row[:-2] + row[-1:] for row in codes]
 
 
 def _pdf417TargetSize(width, height, minWidth, maxWidth, minHeight, maxHeight, preferredAspectRatio):
